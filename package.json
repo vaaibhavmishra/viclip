@@ -1,0 +1,45 @@
+{
+  "name": "viclip",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ViClip monorepo for the website, desktop app, and mobile app.",
+  "author": "Vaibhav Mishra <vaibhav@viclip.shipby.me>",
+  "license": "Proprietary",
+  "homepage": "https://viclip.shipby.me",
+  "scripts": {
+    "start": "turbo run start",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@viclip/web",
+    "build:desktop": "turbo run build --filter=@viclip/desktop",
+    "build:desktop:mac": "turbo run build:mac --filter=@viclip/desktop",
+    "build:desktop:win": "turbo run build:win --filter=@viclip/desktop",
+    "build:desktop:linux": "turbo run build:linux --filter=@viclip/desktop",
+    "build:mobile": "turbo run build --filter=@viclip/mobile",
+    "build:mobile:android": "turbo run build:android --filter=@viclip/mobile",
+    "build:mobile:ios": "turbo run build:ios --filter=@viclip/mobile",
+    "build:mobile:web": "turbo run build:web --filter=@viclip/mobile",
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@viclip/web",
+    "dev:desktop": "turbo run dev --filter=@viclip/desktop",
+    "dev:mobile": "turbo run dev --filter=@viclip/mobile",
+    "check": "biome check . --write",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.11",
+    "@types/react": "19.2.14",
+    "husky": "^9.1.7",
+    "turbo": "^2.3.3",
+    "typescript": "^6.0.2"
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0"
+  }
+}

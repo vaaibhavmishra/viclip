@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+
+echo 'Running pre-commit checks...'
+
+# Check formatting and linting with Biome
+turbo check ||
+(
+    echo 'Biome check failed. Please run "turbo check" and try again.'
+    false;
+)
+
+# Check TypeScript types
+turbo typecheck ||
+(
+    echo 'Type check failed. Please resolve the errors before committing.'
+    false;
+)
+
+# Build Check
+echo 'Building project to ensure stability...'
+turbo build ||
+(
+    echo 'Build failed. Please check the errors above and fix them before committing.'
+    false;
+)
+
+echo 'All checks passed! Proceeding with commit...'

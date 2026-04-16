@@ -1,0 +1,57 @@
+appId: com.viclip.app
+productName: ViClip
+extraMetadata:
+  name: ViClip
+  version: 2.0.0
+  description: Sync Your Clipboard Across All Your Devices
+  homepage: https://viclip.tech
+  author:
+    name: Vaibhav Mishra
+    email: vaibhav@viclip.tech
+directories:
+  buildResources: build
+  output: 'dist/v${version}/${os}-${arch}'
+publish:
+  provider: github
+  owner: ViClip-Org
+  repo: ViClip-Desktop
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintignore, .eslintrc.cjs, .prettierignore, .prettierrc.yaml, .npmrc, .eslintcache, .editorconfig}'
+  - '!{.env, .env.*}'
+  - '!{pnpm-lock.yaml, pnpm-workspace.yaml}'
+  - '!{tsconfig.json, tsconfig.node.json, tsconfig.web.json}'
+  - '!{dev-app-update.yml, eslint.config.mjs}'
+  - '!{CHANGELOG.md, README.md, LICENSE.txt}'
+  - '!**/*.map'
+asarUnpack:
+  - resources/**
+win:
+  executableName: ViClip
+  legalTrademarks: 'ViClip'
+  icon: build/icon.ico
+  signAndEditExecutable: true
+  verifyUpdateCodeSignature: false
+nsis:
+  artifactName: ${name}-${version}-${os}-${arch}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  deleteAppDataOnUninstall: true
+mac:
+  icon: build/icon.icns
+  entitlements: build/entitlements.mac.plist
+  identity: null
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}-${os}-${arch}.${ext}
+linux:
+  target:
+    - AppImage
+  maintainer: Vaibhav-Mishra
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}-${os}-${arch}.${ext}
+npmRebuild: false

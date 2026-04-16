@@ -1,0 +1,37 @@
+{
+  "name": "@viclip/constants",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared constants for Viclip",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./links": {
+      "types": "./src/links.ts",
+      "default": "./src/links.ts"
+    },
+    "./config": {
+      "types": "./src/config.ts",
+      "default": "./src/config.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --write .",
+    "clean": "rm -rf dist .turbo"
+  },
+  "devDependencies": {
+    "@viclip/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

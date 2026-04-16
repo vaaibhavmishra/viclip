@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+pnpm dlx commitlint --edit ${1}
+
+# If everything passes... Now we can commit
+echo 'Commit message looks great!'

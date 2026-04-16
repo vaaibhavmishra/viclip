@@ -1,0 +1,110 @@
+{
+  "expo": {
+    "name": "ViClip",
+    "slug": "ViClip",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/viclip-icon.png",
+    "scheme": "viclip",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "icon": {
+        "light": "./assets/icons/ios-light.png",
+        "dark": "./assets/icons/ios-dark.png",
+        "tinted": "./assets/icons/ios-tinted.png"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "monochromeImage": "./assets/icons/adaptive-icon.png",
+        "backgroundImage": "./assets/icons/background-image.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.destroyerv.viclip",
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.IGNORE_BATTERY_OPTIMIZATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
+        }
+      ],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "android": {
+            "image": "./assets/images/viclip-icon.png",
+            "imageWidth": 76,
+            "resizeMode": "contain",
+            "backgroundColor": "#2463cf"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "viclip-mobile",
+          "organization": "vaibhav-j3"
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1
+          },
+          "androidIntentFilters": ["text/*"]
+        }
+      ],
+      "expo-font",
+      "./modules/viclip-sync/app.plugin.js"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f4f1bef5-c85d-4aec-bdb2-608ca5827507"
+      }
+    },
+    "owner": "destroyerv",
+
+    "updates": {
+      "url": "https://u.expo.dev/f4f1bef5-c85d-4aec-bdb2-608ca5827507"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="viclip_accessibility_description">ViClip uses this service to automatically sync your clipboard across devices in the background. This allows seamless clip sharing even when the app is not open.</string>
+</resources>

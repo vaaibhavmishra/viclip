@@ -1,0 +1,16 @@
+node_modules
+.turbo
+.DS_Store
+
+apps/*/node_modules
+packages/*/node_modules
+
+apps/web/.next
+apps/web/.vercel
+
+apps/desktop/dist
+apps/desktop/out
+
+apps/mobile/.expo
+
+*.tsbuildinfo

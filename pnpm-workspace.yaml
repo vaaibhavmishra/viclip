@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - '@sentry/cli'
+  - '@vercel/speed-insights'
+  - electron
+  - electron-winstaller
+  - esbuild
+  - protobufjs
+  - sharp
