@@ -7,7 +7,6 @@
     "build": "dotenv -e ../../.env -- expo export",
     "build:android": "dotenv -e ../../.env -- expo run:android",
     "build:ios": "dotenv -e ../../.env -- expo run:ios",
-    "build:web": "dotenv -e ../../.env -- expo run:web",
     "clean": "rm -rf .expo .turbo dist",
     "typecheck": "tsc --noEmit"
   },

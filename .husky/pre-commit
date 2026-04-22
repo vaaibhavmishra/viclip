@@ -3,7 +3,7 @@
 echo 'Running pre-commit checks...'
 
 # Check formatting and linting with Biome
-turbo check ||
+pnpm check ||
 (
     echo 'Biome check failed. Please run "turbo check" and try again.'
     false;

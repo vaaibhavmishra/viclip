@@ -33,12 +33,20 @@
       "outputs": ["dist/**", "out/**"],
       "cache": false
     },
-    "check": {
-      "dependsOn": ["^check"]
+    "build:android": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".expo/**", "android/**"],
+      "cache": false
+    },
+    "build:ios": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".expo/**", "ios/**"],
+      "cache": false
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"],
-      "cache": true
+      "dependsOn": ["^typecheck"]
     },
     "dev": {
       "cache": false,
