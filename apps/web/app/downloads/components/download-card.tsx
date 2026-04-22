@@ -41,7 +41,7 @@ export function DownloadCard({
             {cardDescription}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex-grow p-4 sm:p-6 pt-0 sm:pt-0">
+        <CardContent className="grow p-4 sm:p-6 pt-0 sm:pt-0">
           <p className="text-xs sm:text-sm text-muted-foreground">
             {cardContent}
           </p>

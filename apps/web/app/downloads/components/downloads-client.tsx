@@ -11,7 +11,6 @@ import {
   TabletSmartphone,
 } from "lucide-react";
 import Link from "next/link";
-import { getDownloadLink } from "@/actions/firebase";
 import { Footer } from "@/components/sections/Footer";
 import { Navigation } from "@/components/sections/Navigation";
 import { Button } from "@/components/ui/button";
@@ -47,9 +46,9 @@ export function DownloadsClient() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
 
-      <main className="flex-grow">
+      <main className="grow">
         {/* Hero section */}
-        <section className="bg-gradient-to-b from-background to-muted/5 pt-12 sm:pt-16 pb-8 sm:pb-12">
+        <section className="bg-linear-to-b from-background to-muted/5 pt-12 sm:pt-16 pb-8 sm:pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -58,7 +57,7 @@ export function DownloadsClient() {
               viewport={{ once: true }}
               className="text-center"
             >
-              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-blue-400">
+              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl bg-clip-text text-transparent bg-linear-to-r from-blue-700 to-blue-400">
                 Download <span className="text-blue-500">ViClip</span>
               </h1>
               <p className="mt-4 max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-muted-foreground px-2">
@@ -134,10 +133,7 @@ export function DownloadsClient() {
                     cardDescription="Recommended for most users"
                     cardContent="One click installation with windows installer"
                     buttonText="Download .exe"
-                    onClick={async () => {
-                      const link = await getDownloadLink("win", "1.0.0", "x64");
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
 
                   <DownloadCard
@@ -146,14 +142,7 @@ export function DownloadsClient() {
                     cardDescription="For newer ARM-based devices"
                     cardContent="Optimized for ARM64 architecture"
                     buttonText="Download .exe"
-                    onClick={async () => {
-                      const link = await getDownloadLink(
-                        "win",
-                        "1.0.0",
-                        "arm64",
-                      );
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
                 </div>
 
@@ -177,14 +166,7 @@ export function DownloadsClient() {
                     cardDescription="Optimized for M1/M2/M3 chips"
                     cardContent="Native support for Apple Silicon processors"
                     buttonText="Download .dmg"
-                    onClick={async () => {
-                      const link = await getDownloadLink(
-                        "mac",
-                        "1.0.0",
-                        "arm64",
-                      );
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
                 </div>
 
@@ -208,14 +190,7 @@ export function DownloadsClient() {
                     cardDescription="Tested on Ubuntu/Fedora with GNOME"
                     cardContent="Compatible with most Linux distributions"
                     buttonText="Download .AppImage"
-                    onClick={async () => {
-                      const link = await getDownloadLink(
-                        "linux",
-                        "1.0.0",
-                        "x86_64",
-                      );
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
 
                   <DownloadCard
@@ -224,14 +199,7 @@ export function DownloadsClient() {
                     cardDescription="Tested on Ubuntu/Fedora with GNOME"
                     cardContent="Optimized for ARM64 architecture"
                     buttonText="Download .AppImage"
-                    onClick={async () => {
-                      const link = await getDownloadLink(
-                        "linux",
-                        "1.0.0",
-                        "arm64",
-                      );
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
                 </div>
 
@@ -255,14 +223,7 @@ export function DownloadsClient() {
                     cardDescription="Manual installation"
                     cardContent="Direct installation without Play Store restrictions"
                     buttonText="Download APK"
-                    onClick={async () => {
-                      const link = await getDownloadLink(
-                        "android",
-                        "1.0.0",
-                        "arm64",
-                      );
-                      window.open(link, "_blank");
-                    }}
+                    onClick={async () => {}}
                   />
 
                   <motion.div

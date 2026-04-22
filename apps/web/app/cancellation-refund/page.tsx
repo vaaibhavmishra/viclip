@@ -71,7 +71,10 @@ export default function CancellationRefund() {
           <ol className="list-decimal pl-6 mb-4">
             <li>
               Contact us at{" "}
-              <a href="mailto:support@viclip.shipby.me" className="text-blue-400">
+              <a
+                href="mailto:support@viclip.shipby.me"
+                className="text-blue-400"
+              >
                 support@viclip.shipby.me
               </a>
             </li>

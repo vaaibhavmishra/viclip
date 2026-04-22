@@ -6,23 +6,17 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/_next/",
-          "/private/",
-          "*.json",
-          "/sentry-example-page",
-        ],
+        disallow: ["/api/", "/_next/", "/private/", "*.json"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/api/", "/sentry-example-page"],
+        disallow: ["/api/"],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/api/", "/sentry-example-page"],
+        disallow: ["/api/"],
       },
     ],
     sitemap: "https://viclip.shipby.me/sitemap.xml",

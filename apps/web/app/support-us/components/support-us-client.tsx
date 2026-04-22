@@ -93,8 +93,8 @@ export function SupportUsClient() {
                 </h3>
               </div>
               <p className="text-muted-foreground text-xs sm:text-sm">
-                Annual domain registration fees to keep viclip.shipby.me online and
-                accessible to everyone.
+                Annual domain registration fees to keep viclip.shipby.me online
+                and accessible to everyone.
               </p>
             </div>
 
