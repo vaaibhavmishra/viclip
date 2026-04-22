@@ -1,7 +1,6 @@
-import Ionicons from '@expo/vector-icons/Ionicons'
-import { getAuth } from '@react-native-firebase/auth'
-import { router } from 'expo-router'
-import React from 'react'
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { getAuth } from "@react-native-firebase/auth";
+import { router } from "expo-router";
 import {
   ActivityIndicator,
   Image,
@@ -10,9 +9,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native'
-import { logoutUser } from '@/services/auth'
-import { useBackgroundSync } from '@/services/backgroundSync'
+} from "react-native";
+import { logoutUser } from "@/services/auth";
+import { useBackgroundSync } from "@/services/backgroundSync";
 
 // ─── Background Sync Status Card ──────────────────────────────────────────────
 
@@ -22,26 +21,26 @@ function SyncStatusCard() {
     serviceRunning,
     isSyncing,
     openAccessibilitySettings,
-  } = useBackgroundSync()
+  } = useBackgroundSync();
 
   // Determine status pill color and label
   const statusColor = serviceRunning
-    ? '#22c55e' // green
+    ? "#22c55e" // green
     : accessibilityEnabled
-      ? '#f59e0b' // amber – enabled but service not yet alive
-      : '#ef4444' // red  – not enabled
+      ? "#f59e0b" // amber – enabled but service not yet alive
+      : "#ef4444"; // red  – not enabled
 
   const statusLabel = serviceRunning
-    ? 'Active'
+    ? "Active"
     : accessibilityEnabled
-      ? 'Starting…'
-      : 'Disabled'
+      ? "Starting…"
+      : "Disabled";
 
   const statusDesc = serviceRunning
-    ? 'Clipboard changes are being synced in the background.'
+    ? "Clipboard changes are being synced in the background."
     : accessibilityEnabled
-      ? 'The service is enabled but not yet running. Try restarting the app.'
-      : 'Enable the accessibility service so ViClip can sync clipboard changes even when the app is closed.'
+      ? "The service is enabled but not yet running. Try restarting the app."
+      : "Enable the accessibility service so ViClip can sync clipboard changes even when the app is closed.";
 
   return (
     <View className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl mb-6 shadow-sm shadow-blue-900/5 overflow-hidden">
@@ -74,11 +73,8 @@ function SyncStatusCard() {
               style={{ backgroundColor: statusColor }}
             />
           )}
-          <Text
-            className="text-xs font-bold"
-            style={{ color: statusColor }}
-          >
-            {isSyncing ? 'Syncing…' : statusLabel}
+          <Text className="text-xs font-bold" style={{ color: statusColor }}>
+            {isSyncing ? "Syncing…" : statusLabel}
           </Text>
         </View>
       </View>
@@ -114,17 +110,17 @@ function SyncStatusCard() {
         </View>
       )}
     </View>
-  )
+  );
 }
 
 // ─── Main Settings Screen ──────────────────────────────────────────────────────
 
 export default function Settings() {
-  const auth = getAuth()
-  const user = auth.currentUser
-  const userEmail = user?.email
-  const userPhoto = user?.photoURL
-  const userName = user?.displayName
+  const auth = getAuth();
+  const user = auth.currentUser;
+  const userEmail = user?.email;
+  const userPhoto = user?.photoURL;
+  const userName = user?.displayName;
 
   return (
     <ScrollView
@@ -132,7 +128,7 @@ export default function Settings() {
       contentContainerStyle={{
         padding: 20,
         paddingBottom: 150,
-        paddingTop: Platform.OS === 'ios' ? 130 : 110,
+        paddingTop: Platform.OS === "ios" ? 130 : 110,
       }}
     >
       {/* Profile Section */}
@@ -142,13 +138,13 @@ export default function Settings() {
             source={
               userPhoto
                 ? { uri: userPhoto }
-                : require('../../../assets/images/default-avatar.png')
+                : require("../../../assets/images/default-avatar.png")
             }
             className="w-24 h-24 rounded-full"
           />
         </View>
         <Text className="font-bold text-2xl dark:text-white text-gray-900 mb-1 text-center">
-          {userName?.slice(0, 25) || 'User'}
+          {userName?.slice(0, 25) || "User"}
         </Text>
         <Text className="text-gray-500 dark:text-gray-400 font-medium text-base text-center">
           {userEmail?.slice(0, 35)}
@@ -156,13 +152,13 @@ export default function Settings() {
       </View>
 
       {/* Background Sync Section — Android only */}
-      {Platform.OS === 'android' && <SyncStatusCard />}
+      {Platform.OS === "android" && <SyncStatusCard />}
 
       {/* Logout Button */}
       <TouchableOpacity
         onPress={() => {
-          logoutUser()
-          router.replace('/login')
+          logoutUser();
+          router.replace("/login");
         }}
         className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-4 rounded-3xl flex-row items-center justify-center gap-2 mt-4"
         activeOpacity={0.7}
@@ -173,5 +169,5 @@ export default function Settings() {
         </Text>
       </TouchableOpacity>
     </ScrollView>
-  )
+  );
 }

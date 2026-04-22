@@ -1,3 +1,0 @@
-- error handling for log and consoles on the ui
-- forget password - done
-- animation between login and signup switch - done

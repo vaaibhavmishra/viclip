@@ -1,5 +1,5 @@
-import { requireNativeModule } from 'expo-modules-core'
+import { requireNativeModule } from "expo";
 
-const ViClipSyncNative = requireNativeModule('ViClipSync')
+const ViClipSyncNative = requireNativeModule("ViClipSync");
 
-export default ViClipSyncNative
+export default ViClipSyncNative;

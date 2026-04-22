@@ -1,20 +1,37 @@
-import { NativeModulesProxy, EventEmitter, type Subscription } from 'expo-modules-core'
-import ViClipSyncNative from './src/ViClipSyncModule'
+import ViClipSyncNative from "./src/ViClipSyncModule";
 
 // ─── Types ───────────────────────────────────────────────────
 
 export interface ClipboardChangedEvent {
-  text: string
-  timestamp: number
+  text: string;
+  timestamp: number;
 }
 
 export interface ServiceStatusEvent {
-  isRunning: boolean
+  isRunning: boolean;
+}
+
+export interface EventSubscription {
+  remove(): void;
+}
+
+interface ViClipSyncModule {
+  isAccessibilityEnabled(): boolean;
+  isServiceRunning(): boolean;
+  openAccessibilitySettings(): void;
+  addListener(
+    eventName: "onClipboardChanged",
+    listener: (event: ClipboardChangedEvent) => void,
+  ): EventSubscription;
+  addListener(
+    eventName: "onServiceStatusChanged",
+    listener: (event: ServiceStatusEvent) => void,
+  ): EventSubscription;
 }
 
 // ─── Native Event Emitter ────────────────────────────────────
 
-const emitter = new EventEmitter(ViClipSyncNative)
+const module = ViClipSyncNative as ViClipSyncModule;
 
 // ─── Functions ───────────────────────────────────────────────
 
@@ -23,21 +40,21 @@ const emitter = new EventEmitter(ViClipSyncNative)
  * in Android Settings > Accessibility.
  */
 export function isAccessibilityEnabled(): boolean {
-  return ViClipSyncNative.isAccessibilityEnabled()
+  return module.isAccessibilityEnabled();
 }
 
 /**
  * Check if the Accessibility Service background process is currently alive.
  */
 export function isServiceRunning(): boolean {
-  return ViClipSyncNative.isServiceRunning()
+  return module.isServiceRunning();
 }
 
 /**
  * Opens the Android Accessibility Settings screen so the user can enable ViClip.
  */
 export function openAccessibilitySettings(): void {
-  ViClipSyncNative.openAccessibilitySettings()
+  module.openAccessibilitySettings();
 }
 
 // ─── Event Subscriptions ─────────────────────────────────────
@@ -58,8 +75,8 @@ export function openAccessibilitySettings(): void {
  */
 export function addClipboardListener(
   listener: (event: ClipboardChangedEvent) => void,
-): Subscription {
-  return emitter.addListener('onClipboardChanged', listener)
+): EventSubscription {
+  return module.addListener("onClipboardChanged", listener);
 }
 
 /**
@@ -67,6 +84,6 @@ export function addClipboardListener(
  */
 export function addServiceStatusListener(
   listener: (event: ServiceStatusEvent) => void,
-): Subscription {
-  return emitter.addListener('onServiceStatusChanged', listener)
+): EventSubscription {
+  return module.addListener("onServiceStatusChanged", listener);
 }

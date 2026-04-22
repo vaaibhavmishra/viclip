@@ -1,10 +1,10 @@
-import Ionicons from '@expo/vector-icons/Ionicons'
-import { BlurView } from 'expo-blur'
-import * as Clipboard from 'expo-clipboard'
-import * as Haptics from 'expo-haptics'
-import { useFocusEffect } from 'expo-router'
-import { useShareIntentContext } from 'expo-share-intent'
-import { useCallback, useEffect, useState } from 'react'
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { BlurView } from "expo-blur";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
+import { useFocusEffect } from "expo-router";
+import { useShareIntentContext } from "expo-share-intent";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -15,9 +15,10 @@ import {
   TouchableWithoutFeedback,
   useColorScheme,
   View,
-} from 'react-native'
-import Animated, { FadeInDown } from 'react-native-reanimated'
-import Toast from 'react-native-toast-message'
+} from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import Toast from "react-native-toast-message";
+import { decryptClips, sendClip } from "@/services/clipboard";
 import {
   addClip,
   enforceClipLimit,
@@ -25,258 +26,255 @@ import {
   removeAllClips,
   removeClip,
   togglePinClip,
-  updateClip,
-} from '@/services/firebase'
-import { ClipData } from '@/types/clips'
-import { StatesContext } from '@/utils/statesContext'
-import { detectClipboardType, extractTextFromShare } from '@/utils/util'
-import { decryptClips, sendClip } from '@/services/clipboard'
+} from "@/services/firebase";
+import type { ClipData } from "@/types/clips";
+import { detectClipboardType, extractTextFromShare } from "@/utils/util";
 
 export default function Index() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === 'dark'
-  const [clipboardContent, setClipboardContent] = useState<ClipData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [selectedClip, setSelectedClip] = useState<string>()
-  const [lastClip, setLastClip] = useState<string | null>(null)
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const [clipboardContent, setClipboardContent] = useState<ClipData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedClip, setSelectedClip] = useState<string>();
+  const [lastClip, setLastClip] = useState<string | null>(null);
 
   const { hasShareIntent, shareIntent, resetShareIntent } =
-    useShareIntentContext()
+    useShareIntentContext();
 
   const fetchClips = useCallback(async () => {
     try {
-      const clips = await getClips()
-      const decryptedClips = clips ? decryptClips(clips) : null
+      const clips = await getClips();
+      const decryptedClips = clips ? decryptClips(clips) : null;
       const sortedClips = decryptedClips
         ? Object.values(decryptedClips).sort((a, b) => {
-            if (a.pinned && !b.pinned) return -1
-            if (!a.pinned && b.pinned) return 1
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
             return (
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            )
+            );
           })
-        : []
-      setClipboardContent(sortedClips)
-      setError(null)
+        : [];
+      setClipboardContent(sortedClips);
+      setError(null);
     } catch (error) {
-      console.error('Error fetching clips:', error)
-      setError('Failed to load clips. Please try again.')
+      console.error("Error fetching clips:", error);
+      setError("Failed to load clips. Please try again.");
     } finally {
-      setIsLoading(false)
-      setRefreshing(false)
+      setIsLoading(false);
+      setRefreshing(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (hasShareIntent && shareIntent) {
-      let exitTimer: number
+      let exitTimer: ReturnType<typeof setTimeout> | undefined;
 
       const handleShare = async () => {
-        const originalContent = shareIntent?.text || ''
-        const cleanContent = extractTextFromShare(originalContent)
-        const contentToSave = cleanContent.trim() || originalContent.trim()
+        const originalContent = shareIntent?.text || "";
+        const cleanContent = extractTextFromShare(originalContent);
+        const contentToSave = cleanContent.trim() || originalContent.trim();
 
         if (contentToSave && contentToSave.length < 1000) {
-          setRefreshing(true)
-          await enforceClipLimit()
-          await addClip(contentToSave, 'text')
-          await fetchClips()
-          setRefreshing(false)
+          setRefreshing(true);
+          await enforceClipLimit();
+          await addClip(contentToSave, "text");
+          await fetchClips();
+          setRefreshing(false);
         }
 
         exitTimer = setTimeout(() => {
-          BackHandler.exitApp()
-        }, 1500)
-      }
+          BackHandler.exitApp();
+        }, 1500);
+      };
 
-      handleShare()
-      resetShareIntent()
+      handleShare();
+      resetShareIntent();
 
       return () => {
-        if (exitTimer) {
-          clearTimeout(exitTimer)
+        if (exitTimer !== undefined) {
+          clearTimeout(exitTimer);
         }
-      }
+      };
     }
-  }, [hasShareIntent, shareIntent, fetchClips, resetShareIntent])
+  }, [hasShareIntent, shareIntent, fetchClips, resetShareIntent]);
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true)
-    fetchClips()
-  }, [fetchClips])
+    setRefreshing(true);
+    fetchClips();
+  }, [fetchClips]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchClips()
-      return () => {}
+      fetchClips();
+      return () => {};
     }, [fetchClips]),
-  )
+  );
 
   const handleSend = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    const clipboard = await Clipboard.getStringAsync()
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const clipboard = await Clipboard.getStringAsync();
     if (clipboard && clipboard !== lastClip && clipboard.length < 1000) {
-      setRefreshing(true)
-      const contentType = await detectClipboardType(clipboard)
+      setRefreshing(true);
+      const contentType = await detectClipboardType(clipboard);
       if (
-        contentType === 'text' ||
-        contentType === 'url' ||
-        contentType === 'text-formatted' ||
-        contentType === 'email' ||
-        contentType === 'color'
+        contentType === "text" ||
+        contentType === "url" ||
+        contentType === "text-formatted" ||
+        contentType === "email" ||
+        contentType === "color"
       ) {
         if (clipboard.length > 10000) {
-          console.warn('Content exceeds maximum size limit, skipping sync', {
+          console.warn("Content exceeds maximum size limit, skipping sync", {
             contentLength: clipboard.length,
             maxLength: 10000,
-          })
+          });
           Toast.show({
-            type: 'warning',
-            text1: 'Clipboard Sync Warning',
-            text2: 'Clipboard content is too large to sync.',
-          })
-          setLastClip(clipboard)
-          return
+            type: "warning",
+            text1: "Clipboard Sync Warning",
+            text2: "Clipboard content is too large to sync.",
+          });
+          setLastClip(clipboard);
+          return;
         }
       }
 
       try {
-        await sendClip(clipboard, contentType)
+        await sendClip(clipboard, contentType);
       } catch {
-        return
+        return;
       }
-      setLastClip(clipboard)
-      await fetchClips()
-      setRefreshing(false)
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      setLastClip(clipboard);
+      await fetchClips();
+      setRefreshing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
-        type: 'success',
-        text1: 'Clip Sent',
-        text2: 'Available on all your devices.',
-      })
+        type: "success",
+        text1: "Clip Sent",
+        text2: "Available on all your devices.",
+      });
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Toast.show({
-        type: 'info',
-        text1: 'Nothing New to Send',
-        text2: 'Your clipboard is unchanged or empty.',
-      })
+        type: "info",
+        text1: "Nothing New to Send",
+        text2: "Your clipboard is unchanged or empty.",
+      });
     }
-  }
+  };
 
   const handleReceive = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    setRefreshing(true)
-    await fetchClips()
-    setRefreshing(false)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRefreshing(true);
+    await fetchClips();
+    setRefreshing(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Toast.show({
-      type: 'success',
-      text1: 'Synced Successfully',
-      text2: 'Your clips are up to date.',
-    })
-  }
+      type: "success",
+      text1: "Synced Successfully",
+      text2: "Your clips are up to date.",
+    });
+  };
 
   const handleTogglePin = useCallback(
     async (clipId: string, currentPinned: boolean) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       // Optimistic UI update
       setClipboardContent((prev) => {
         const newClips = prev.map((c) =>
           c.id === clipId ? { ...c, pinned: !currentPinned } : c,
-        )
+        );
         return newClips.sort((a, b) => {
-          if (a.pinned && !b.pinned) return -1
-          if (!a.pinned && b.pinned) return 1
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
           return (
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          )
-        })
-      })
+          );
+        });
+      });
 
       try {
-        await togglePinClip(clipId, !currentPinned)
+        await togglePinClip(clipId, !currentPinned);
       } catch {
         // Revert on error
-        await fetchClips()
+        await fetchClips();
         Toast.show({
-          type: 'error',
-          text1: 'Failed to pin clip',
-          text2: 'Please try again later.',
-        })
+          type: "error",
+          text1: "Failed to pin clip",
+          text2: "Please try again later.",
+        });
       }
     },
     [fetchClips],
-  )
+  );
 
   const handleDelete = useCallback(
     async (clipId: string) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
       // Optimistic UI update
-      setClipboardContent((prev) => prev.filter((c) => c.id !== clipId))
+      setClipboardContent((prev) => prev.filter((c) => c.id !== clipId));
 
       try {
-        await removeClip(clipId)
+        await removeClip(clipId);
         Toast.show({
-          type: 'success',
-          text1: 'Clip Deleted',
-          text2: 'The clip has been removed.',
-        })
+          type: "success",
+          text1: "Clip Deleted",
+          text2: "The clip has been removed.",
+        });
       } catch {
         // Revert on error
-        await fetchClips()
+        await fetchClips();
         Toast.show({
-          type: 'error',
-          text1: 'Failed to delete clip',
-          text2: 'Please try again later.',
-        })
+          type: "error",
+          text1: "Failed to delete clip",
+          text2: "Please try again later.",
+        });
       }
     },
     [fetchClips],
-  )
+  );
 
   const handleClearHistory = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
-    setRefreshing(true)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setRefreshing(true);
 
     // Optimistic UI update
-    setClipboardContent((prev) => prev.filter((c) => c.pinned))
+    setClipboardContent((prev) => prev.filter((c) => c.pinned));
 
     try {
-      await removeAllClips()
+      await removeAllClips();
       Toast.show({
-        type: 'success',
-        text1: 'History Cleared',
-        text2: 'All unpinned clips have been removed.',
-      })
+        type: "success",
+        text1: "History Cleared",
+        text2: "All unpinned clips have been removed.",
+      });
     } catch {
       Toast.show({
-        type: 'error',
-        text1: 'Failed to clear history',
-        text2: 'Please try again later.',
-      })
+        type: "error",
+        text1: "Failed to clear history",
+        text2: "Please try again later.",
+      });
     } finally {
-      await fetchClips()
-      setRefreshing(false)
-      setError(null)
-      setSelectedClip(undefined)
+      await fetchClips();
+      setRefreshing(false);
+      setError(null);
+      setSelectedClip(undefined);
     }
-  }
+  };
 
   const renderItem = useCallback(
     ({ item, index }: { item: ClipData; index: number }) => (
       <Animated.View
         entering={FadeInDown.delay(index * 50).duration(400)}
         className={[
-          'p-5 rounded-3xl mb-4 shadow-sm shadow-blue-900/5',
+          "p-5 rounded-3xl mb-4 shadow-sm shadow-blue-900/5",
           item.pinned
-            ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800/40 relative'
-            : 'bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800',
-        ].join(' ')}
+            ? "bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800/40 relative"
+            : "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800",
+        ].join(" ")}
       >
         {item.pinned && (
           <View className="absolute -top-3 right-6 bg-amber-100 dark:bg-amber-900/60 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-700/50">
@@ -296,19 +294,19 @@ export default function Index() {
           </View>
           <TouchableWithoutFeedback
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setSelectedClip(item.id)
-              Clipboard.setStringAsync(item.content)
-              setLastClip(item.content)
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSelectedClip(item.id);
+              Clipboard.setStringAsync(item.content);
+              setLastClip(item.content);
               Toast.show({
-                type: 'success',
-                text1: 'Copied to Clipboard!',
-                text2: 'Ready to paste anywhere.',
+                type: "success",
+                text1: "Copied to Clipboard!",
+                text2: "Ready to paste anywhere.",
                 visibilityTime: 1500,
-              })
+              });
               setTimeout(() => {
-                setSelectedClip(undefined)
-              }, 2000)
+                setSelectedClip(undefined);
+              }, 2000);
             }}
           >
             <View className="bg-gray-50 dark:bg-zinc-800 p-2.5 rounded-full">
@@ -327,8 +325,8 @@ export default function Index() {
               <Ionicons name="time-outline" size={14} color="#6b7280" />
               <Text className="dark:text-gray-400 text-gray-500 text-xs font-medium">
                 {new Date(item.timestamp).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </Text>
             </View>
@@ -349,9 +347,9 @@ export default function Index() {
               className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
             >
               <Ionicons
-                name={item.pinned ? 'pin' : 'pin-outline'}
+                name={item.pinned ? "pin" : "pin-outline"}
                 size={16}
-                color={item.pinned ? '#eab308' : '#6b7280'}
+                color={item.pinned ? "#eab308" : "#6b7280"}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -365,14 +363,14 @@ export default function Index() {
       </Animated.View>
     ),
     [selectedClip, handleTogglePin, handleDelete],
-  )
+  );
 
   if (isLoading && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center dark:bg-black bg-[#f9fafb]">
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
-    )
+    );
   }
 
   return (
@@ -381,7 +379,7 @@ export default function Index() {
         className="flex-1 px-5"
         contentContainerStyle={{
           paddingBottom: 180,
-          paddingTop: Platform.OS === 'ios' ? 130 : 110,
+          paddingTop: Platform.OS === "ios" ? 130 : 110,
         }}
         data={clipboardContent}
         renderItem={renderItem}
@@ -393,18 +391,18 @@ export default function Index() {
           <View className="flex-1 justify-center items-center mt-20 px-8">
             <View className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-full mb-6">
               <Ionicons
-                name={error ? 'alert-circle-outline' : 'clipboard-outline'}
+                name={error ? "alert-circle-outline" : "clipboard-outline"}
                 size={56}
-                color={error ? '#ef4444' : '#2563eb'}
+                color={error ? "#ef4444" : "#2563eb"}
               />
             </View>
             <Text className="dark:text-white text-gray-900 text-xl font-bold mb-2 text-center">
-              {error ? 'Oops! Something went wrong' : 'Your Clipboard is Empty'}
+              {error ? "Oops! Something went wrong" : "Your Clipboard is Empty"}
             </Text>
             <Text className="dark:text-gray-400 text-gray-500 text-center leading-relaxed">
               {error
                 ? error
-                : 'Send text from any of your connected devices, and it will magically appear right here.'}
+                : "Send text from any of your connected devices, and it will magically appear right here."}
             </Text>
           </View>
         }
@@ -427,7 +425,7 @@ export default function Index() {
       <View className="absolute bottom-[110px] left-5 right-5 overflow-hidden rounded-[28px] border border-gray-200/50 dark:border-zinc-800/80 shadow-lg shadow-blue-900/10">
         <BlurView
           intensity={80}
-          tint={isDark ? 'dark' : 'light'}
+          tint={isDark ? "dark" : "light"}
           className="flex-row justify-between items-center p-2.5"
         >
           <TouchableOpacity
@@ -450,5 +448,5 @@ export default function Index() {
         </BlurView>
       </View>
     </View>
-  )
+  );
 }

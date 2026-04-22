@@ -1,36 +1,36 @@
 import React, {
   createContext,
+  type ReactElement,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactElement,
-} from 'react'
-import { AppState, Platform, type AppStateStatus } from 'react-native'
+} from "react";
+import { AppState, type AppStateStatus, Platform } from "react-native";
+import { sendClip } from "@/services/clipboard";
 import {
   addClipboardListener,
   addServiceStatusListener,
+  type ClipboardChangedEvent,
   isAccessibilityEnabled,
   isServiceRunning,
   openAccessibilitySettings,
-  type ClipboardChangedEvent,
-} from '../modules/viclip-sync'
-import { sendClip } from '@/services/clipboard'
+} from "../modules/viclip-sync";
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 export interface BackgroundSyncState {
   /** Whether the Accessibility Service is toggled on in Android Settings */
-  accessibilityEnabled: boolean
+  accessibilityEnabled: boolean;
   /** Whether the service process is currently live */
-  serviceRunning: boolean
+  serviceRunning: boolean;
   /** Whether a clip is currently being uploaded to Firebase */
-  isSyncing: boolean
+  isSyncing: boolean;
   /** Deep-links user to Android > Settings > Accessibility */
-  openAccessibilitySettings: () => void
+  openAccessibilitySettings: () => void;
   /** Re-checks status immediately (e.g. after returning from Settings) */
-  refreshStatus: () => void
+  refreshStatus: () => void;
 }
 
 const BackgroundSyncContext = createContext<BackgroundSyncState>({
@@ -39,7 +39,7 @@ const BackgroundSyncContext = createContext<BackgroundSyncState>({
   isSyncing: false,
   openAccessibilitySettings,
   refreshStatus: () => {},
-})
+});
 
 // ─── Provider (mount once at the protected layout level) ─────────────────────
 
@@ -53,69 +53,72 @@ const BackgroundSyncContext = createContext<BackgroundSyncState>({
 export function BackgroundSyncProvider({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }): ReactElement {
-  const [accessibilityEnabled, setAccessibilityEnabled] = useState(false)
-  const [serviceRunning, setServiceRunning] = useState(false)
-  const [isSyncing, setIsSyncing] = useState(false)
-  const lastSyncedText = useRef<string | null>(null)
+  const [accessibilityEnabled, setAccessibilityEnabled] = useState(false);
+  const [serviceRunning, setServiceRunning] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const lastSyncedText = useRef<string | null>(null);
 
   // ── Status polling ──────────────────────────────────────────────────────────
   const checkStatus = useCallback(() => {
-    if (Platform.OS !== 'android') return
+    if (Platform.OS !== "android") return;
     try {
-      setAccessibilityEnabled(isAccessibilityEnabled())
-      setServiceRunning(isServiceRunning())
+      setAccessibilityEnabled(isAccessibilityEnabled());
+      setServiceRunning(isServiceRunning());
     } catch (err) {
-      console.warn('[BackgroundSync] Failed to check status:', err)
+      console.warn("[BackgroundSync] Failed to check status:", err);
     }
-  }, [])
+  }, []);
 
   // Re-check whenever the app returns to the foreground (e.g. user comes back
   // from Android Accessibility Settings after enabling the service).
   useEffect(() => {
-    if (Platform.OS !== 'android') return
+    if (Platform.OS !== "android") return;
 
-    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (next === 'active') checkStatus()
-    })
-    checkStatus() // initial read
+    const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
+      if (next === "active") checkStatus();
+    });
+    checkStatus(); // initial read
 
-    return () => sub.remove()
-  }, [checkStatus])
+    return () => sub.remove();
+  }, [checkStatus]);
 
   // ── Native event subscriptions ──────────────────────────────────────────────
   useEffect(() => {
-    if (Platform.OS !== 'android') return
+    if (Platform.OS !== "android") return;
 
     // 1. Clipboard events → encrypt + push to Firebase
     const clipSub = addClipboardListener(async (ev: ClipboardChangedEvent) => {
-      if (ev.text === lastSyncedText.current) return // deduplicate
+      if (ev.text === lastSyncedText.current) return; // deduplicate
 
       try {
-        setIsSyncing(true)
-        lastSyncedText.current = ev.text
-        await sendClip(ev.text, 'text')
-        console.debug('[BackgroundSync] Clip synced:', ev.text.substring(0, 40))
+        setIsSyncing(true);
+        lastSyncedText.current = ev.text;
+        await sendClip(ev.text, "text");
+        console.debug(
+          "[BackgroundSync] Clip synced:",
+          ev.text.substring(0, 40),
+        );
       } catch (err) {
-        console.error('[BackgroundSync] Sync failed:', err)
+        console.error("[BackgroundSync] Sync failed:", err);
       } finally {
-        setIsSyncing(false)
+        setIsSyncing(false);
       }
-    })
+    });
 
     // 2. Service lifecycle events → update running state
     const statusSub = addServiceStatusListener((ev) => {
-      setServiceRunning(ev.isRunning)
+      setServiceRunning(ev.isRunning);
       // Also refresh the full status so accessibilityEnabled stays current
-      checkStatus()
-    })
+      checkStatus();
+    });
 
     return () => {
-      clipSub.remove()
-      statusSub.remove()
-    }
-  }, [checkStatus])
+      clipSub.remove();
+      statusSub.remove();
+    };
+  }, [checkStatus]);
 
   return (
     <BackgroundSyncContext.Provider
@@ -129,7 +132,7 @@ export function BackgroundSyncProvider({
     >
       {children}
     </BackgroundSyncContext.Provider>
-  )
+  );
 }
 
 // ─── Consumer hook ────────────────────────────────────────────────────────────
@@ -143,5 +146,5 @@ export function BackgroundSyncProvider({
  * native listeners.
  */
 export function useBackgroundSync(): BackgroundSyncState {
-  return useContext(BackgroundSyncContext)
+  return useContext(BackgroundSyncContext);
 }

@@ -23,6 +23,7 @@ web-build/
 .env
 .env.*
 !.env.example
+!.env.local
 
 # =========================
 # Types & Frameworks
@@ -67,9 +68,3 @@ android/
 *.p12
 *.key
 *.mobileprovision
-
-# =========================
-# Firebase Config Files
-# =========================
-google-services.json
-GoogleService-Info.plist

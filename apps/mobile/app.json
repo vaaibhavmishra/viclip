@@ -32,7 +32,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -65,14 +65,7 @@
           }
         }
       ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "viclip-mobile",
-          "organization": "vaibhav-j3"
-        }
-      ],
+
       [
         "expo-share-intent",
         {

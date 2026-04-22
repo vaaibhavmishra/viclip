@@ -1,9 +1,9 @@
 {
   "name": "@viclip/web",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
+    "dev": "dotenv -e ../../.env -- next dev --turbopack",
+    "build": "dotenv -e ../../.env -- next build --turbopack",
+    "start": "dotenv -e ../../.env -- next start",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules"
   },

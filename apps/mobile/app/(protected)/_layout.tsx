@@ -1,22 +1,22 @@
-import { getAuth } from '@react-native-firebase/auth'
-import { Redirect, Stack } from 'expo-router'
-import { StateProvider } from '@/utils/statesContext'
-import { authStorage } from '@/services/secureStorage'
-import { setActiveDEK } from '@/services/crypto'
-import { BackgroundSyncProvider } from '@/services/backgroundSync'
+import { getAuth } from "@react-native-firebase/auth";
+import { Redirect, Stack } from "expo-router";
+import { BackgroundSyncProvider } from "@/services/backgroundSync";
+import { setActiveDEK } from "@/services/crypto";
+import { authStorage } from "@/services/secureStorage";
+import { StateProvider } from "@/utils/statesContext";
 
 export default function ProtectedLayout() {
-  const auth = getAuth()
-  const user = auth.currentUser
+  const auth = getAuth();
+  const user = auth.currentUser;
 
   if (!user) {
-    return <Redirect href="/login" />
+    return <Redirect href="/login" />;
   } else {
-    const dek = authStorage.getMasterKey()
+    const dek = authStorage.getMasterKey();
     if (!dek) {
-      return <Redirect href="/login" />
+      return <Redirect href="/login" />;
     }
-    setActiveDEK(dek)
+    setActiveDEK(dek);
   }
 
   return (
@@ -30,5 +30,5 @@ export default function ProtectedLayout() {
         <Stack screenOptions={{ headerShown: false }} />
       </BackgroundSyncProvider>
     </StateProvider>
-  )
+  );
 }
