@@ -1,9 +1,18 @@
-import { useGlobalStore } from '@renderer/components/global-context';
-import type { DeviceData } from '@shared/types/clipboard';
-import { Bell, Keyboard, Laptop, LogOut, Mail, RefreshCw, Smartphone, Tablet } from 'lucide-react';
-import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useGlobalStore } from "@renderer/components/global-context";
+import type { DeviceData } from "@shared/types/clipboard";
+import {
+  Bell,
+  Keyboard,
+  Laptop,
+  LogOut,
+  Mail,
+  RefreshCw,
+  Smartphone,
+  Tablet,
+} from "lucide-react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 
 // --- Sub-components ---
 
@@ -12,9 +21,14 @@ interface SettingsSectionProps {
   children: React.ReactNode;
 }
 
-const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
+const SettingsSection: React.FC<SettingsSectionProps> = ({
+  title,
+  children,
+}) => (
   <div className="p-2 space-y-1">
-    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</h3>
+    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      {title}
+    </h3>
     {children}
   </div>
 );
@@ -26,14 +40,15 @@ interface ToggleButtonProps {
 
 const ToggleButton: React.FC<ToggleButtonProps> = ({ enabled, onChange }) => (
   <button
+    type="button"
     onClick={onChange}
     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-      enabled ? 'bg-blue-500 dark:bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+      enabled ? "bg-blue-500 dark:bg-blue-600" : "bg-gray-200 dark:bg-gray-600"
     }`}
   >
     <span
       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-        enabled ? 'translate-x-5' : 'translate-x-0'
+        enabled ? "translate-x-5" : "translate-x-0"
       }`}
     />
   </button>
@@ -52,11 +67,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onSignOut }) => {
   if (!user) return null;
 
   const getInitials = (name: string | null) => {
-    if (!name) return 'U';
+    if (!name) return "U";
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -69,12 +84,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onSignOut }) => {
         </div>
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-            {user.displayName || 'User'}
+            {user.displayName || "User"}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {user.email}
+          </p>
         </div>
       </div>
       <button
+        type="button"
         onClick={onSignOut}
         className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
         title="Sign Out"
@@ -95,11 +113,16 @@ interface DeviceItemProps {
   onRemove: (deviceKey: string) => void;
 }
 
-const DeviceItem: React.FC<DeviceItemProps> = ({ device, isCurrentDevice, onRemove }) => {
+const DeviceItem: React.FC<DeviceItemProps> = ({
+  device,
+  isCurrentDevice,
+  onRemove,
+}) => {
   const getDeviceIcon = (platform: string) => {
     const p = platform.toLowerCase();
-    if (p.includes('mobile') || p.includes('android') || p.includes('ios')) return Smartphone;
-    if (p.includes('tablet') || p.includes('ipad')) return Tablet;
+    if (p.includes("mobile") || p.includes("android") || p.includes("ios"))
+      return Smartphone;
+    if (p.includes("tablet") || p.includes("ipad")) return Tablet;
     return Laptop;
   };
 
@@ -114,7 +137,7 @@ const DeviceItem: React.FC<DeviceItemProps> = ({ device, isCurrentDevice, onRemo
         <div>
           <div className="flex items-center space-x-2">
             <span className="font-medium text-gray-900 dark:text-gray-100">
-              {device.deviceName || 'Unknown Device'}
+              {device.deviceName || "Unknown Device"}
             </span>
             {isCurrentDevice && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 rounded">
@@ -129,11 +152,12 @@ const DeviceItem: React.FC<DeviceItemProps> = ({ device, isCurrentDevice, onRemo
       </div>
       <div className="flex items-center space-x-2">
         <div
-          className={`w-2 h-2 rounded-full ${isCurrentDevice ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+          className={`w-2 h-2 rounded-full ${isCurrentDevice ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
         />
         {!isCurrentDevice && (
           <button
-            onClick={() => onRemove(device.firebaseKey!)}
+            type="button"
+            onClick={() => onRemove(device.firebaseKey as string)}
             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
             title="Logout device"
           >
@@ -150,7 +174,10 @@ interface ShortcutRecorderProps {
   onSave: (shortcut: string) => void;
 }
 
-const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({ currentShortcut, onSave }) => {
+const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
+  currentShortcut,
+  onSave,
+}) => {
   const [isRecording, setIsRecording] = useState(false);
   const [keys, setKeys] = useState<string[]>([]);
   const ref = useRef<HTMLButtonElement>(null);
@@ -164,26 +191,33 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({ currentShortcut, on
 
       const key = e.key;
       // Ignore isolated modifier keys press (wait for combination)
-      if (['Control', 'Shift', 'Alt', 'Meta', 'Command'].includes(key) && !keys.includes(key)) {
+      if (
+        ["Control", "Shift", "Alt", "Meta", "Command"].includes(key) &&
+        !keys.includes(key)
+      ) {
         // Just add to display, don't finalize
       }
 
       // Build safe electron accelerator string
       const modifiers: string[] = [];
-      if (e.metaKey || e.ctrlKey) modifiers.push('CommandOrControl');
-      if (e.altKey) modifiers.push('Alt');
-      if (e.shiftKey) modifiers.push('Shift');
+      if (e.metaKey || e.ctrlKey) modifiers.push("CommandOrControl");
+      if (e.altKey) modifiers.push("Alt");
+      if (e.shiftKey) modifiers.push("Shift");
 
-      let mainKey = e.code.replace('Key', '').replace('Digit', '');
-      if (mainKey.startsWith('Arrow')) mainKey = mainKey.replace('Arrow', '');
+      let mainKey = e.code.replace("Key", "").replace("Digit", "");
+      if (mainKey.startsWith("Arrow")) mainKey = mainKey.replace("Arrow", "");
 
       // If just modifiers, don't save yet
-      if (['Control', 'Shift', 'Alt', 'Meta', 'Command'].some((k) => e.key.includes(k))) {
+      if (
+        ["Control", "Shift", "Alt", "Meta", "Command"].some((k) =>
+          e.key.includes(k),
+        )
+      ) {
         setKeys([...modifiers]);
         return;
       }
 
-      const shortcut = [...modifiers, mainKey].join('+');
+      const shortcut = [...modifiers, mainKey].join("+");
       setKeys([...modifiers, mainKey]);
 
       // Save logic could be here or on key up, but key down is usually fine for shortcuts
@@ -191,26 +225,29 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({ currentShortcut, on
       setIsRecording(false);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isRecording, onSave, keys]);
 
   const displayShortcut = isRecording
-    ? keys.join(' + ') || 'Type shortcut...'
-    : currentShortcut.replace('CommandOrControl', 'Cmd/Ctrl');
+    ? keys.join(" + ") || "Type shortcut..."
+    : currentShortcut.replace("CommandOrControl", "Cmd/Ctrl");
 
   return (
     <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
       <div className="flex items-center space-x-3">
         <Keyboard className="w-5 h-5 text-blue-500 dark:text-blue-400" />
         <div className="flex flex-col">
-          <span className="text-gray-900 dark:text-gray-100 font-medium">Global Shortcut</span>
+          <span className="text-gray-900 dark:text-gray-100 font-medium">
+            Global Shortcut
+          </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             Click to record new shortcut
           </span>
         </div>
       </div>
       <button
+        type="button"
         ref={ref}
         onClick={() => {
           setIsRecording(true);
@@ -218,8 +255,8 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({ currentShortcut, on
         }}
         className={`px-3 py-1.5 min-w-[100px] text-sm font-medium rounded-lg border transition-all ${
           isRecording
-            ? 'border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-            : 'border-gray-200 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500'
+            ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+            : "border-gray-200 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500"
         }`}
       >
         {displayShortcut}
@@ -236,7 +273,7 @@ export const SettingsPanel: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [devices, setDevices] = useState<ExtendedDeviceData[]>([]);
-  const [shortcut, setShortcut] = useState('CommandOrControl+Shift+V');
+  const [shortcut, setShortcut] = useState("CommandOrControl+Shift+V");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -260,15 +297,19 @@ export const SettingsPanel: React.FC = () => {
           const deviceArray = Object.entries(deviceList)
             .map(([key, value]) => ({
               ...(value as DeviceData),
-              firebaseKey: key
+              firebaseKey: key,
             }))
-            .sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+            .sort(
+              (a, b) =>
+                new Date(b.lastActive).getTime() -
+                new Date(a.lastActive).getTime(),
+            );
           setDevices(deviceArray);
         } else {
           setDevices([]);
         }
       } catch (error) {
-        console.error('Failed to load settings:', error);
+        console.error("Failed to load settings:", error);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -283,7 +324,7 @@ export const SettingsPanel: React.FC = () => {
 
   const onSignOut = () => {
     window.api.signOutUser();
-    navigate('/auth');
+    navigate("/auth");
   };
 
   const onNotificationsChange = () => {
@@ -303,7 +344,7 @@ export const SettingsPanel: React.FC = () => {
   };
 
   const handleRemoveDevice = async (deviceKey: string) => {
-    if (confirm('Are you sure you want to logout this device?')) {
+    if (confirm("Are you sure you want to logout this device?")) {
       try {
         await window.api.removeDevice(deviceKey);
         // We need to reload devices to reflect changes
@@ -312,15 +353,19 @@ export const SettingsPanel: React.FC = () => {
           const deviceArray = Object.entries(deviceList)
             .map(([key, value]) => ({
               ...(value as DeviceData),
-              firebaseKey: key
+              firebaseKey: key,
             }))
-            .sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+            .sort(
+              (a, b) =>
+                new Date(b.lastActive).getTime() -
+                new Date(a.lastActive).getTime(),
+            );
           setDevices(deviceArray);
         } else {
           setDevices([]);
         }
       } catch (error) {
-        console.error('Failed to remove device:', error);
+        console.error("Failed to remove device:", error);
       }
     }
   };
@@ -342,7 +387,9 @@ export const SettingsPanel: React.FC = () => {
             <UserProfile user={user} onSignOut={onSignOut} />
           ) : (
             <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Not logged in</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Not logged in
+              </p>
             </div>
           )}
         </SettingsSection>
@@ -352,10 +399,12 @@ export const SettingsPanel: React.FC = () => {
           <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
             <div className="flex items-center space-x-3">
               <RefreshCw
-                className={`w-5 h-5 text-blue-500 dark:text-blue-400 ${syncEnabled ? 'animate-spin-slow' : ''}`}
+                className={`w-5 h-5 text-blue-500 dark:text-blue-400 ${syncEnabled ? "animate-spin-slow" : ""}`}
               />
               <div className="flex flex-col">
-                <span className="text-gray-900 dark:text-gray-100 font-medium">Clipboard Sync</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  Clipboard Sync
+                </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                   Sync clips across all your devices
                 </span>
@@ -367,7 +416,10 @@ export const SettingsPanel: React.FC = () => {
 
         {/* Shortcut Settings */}
         <SettingsSection title="Shortcuts">
-          <ShortcutRecorder currentShortcut={shortcut} onSave={onShortcutChange} />
+          <ShortcutRecorder
+            currentShortcut={shortcut}
+            onSave={onShortcutChange}
+          />
         </SettingsSection>
 
         {/* Devices List */}
@@ -401,7 +453,10 @@ export const SettingsPanel: React.FC = () => {
                 </span>
               </div>
             </div>
-            <ToggleButton enabled={notificationsEnabled} onChange={onNotificationsChange} />
+            <ToggleButton
+              enabled={notificationsEnabled}
+              onChange={onNotificationsChange}
+            />
           </div>
         </SettingsSection>
 
@@ -415,7 +470,9 @@ export const SettingsPanel: React.FC = () => {
           >
             <div className="flex items-center space-x-3">
               <Mail className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-              <span className="text-gray-700 dark:text-gray-300">Send Feedback</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                Send Feedback
+              </span>
             </div>
           </a>
         </SettingsSection>

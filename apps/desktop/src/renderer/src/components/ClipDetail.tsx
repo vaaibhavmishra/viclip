@@ -1,18 +1,18 @@
-import type { ClipData } from '@shared/types/clipboard';
-import React from 'react';
+import type { ClipData } from "@shared/types/clipboard";
+import React from "react";
 
 interface ClipDetailProps {
   clip: ClipData | null;
 }
 
 export const ClipDetail: React.FC<ClipDetailProps> = ({ clip }) => {
-  const [content, setContent] = React.useState('');
+  const [content, setContent] = React.useState("");
 
   React.useEffect(() => {
     if (clip) {
       setContent(clip.content);
     } else {
-      setContent('');
+      setContent("");
     }
   }, [clip]);
 
@@ -21,7 +21,7 @@ export const ClipDetail: React.FC<ClipDetailProps> = ({ clip }) => {
       try {
         await window.api.updateClip(clip.id, content);
       } catch (error) {
-        console.error('Failed to update clip:', error);
+        console.error("Failed to update clip:", error);
       }
     }
   }, [clip, content]);
@@ -38,7 +38,7 @@ export const ClipDetail: React.FC<ClipDetailProps> = ({ clip }) => {
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Content Area */}
       <div className="flex-1 p-6 overflow-hidden flex flex-col">
-        {clip.type === 'color' && (
+        {clip.type === "color" && (
           <div
             className="w-full h-32 rounded-lg border border-border flex items-center justify-center shrink-0 mb-4 shadow-sm transition-colors"
             style={{ backgroundColor: content.trim() }}
@@ -79,10 +79,14 @@ export const ClipDetail: React.FC<ClipDetailProps> = ({ clip }) => {
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
               Characters
             </div>
-            <div className="text-gray-900 dark:text-gray-100">{content.length}</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {content.length}
+            </div>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Words</div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Words
+            </div>
             <div className="text-gray-900 dark:text-gray-100">
               {content.split(/\s+/).filter(Boolean).length}
             </div>

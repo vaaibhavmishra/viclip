@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import type { ClipData } from '@shared/types/clipboard';
-import { FileText } from 'lucide-react';
-import type React from 'react';
-import { useEffect } from 'react';
-import { cn } from '../lib/utils';
-import { Kbd, KbdGroup } from './ui/kbd';
+import type { ClipData } from "@shared/types/clipboard";
+import { FileText } from "lucide-react";
+import type React from "react";
+import { useEffect } from "react";
+import { cn } from "../lib/utils";
+import { Kbd, KbdGroup } from "./ui/kbd";
 
 interface SidebarProps {
   clips: ClipData[];
@@ -13,7 +13,11 @@ interface SidebarProps {
   onSelect: (id: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  clips,
+  selectedId,
+  onSelect,
+}) => {
   // Group clips
   const pinnedClips = clips.filter((c) => c.pinned);
   const unpinnedClips = clips.filter((c) => !c.pinned);
@@ -27,9 +31,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect })
 
       let key = date.toLocaleDateString();
       if (date.toDateString() === today.toDateString()) {
-        key = 'Today';
+        key = "Today";
       } else if (date.toDateString() === yesterday.toDateString()) {
-        key = 'Yesterday';
+        key = "Yesterday";
       }
 
       if (!acc[key]) {
@@ -38,14 +42,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect })
       acc[key].push(clip);
       return acc;
     },
-    {} as Record<string, ClipData[]>
+    {} as Record<string, ClipData[]>,
   );
 
   useEffect(() => {
     if (selectedId) {
       const element = document.getElementById(`clip-${selectedId}`);
       if (element) {
-        element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        element.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
     }
   }, [selectedId]);
@@ -62,17 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect })
             <div className="space-y-1">
               {pinnedClips.map((clip) => (
                 <button
+                  type="button"
                   key={clip.id}
                   id={`clip-${clip.id}`}
                   onClick={() => onSelect(clip.id)}
                   className={cn(
-                    'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-start gap-3',
+                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-start gap-3",
                     selectedId === clip.id
-                      ? 'bg-background/50 text-foreground'
-                      : 'text-foreground hover:bg-background/30'
+                      ? "bg-background/50 text-foreground"
+                      : "text-foreground hover:bg-background/30",
                   )}
                 >
-                  {clip.type === 'color' ? (
+                  {clip.type === "color" ? (
                     <div
                       className="w-4 h-4 mt-0.5 shrink-0 rounded-full border border-border/50 shadow-sm"
                       style={{ backgroundColor: clip.content.trim() }}
@@ -96,17 +101,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect })
             <div className="space-y-1">
               {groupClips.map((clip) => (
                 <button
+                  type="button"
                   key={clip.id}
                   id={`clip-${clip.id}`}
                   onClick={() => onSelect(clip.id)}
                   className={cn(
-                    'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-start gap-3',
+                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-start gap-3",
                     selectedId === clip.id
-                      ? 'bg-background/50 text-foreground'
-                      : 'text-foreground hover:bg-background/30'
+                      ? "bg-background/50 text-foreground"
+                      : "text-foreground hover:bg-background/30",
                   )}
                 >
-                  {clip.type === 'color' ? (
+                  {clip.type === "color" ? (
                     <div
                       className="w-4 h-4 mt-0.5 shrink-0 rounded-full border border-border/50 shadow-sm"
                       style={{ backgroundColor: clip.content.trim() }}
@@ -121,7 +127,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ clips, selectedId, onSelect })
           </div>
         ))}
         {clips.length === 0 && (
-          <div className="p-4 text-center text-sm text-gray-500">No clips found</div>
+          <div className="p-4 text-center text-sm text-gray-500">
+            No clips found
+          </div>
         )}
       </div>
 

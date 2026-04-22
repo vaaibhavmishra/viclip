@@ -2,7 +2,7 @@
 export interface Device {
   id: string;
   name: string;
-  type: 'desktop' | 'mobile';
+  type: "desktop" | "mobile";
   // other device properties
 }
 

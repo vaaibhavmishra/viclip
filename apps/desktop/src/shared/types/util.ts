@@ -12,6 +12,6 @@ export type LinkType = {
  */
 
 export const LINKS: LinkType = {
-  terms: 'https://www.viclip.shipby.me/terms',
-  privacy: 'https://www.viclip.shipby.me/privacy'
+  terms: "https://www.viclip.shipby.me/terms",
+  privacy: "https://www.viclip.shipby.me/privacy",
 };

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 // Define the User type based on the preload API
 export interface User {
@@ -19,7 +19,7 @@ interface GlobalState {
 export const useGlobalStore = create<GlobalState>((set) => ({
   user: null,
   isLoading: true,
-  platform: '',
+  platform: "",
   setUser: (user) => set({ user }),
   setPlatform: (platform) => set({ platform }),
   initialize: async () => {
@@ -32,14 +32,14 @@ export const useGlobalStore = create<GlobalState>((set) => ({
 
       const [currentUser, currentPlatform] = await Promise.all([
         window.api.getCurrentUser(),
-        window.api.getPlatform()
+        window.api.getPlatform(),
       ]);
       set({ user: currentUser, platform: currentPlatform, isLoading: false });
     } catch (error) {
-      console.error('Failed to initialize global state:', error);
+      console.error("Failed to initialize global state:", error);
       set({ isLoading: false });
     }
-  }
+  },
 }));
 
 // Initialize the store immediately

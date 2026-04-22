@@ -4,26 +4,26 @@ extraMetadata:
   name: ViClip
   version: 2.0.0
   description: Sync Your Clipboard Across All Your Devices
-  homepage: https://viclip.tech
+  homepage: https://viclip.shipby.me
   author:
     name: Vaibhav Mishra
-    email: vaibhav@viclip.tech
+    email: [EMAIL_ADDRESS]
 directories:
   buildResources: build
   output: 'dist/v${version}/${os}-${arch}'
 publish:
   provider: github
-  owner: ViClip-Org
-  repo: ViClip-Desktop
+  owner: vaaibhavmishra
+  repo: viclip
 files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore, .eslintrc.cjs, .prettierignore, .prettierrc.yaml, .npmrc, .eslintcache, .editorconfig}'
+  - '!{.eslintignore, .eslintrc.cjs, .prettierignore, .prettierrc.yaml, .npmrc, .eslintcache, .editorconfig, biome.json}'
   - '!{.env, .env.*}'
   - '!{pnpm-lock.yaml, pnpm-workspace.yaml}'
   - '!{tsconfig.json, tsconfig.node.json, tsconfig.web.json}'
-  - '!{dev-app-update.yml, eslint.config.mjs}'
+  - '!{dev-app-update.yml}'
   - '!{CHANGELOG.md, README.md, LICENSE.txt}'
   - '!**/*.map'
 asarUnpack:

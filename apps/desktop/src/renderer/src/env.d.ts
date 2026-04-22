@@ -1,15 +1,14 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly VITE_SENTRY_DSN: string;
-}
+// biome-ignore lint/complexity/noBannedTypes: <no env>
+type ImportMetaEnv = {};
 
-interface ImportMeta {
+interface _ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
 // Ensure TypeScript sees the custom API on window
-import { PreloadAPI } from '../../preload/index';
+import type { PreloadAPI } from "../../preload/index";
 
 declare global {
   interface Window {

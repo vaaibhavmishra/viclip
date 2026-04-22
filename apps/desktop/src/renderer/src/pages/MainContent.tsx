@@ -1,23 +1,34 @@
-import type { ClipContentType, ClipData } from '@shared/types/clipboard';
-import { FileText, Image, LayoutGrid, Link, Mail, Palette, Search, Settings } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { ClipDetail } from '../components/ClipDetail';
-import { CommandMenu } from '../components/CommandMenu';
-import { Sidebar } from '../components/Sidebar';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import type { ClipContentType, ClipData } from "@shared/types/clipboard";
+import {
+  FileText,
+  Image,
+  LayoutGrid,
+  Link,
+  Mail,
+  Palette,
+  Search,
+  Settings,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ClipDetail } from "../components/ClipDetail";
+import { CommandMenu } from "../components/CommandMenu";
+import { Sidebar } from "../components/Sidebar";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '../components/ui/select';
+  SelectValue,
+} from "../components/ui/select";
 
 export const MainContent: React.FC = () => {
   const [clips, setClips] = useState<ClipData[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<ClipContentType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<ClipContentType | "all">(
+    "all",
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedClip = clips.find((c) => c.id === selectedId) || null;
   const [commandOpen, setCommandOpen] = useState(false);
@@ -26,19 +37,24 @@ export const MainContent: React.FC = () => {
   useEffect(() => {
     const loadClips = async (): Promise<void> => {
       try {
-        const clipsData = (await window.api.getClips()) as Record<string, ClipData>;
+        const clipsData = (await window.api.getClips()) as Record<
+          string,
+          ClipData
+        >;
         if (clipsData && Object.keys(clipsData).length > 0) {
           const sortedClips = Object.values(clipsData).sort((a, b) => {
             if (a.pinned && !b.pinned) return -1;
             if (!a.pinned && b.pinned) return 1;
-            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            return (
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
           });
           setClips(sortedClips);
 
           setSelectedId(sortedClips[0].id);
         }
       } catch (error) {
-        console.error('Failed to load clips:', error);
+        console.error("Failed to load clips:", error);
       }
     };
 
@@ -48,15 +64,19 @@ export const MainContent: React.FC = () => {
       const sortedClips = Object.values(value).sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        return (
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
       });
       setClips(sortedClips);
     });
   }, []);
 
   const filteredClips = clips.filter((clip) => {
-    const matchesSearch = clip.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || clip.type === selectedType;
+    const matchesSearch = clip.content
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesType = selectedType === "all" || clip.type === selectedType;
     return matchesSearch && matchesType;
   });
 
@@ -75,23 +95,25 @@ export const MainContent: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setCommandOpen((open) => !open);
       }
 
       if (filteredClips.length === 0) return;
 
-      if (e.key === 'Enter' && !commandOpen && selectedId) {
+      if (e.key === "Enter" && !commandOpen && selectedId) {
         const clipToPaste = filteredClips.find((c) => c.id === selectedId);
         if (clipToPaste) {
           window.api.pasteClip(clipToPaste.content, clipToPaste.id);
         }
       }
 
-      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !commandOpen) {
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !commandOpen) {
         e.preventDefault();
-        const currentIndex = filteredClips.findIndex((c) => c.id === selectedId);
+        const currentIndex = filteredClips.findIndex(
+          (c) => c.id === selectedId,
+        );
 
         if (currentIndex === -1 && filteredClips.length > 0) {
           // If nothing selected, select the first one
@@ -99,18 +121,21 @@ export const MainContent: React.FC = () => {
           return;
         }
 
-        if (e.key === 'ArrowDown') {
-          const nextIndex = Math.min(currentIndex + 1, filteredClips.length - 1);
+        if (e.key === "ArrowDown") {
+          const nextIndex = Math.min(
+            currentIndex + 1,
+            filteredClips.length - 1,
+          );
           setSelectedId(filteredClips[nextIndex].id);
-        } else if (e.key === 'ArrowUp') {
+        } else if (e.key === "ArrowUp") {
           const prevIndex = Math.max(currentIndex - 1, 0);
           setSelectedId(filteredClips[prevIndex].id);
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [filteredClips, selectedId, commandOpen]);
 
   return (
@@ -131,16 +156,18 @@ export const MainContent: React.FC = () => {
         <div className="ml-auto flex items-center gap-2">
           <Select
             value={selectedType}
-            onValueChange={(val) => setSelectedType(val as ClipContentType | 'all')}
+            onValueChange={(val) =>
+              setSelectedType(val as ClipContentType | "all")
+            }
           >
             <SelectTrigger className="w-[140px] h-8 text-xs bg-muted/50 border-transparent hover:bg-muted transition-colors">
               <div className="flex items-center gap-2">
-                {selectedType === 'all'}
-                {selectedType === 'text'}
-                {selectedType === 'image'}
-                {selectedType === 'url'}
-                {selectedType === 'email'}
-                {selectedType === 'color'}
+                {selectedType === "all"}
+                {selectedType === "text"}
+                {selectedType === "image"}
+                {selectedType === "url"}
+                {selectedType === "email"}
+                {selectedType === "color"}
                 <SelectValue placeholder="All Types" />
               </div>
             </SelectTrigger>
@@ -184,7 +211,11 @@ export const MainContent: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="ghost" size="icon" onClick={() => window.api.openSettings()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.api.openSettings()}
+          >
             <Settings className="size-6 text-foreground" />
           </Button>
         </div>
@@ -192,7 +223,11 @@ export const MainContent: React.FC = () => {
 
       {/* Main Area */}
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar clips={filteredClips} selectedId={selectedId} onSelect={setSelectedId} />
+        <Sidebar
+          clips={filteredClips}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
         <ClipDetail clip={selectedClip} />
       </div>
       <CommandMenu

@@ -1,4 +1,4 @@
-import { ElectronAPI } from '@electron-toolkit/preload';
+import type { ElectronAPI } from "@electron-toolkit/preload";
 
 export interface PreloadAPI {
   toggleClipboardSync: (shouldEnable: boolean) => Promise<boolean>;
@@ -14,7 +14,11 @@ export interface PreloadAPI {
   signOutUser: () => void;
   loginUser: (email: string, password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  signUpUser: (email: string, username: string, password: string) => Promise<void>;
+  signUpUser: (
+    email: string,
+    username: string,
+    password: string,
+  ) => Promise<void>;
   getCurrentUser: () => Promise<{
     email: string | null;
     displayName: string | null;

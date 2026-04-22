@@ -5,8 +5,8 @@
  * Uses Electron's Notification API to show native system notifications.
  */
 
-import { Notification } from 'electron/main';
-import { getNotificationsEnabled } from '../globalStates';
+import { Notification } from "electron/main";
+import { getNotificationsEnabled } from "../globalStates";
 
 /**
  * Shows a system notification with the specified title and body text
@@ -22,7 +22,7 @@ export function showNotification(title: string, body: string): void {
   // Create a new notification instance
   const notification = new Notification({
     title,
-    body
+    body,
   });
   notification.show();
 }

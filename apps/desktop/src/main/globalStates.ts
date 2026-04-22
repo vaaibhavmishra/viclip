@@ -1,5 +1,5 @@
-import type { ClipData } from '@shared/types/clipboard';
-import type { BrowserWindow, Tray } from 'electron';
+import type { ClipData } from "@shared/types/clipboard";
+import type { BrowserWindow, Tray } from "electron";
 
 // Global instances
 let mainWindowInstance: BrowserWindow | null = null;

@@ -6,9 +6,9 @@
  * main process (backend) in Electron applications.
  */
 
-import { electronAPI } from '@electron-toolkit/preload';
-import type { ClipData, DeviceData } from '@shared/types/clipboard';
-import { contextBridge, ipcRenderer } from 'electron';
+import { electronAPI } from "@electron-toolkit/preload";
+import type { ClipData, DeviceData } from "@shared/types/clipboard";
+import { contextBridge, ipcRenderer } from "electron";
 
 /**
  * Custom APIs exposed to the renderer process
@@ -19,12 +19,12 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
   toggleClipboardSync: (shouldEnable: boolean): Promise<boolean> =>
-    ipcRenderer.invoke('toggle-clipboard-sync', shouldEnable),
+    ipcRenderer.invoke("toggle-clipboard-sync", shouldEnable),
 
   /**
    * Get the current platform of the application
    */
-  getPlatform: (): Promise<string> => ipcRenderer.invoke('get-platform'),
+  getPlatform: (): Promise<string> => ipcRenderer.invoke("get-platform"),
 
   /**
    * Toggles notifications on or off
@@ -32,53 +32,60 @@ const api = {
    * @param shouldEnable Boolean indicating whether to enable or disable notifications
    */
   toggleNotifications: (shouldEnable: boolean): void => {
-    ipcRenderer.send('toggle-notifications', shouldEnable);
+    ipcRenderer.send("toggle-notifications", shouldEnable);
   },
 
   openSettings: (): void => {
-    ipcRenderer.send('open-settings');
+    ipcRenderer.send("open-settings");
   },
 
   // Listen for clips updates from the main process
   onClipsUpdate: (callback: (value: ClipData) => void): void => {
-    ipcRenderer.on('clips-updated', (_event, value) => callback(value));
+    ipcRenderer.on("clips-updated", (_event, value) => callback(value));
   },
 
-  getClips: (): Promise<Record<string, ClipData> | null> => ipcRenderer.invoke('get-clips'),
+  getClips: (): Promise<Record<string, ClipData> | null> =>
+    ipcRenderer.invoke("get-clips"),
 
   //Get Devices
-  getDevices: (): Promise<Record<string, DeviceData> | null> => ipcRenderer.invoke('get-devices'),
+  getDevices: (): Promise<Record<string, DeviceData> | null> =>
+    ipcRenderer.invoke("get-devices"),
 
   // Remove device
   removeDevice: (deviceKey: string): Promise<void> =>
-    ipcRenderer.invoke('remove-device', deviceKey),
+    ipcRenderer.invoke("remove-device", deviceKey),
 
   // Remove all clips
-  removeAllClips: (): Promise<void> => ipcRenderer.invoke('remove-all-clips'),
+  removeAllClips: (): Promise<void> => ipcRenderer.invoke("remove-all-clips"),
 
   /**
    * Listen for authentication state changes from the main process
    */
-  onAuthStateChanged: (callback: (displayName: string | null) => void): void => {
-    ipcRenderer.on('auth-state-changed', (_event, displayName) => callback(displayName));
+  onAuthStateChanged: (
+    callback: (displayName: string | null) => void,
+  ): void => {
+    ipcRenderer.on("auth-state-changed", (_event, displayName) =>
+      callback(displayName),
+    );
   },
 
   /**
    * Sign out the current user
    */
-  signOutUser: (): void => ipcRenderer.send('sign-out-user'),
+  signOutUser: (): void => ipcRenderer.send("sign-out-user"),
   /**
    * Log in a user with email and password
    * @param email User's email address
    * @param password User's password
    */
   loginUser: (email: string, password: string): Promise<void> =>
-    ipcRenderer.invoke('login-user', email, password),
+    ipcRenderer.invoke("login-user", email, password),
 
   /**
    * Send a password reset email
    */
-  resetPassword: (email: string): Promise<void> => ipcRenderer.invoke('reset-password', email),
+  resetPassword: (email: string): Promise<void> =>
+    ipcRenderer.invoke("reset-password", email),
 
   /**
    * Sign up a new user with email, username, and password
@@ -92,8 +99,12 @@ const api = {
    * @param username Desired username
    * @param password Desired password
    */
-  signUpUser: (email: string, username: string, password: string): Promise<void> =>
-    ipcRenderer.invoke('sign-up-user', email, username, password),
+  signUpUser: (
+    email: string,
+    username: string,
+    password: string,
+  ): Promise<void> =>
+    ipcRenderer.invoke("sign-up-user", email, username, password),
 
   /**
    * Get the current logged-in user details
@@ -102,28 +113,30 @@ const api = {
     email: string | null;
     displayName: string | null;
     uid: string;
-  } | null> => ipcRenderer.invoke('get-current-user'),
+  } | null> => ipcRenderer.invoke("get-current-user"),
 
   /**
    * Get current clipboard sync state
    */
-  getSyncState: (): Promise<boolean> => ipcRenderer.invoke('get-sync-state'),
+  getSyncState: (): Promise<boolean> => ipcRenderer.invoke("get-sync-state"),
 
-  removeClip: (id: string): Promise<void> => ipcRenderer.invoke('remove-clip', id),
+  removeClip: (id: string): Promise<void> =>
+    ipcRenderer.invoke("remove-clip", id),
 
   pinClip: (id: string, pinned: boolean): Promise<void> =>
-    ipcRenderer.invoke('pin-clip', id, pinned),
+    ipcRenderer.invoke("pin-clip", id, pinned),
 
   updateClip: (id: string, content: string): Promise<void> =>
-    ipcRenderer.invoke('update-clip', id, content),
+    ipcRenderer.invoke("update-clip", id, content),
 
-  openUrl: (url: string): void => ipcRenderer.send('open-url', url),
+  openUrl: (url: string): void => ipcRenderer.send("open-url", url),
   pasteClip: (content: string, id?: string): Promise<void> =>
-    ipcRenderer.invoke('paste-clip', content, id),
+    ipcRenderer.invoke("paste-clip", content, id),
 
   // Shortcut management
-  getShortcut: (): Promise<string> => ipcRenderer.invoke('get-shortcut'),
-  setShortcut: (shortcut: string): Promise<boolean> => ipcRenderer.invoke('set-shortcut', shortcut)
+  getShortcut: (): Promise<string> => ipcRenderer.invoke("get-shortcut"),
+  setShortcut: (shortcut: string): Promise<boolean> =>
+    ipcRenderer.invoke("set-shortcut", shortcut),
 };
 
 /**
@@ -136,16 +149,16 @@ const api = {
 if (process.contextIsolated) {
   try {
     // Expose the custom APIs and electronAPI securely to the renderer
-    contextBridge.exposeInMainWorld('electron', electronAPI);
-    contextBridge.exposeInMainWorld('api', api);
+    contextBridge.exposeInMainWorld("electron", electronAPI);
+    contextBridge.exposeInMainWorld("api", api);
   } catch (error) {
     console.error(error);
   }
 } else {
   // Fallback for when context isolation is disabled
   // This is less secure and should be avoided in production
-  // @ts-expect-error (define in dts)
+  // @ts-ignore - window augmentation defined in renderer .d.ts
   window.electron = electronAPI;
-  // @ts-expect-error (define in dts)
+  // @ts-ignore - window augmentation defined in renderer .d.ts
   window.api = api;
 }

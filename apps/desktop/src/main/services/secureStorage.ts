@@ -1,6 +1,6 @@
-import { safeStorage } from 'electron';
-import { Conf } from 'electron-conf/main';
-import log from 'electron-log/main';
+import { safeStorage } from "electron";
+import { Conf } from "electron-conf/main";
+import log from "electron-log/main";
 
 const store = new Conf();
 
@@ -12,13 +12,13 @@ const store = new Conf();
 export function encryptData(data: string): string {
   try {
     if (!safeStorage.isEncryptionAvailable()) {
-      log.warn('Encryption is not available, data will be stored unencrypted');
+      log.warn("Encryption is not available, data will be stored unencrypted");
       return data;
     }
     const encryptedData = safeStorage.encryptString(data);
-    return encryptedData.toString('base64');
+    return encryptedData.toString("base64");
   } catch (error) {
-    log.error('Failed to encrypt data', error);
+    log.error("Failed to encrypt data", error);
     return data;
   }
 }
@@ -31,15 +31,15 @@ export function encryptData(data: string): string {
 export function encryptImageBuffer(buffer: Buffer): string {
   try {
     if (!safeStorage.isEncryptionAvailable()) {
-      log.warn('Encryption is not available, image will be stored unencrypted');
-      return buffer.toString('base64');
+      log.warn("Encryption is not available, image will be stored unencrypted");
+      return buffer.toString("base64");
     }
     // safeStorage.encryptString expects a string. Convert buffer to base64 first.
-    const encryptedData = safeStorage.encryptString(buffer.toString('base64'));
-    return encryptedData.toString('base64');
+    const encryptedData = safeStorage.encryptString(buffer.toString("base64"));
+    return encryptedData.toString("base64");
   } catch (error) {
-    log.error('Failed to encrypt image buffer', error);
-    return buffer.toString('base64');
+    log.error("Failed to encrypt image buffer", error);
+    return buffer.toString("base64");
   }
 }
 
@@ -51,15 +51,19 @@ export function encryptImageBuffer(buffer: Buffer): string {
 function decryptData(encryptedData: string): string {
   try {
     if (!safeStorage.isEncryptionAvailable()) {
-      log.warn('Encryption is not available, data will be returned unencrypted');
+      log.warn(
+        "Encryption is not available, data will be returned unencrypted",
+      );
       return encryptedData;
     }
 
-    const decryptedData = safeStorage.decryptString(Buffer.from(encryptedData, 'base64'));
+    const decryptedData = safeStorage.decryptString(
+      Buffer.from(encryptedData, "base64"),
+    );
     return decryptedData.toString();
   } catch (error) {
-    log.error('Failed to decrypt data', error);
-    return '';
+    log.error("Failed to decrypt data", error);
+    return "";
   }
 }
 
@@ -68,9 +72,9 @@ export const authStorage = {
    * Clear all stored auth data
    */
   clearAuth(): void {
-    store.delete('masterKey');
+    store.delete("masterKey");
     // store.delete('uid')
-    log.debug('Auth data cleared');
+    log.debug("Auth data cleared");
   },
 
   /**
@@ -79,8 +83,8 @@ export const authStorage = {
    */
   saveMasterKey(key: Buffer): void {
     // We encrypt the buffer using safeStorage and store as base64
-    store.set('masterKey', encryptImageBuffer(key));
-    log.debug('Master key saved securely');
+    store.set("masterKey", encryptImageBuffer(key));
+    log.debug("Master key saved securely");
   },
 
   /**
@@ -88,7 +92,7 @@ export const authStorage = {
    * @returns The DEK buffer or null if not found
    */
   getMasterKey(): Buffer | null {
-    const encryptedKey = store.get('masterKey') as string;
+    const encryptedKey = store.get("masterKey") as string;
     if (!encryptedKey) return null;
 
     const decryptedHex = decryptData(encryptedKey);
@@ -114,7 +118,7 @@ export const authStorage = {
     // No, usually it accepts string.
     // If I want to store a Buffer (the Key), I should probably convert it to hex/base64 STRING first, then encrypt.
 
-    return Buffer.from(decryptedHex, 'base64'); // assuming I store it as base64 string before encryption
+    return Buffer.from(decryptedHex, "base64"); // assuming I store it as base64 string before encryption
   },
 
   /**
@@ -124,8 +128,8 @@ export const authStorage = {
    */
   saveCredentials(email: string, pass: string): void {
     const data = JSON.stringify({ email, pass });
-    store.set('credentials', encryptData(data));
-    log.debug('Credentials saved securely');
+    store.set("credentials", encryptData(data));
+    log.debug("Credentials saved securely");
   },
 
   /**
@@ -133,7 +137,7 @@ export const authStorage = {
    * @returns Object with email and password or null if not found
    */
   getCredentials(): { email: string; pass: string } | null {
-    const encrypted = store.get('credentials') as string;
+    const encrypted = store.get("credentials") as string;
     if (!encrypted) return null;
 
     const decrypted = decryptData(encrypted);
@@ -142,7 +146,7 @@ export const authStorage = {
     try {
       return JSON.parse(decrypted);
     } catch (e) {
-      log.error('Failed to parse credentials', e);
+      log.error("Failed to parse credentials", e);
       return null;
     }
   },
@@ -151,7 +155,7 @@ export const authStorage = {
    * Clear stored credentials
    */
   clearCredentials(): void {
-    store.delete('credentials');
-    log.debug('Credentials cleared');
-  }
+    store.delete("credentials");
+    log.debug("Credentials cleared");
+  },
 };

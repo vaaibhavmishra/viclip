@@ -6,11 +6,20 @@
  * It's used to synchronize clipboard data across devices.
  */
 
-import os from 'node:os';
-import type { ClipContentType, ClipData, DeviceData } from '@shared/types/clipboard';
-import log from 'electron-log/main';
-import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, type User, type UserProfile } from 'firebase/auth';
+import os from "node:os";
+import type {
+  ClipContentType,
+  ClipData,
+  DeviceData,
+} from "@shared/types/clipboard";
+import log from "electron-log/main";
+import { initializeApp } from "firebase/app";
+import {
+  getAuth,
+  initializeAuth,
+  type User,
+  type UserProfile,
+} from "firebase/auth";
 import {
   equalTo,
   get,
@@ -23,27 +32,31 @@ import {
   ref,
   remove,
   set,
-  update
-} from 'firebase/database';
-import { v4 as uuidv4 } from 'uuid';
+  update,
+} from "firebase/database";
+import { v4 as uuidv4 } from "uuid";
 
 // Configuration constants
 const MAX_CLIP_COUNT = 300; // Maximum number of clips to store per user
 
 export function initFirebase(): void {
-  log.debug('Initializing Firebase');
+  log.debug("Initializing Firebase");
 
   // Check for required Firebase configuration variables
   const requiredEnvVars = [
-    'MAIN_VITE_FIREBASE_API_KEY',
-    'MAIN_VITE_FIREBASE_AUTH_DOMAIN',
-    'MAIN_VITE_FIREBASE_DATABASE_URL',
-    'MAIN_VITE_FIREBASE_PROJECT_ID'
+    "MAIN_VITE_FIREBASE_API_KEY",
+    "MAIN_VITE_FIREBASE_AUTH_DOMAIN",
+    "MAIN_VITE_FIREBASE_DATABASE_URL",
+    "MAIN_VITE_FIREBASE_PROJECT_ID",
   ];
 
-  const missingVars = requiredEnvVars.filter((varName) => !import.meta.env[varName]);
+  const missingVars = requiredEnvVars.filter(
+    (varName) => !import.meta.env[varName],
+  );
   if (missingVars.length > 0) {
-    throw new Error(`Missing required Firebase configuration: ${missingVars.join(', ')}`);
+    throw new Error(
+      `Missing required Firebase configuration: ${missingVars.join(", ")}`,
+    );
   }
 
   // Firebase configuration from environment variables
@@ -55,19 +68,19 @@ export function initFirebase(): void {
     storageBucket: import.meta.env.MAIN_VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.MAIN_VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.MAIN_VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.MAIN_VITE_FIREBASE_MEASUREMENT_ID
+    measurementId: import.meta.env.MAIN_VITE_FIREBASE_MEASUREMENT_ID,
   };
 
   // Initialize Firebase with the configuration
   const app = initializeApp(firebaseConfig);
   // Test calling initializeAuth without options to debug crash
   initializeAuth(app);
-  log.info('Firebase initialized successfully (testing initializeAuth)');
+  log.info("Firebase initialized successfully (testing initializeAuth)");
 }
 
 export async function addUserProfile(user: User): Promise<void> {
   if (!user) {
-    log.warn('Cannot add profile: user is not authenticated');
+    log.warn("Cannot add profile: user is not authenticated");
     return;
   }
 
@@ -80,7 +93,7 @@ export async function addUserProfile(user: User): Promise<void> {
     const existedUser = await get(userRef);
 
     if (existedUser.exists()) {
-      log.debug('User profile already exists', { userId: user.uid });
+      log.debug("User profile already exists", { userId: user.uid });
       return;
     }
 
@@ -88,14 +101,14 @@ export async function addUserProfile(user: User): Promise<void> {
       email: user.email,
       name: user.displayName,
       createdAt: new Date().toISOString(),
-      role: 'user',
-      subscription: 'free'
+      role: "user",
+      subscription: "free",
     };
 
     // Set the user's profile data in the database
     await set(userRef, userData);
 
-    log.info('User profile created', { userId: user.uid });
+    log.info("User profile created", { userId: user.uid });
   } catch (error) {
     log.error(`Failed to add user profile for ${user.uid}`, error);
   }
@@ -104,7 +117,7 @@ export async function addUserProfile(user: User): Promise<void> {
 export async function addClip(
   userId: string,
   content: string,
-  type: ClipContentType
+  type: ClipContentType,
 ): Promise<void> {
   try {
     // Get a reference to the Firebase Realtime Database
@@ -112,11 +125,11 @@ export async function addClip(
     // Get the current device name
     const sourceDevice = os.hostname();
 
-    log.debug('Adding clip to Firebase', {
+    log.debug("Adding clip to Firebase", {
       userId,
       contentLength: content.length,
       type,
-      sourceDevice
+      sourceDevice,
     });
 
     // Create a properly typed clip object
@@ -125,7 +138,7 @@ export async function addClip(
       content,
       type,
       timestamp: new Date().toISOString(),
-      sourceDevice
+      sourceDevice,
     };
 
     // Write data to the user's clipboard path
@@ -134,13 +147,13 @@ export async function addClip(
 
     await set(newClipRef, clipData);
   } catch (error) {
-    log.error('Failed to add clip to Firebase', error);
+    log.error("Failed to add clip to Firebase", error);
   }
 }
 
 export function listenClips(
   userId: string,
-  onDataChange?: (clips: Record<string, ClipData>) => void
+  onDataChange?: (clips: Record<string, ClipData>) => void,
 ): () => void {
   try {
     // Get a reference to the Firebase Realtime Database
@@ -148,7 +161,7 @@ export function listenClips(
     // Create a reference to the specific data path
     const cloudData = ref(db, `users/${userId}/clips`);
 
-    log.debug('Setting up Firebase clip listener', { userId });
+    log.debug("Setting up Firebase clip listener", { userId });
 
     // Set up a real-time listener for changes
     const unsubscribe = onValue(
@@ -157,7 +170,7 @@ export function listenClips(
         try {
           // Check if the snapshot exists and has data
           if (!snapshot.exists()) {
-            log.debug('No clip data available in Firebase');
+            log.debug("No clip data available in Firebase");
             if (onDataChange) {
               onDataChange({});
             }
@@ -171,20 +184,20 @@ export function listenClips(
             onDataChange(clips);
           }
         } catch (error) {
-          log.error('Error processing Firebase clip data', error);
+          log.error("Error processing Firebase clip data", error);
         }
       },
       (error) => {
-        log.error('Firebase onValue error', error);
-      }
+        log.error("Firebase onValue error", error);
+      },
     );
 
     // Return the unsubscribe function to allow caller to stop listening
     return unsubscribe;
   } catch (error) {
-    log.error('Failed to set up Firebase clip listener', error);
+    log.error("Failed to set up Firebase clip listener", error);
     return () => {
-      log.debug('Using empty unsubscribe function (fallback)');
+      log.debug("Using empty unsubscribe function (fallback)");
     };
   }
 }
@@ -194,11 +207,11 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
-      log.warn('No user is currently authenticated');
+      log.warn("No user is currently authenticated");
       return null;
     }
     const userId = user.uid;
-    log.debug('Fetching clips from Firebase', { userId });
+    log.debug("Fetching clips from Firebase", { userId });
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the specific data path
@@ -209,17 +222,17 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
 
     if (snapshot.exists()) {
       const clips = snapshot.val();
-      log.debug('Clips found', {
+      log.debug("Clips found", {
         userId,
-        clipCount: Object.keys(clips).length
+        clipCount: Object.keys(clips).length,
       });
       return snapshot.val();
     } else {
-      log.debug('No clip data available in Firebase');
+      log.debug("No clip data available in Firebase");
       return null;
     }
   } catch (error) {
-    log.error('Failed to get clip data', error);
+    log.error("Failed to get clip data", error);
     return null;
   }
 }
@@ -235,11 +248,11 @@ export async function enforceClipLimit(userId: string): Promise<void> {
     const db = getDatabase();
     const clipsRef = ref(db, `users/${userId}/clips`);
     // Order by timestamp to reliably get the oldest clips first
-    const clipsQuery = query(clipsRef, orderByChild('timestamp'));
+    const clipsQuery = query(clipsRef, orderByChild("timestamp"));
     const snapshot = await get(clipsQuery);
 
     if (!snapshot.exists()) {
-      log.debug('No clips found to enforce limit', { userId });
+      log.debug("No clips found to enforce limit", { userId });
       return;
     }
 
@@ -261,19 +274,19 @@ export async function enforceClipLimit(userId: string): Promise<void> {
           userId,
           clipId: oldestUnpinnedKey,
           currentCount: clipKeys.length,
-          limit: MAX_CLIP_COUNT
+          limit: MAX_CLIP_COUNT,
         });
 
         await remove(ref(db, `users/${userId}/clips/${oldestUnpinnedKey}`));
       } else {
-        log.warn('All clips are pinned, cannot enforce clip limit.', {
+        log.warn("All clips are pinned, cannot enforce clip limit.", {
           userId,
-          currentCount: clipKeys.length
+          currentCount: clipKeys.length,
         });
       }
     }
   } catch (error) {
-    log.error('Failed to enforce clip limit', error);
+    log.error("Failed to enforce clip limit", error);
   }
 }
 
@@ -282,11 +295,11 @@ export async function removeAllClips(): Promise<void> {
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
-      log.warn('No user is currently authenticated');
+      log.warn("No user is currently authenticated");
       return;
     }
     const userId = user.uid;
-    log.debug('Removing unpinned clips from Firebase', { userId });
+    log.debug("Removing unpinned clips from Firebase", { userId });
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the specific clip path
@@ -295,7 +308,7 @@ export async function removeAllClips(): Promise<void> {
     // Fetch all clips first
     const snapshot = await get(clipRef);
     if (!snapshot.exists()) {
-      log.debug('No clips to remove');
+      log.debug("No clips to remove");
       return;
     }
 
@@ -316,23 +329,26 @@ export async function removeAllClips(): Promise<void> {
       // Perform atomic update to remove unpinned clips
       await update(clipRef, updates);
       log.debug(`Removed ${removedCount} unpinned clips from Firebase`, {
-        userId
+        userId,
       });
     } else {
-      log.debug('No unpinned clips found to remove', { userId });
+      log.debug("No unpinned clips found to remove", { userId });
     }
   } catch (error) {
-    log.error('Failed to remove clips from Firebase', error);
+    log.error("Failed to remove clips from Firebase", error);
   }
 }
 
-export async function removeClip(userId: string, clipId: string): Promise<void> {
+export async function removeClip(
+  userId: string,
+  clipId: string,
+): Promise<void> {
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `users/${userId}/clips`);
 
     // Find the clip by id field
-    const clipQuery = query(clipsRef, orderByChild('id'), equalTo(clipId));
+    const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
 
     if (snapshot.exists()) {
@@ -340,7 +356,7 @@ export async function removeClip(userId: string, clipId: string): Promise<void> 
       await remove(ref(db, `users/${userId}/clips/${key}`));
     }
   } catch (error) {
-    log.error('Failed to remove clip', error);
+    log.error("Failed to remove clip", error);
     throw error;
   }
 }
@@ -348,14 +364,14 @@ export async function removeClip(userId: string, clipId: string): Promise<void> 
 export async function updateClip(
   userId: string,
   clipId: string,
-  updates: Partial<ClipData>
+  updates: Partial<ClipData>,
 ): Promise<void> {
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `users/${userId}/clips`);
 
     // Find the clip by id field
-    const clipQuery = query(clipsRef, orderByChild('id'), equalTo(clipId));
+    const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
 
     if (snapshot.exists()) {
@@ -366,18 +382,22 @@ export async function updateClip(
       log.warn(`Clip not found for update`, { userId, clipId });
     }
   } catch (error) {
-    log.error('Failed to update clip', error);
+    log.error("Failed to update clip", error);
     throw error;
   }
 }
 
-export async function pinClip(userId: string, clipId: string, pinned: boolean): Promise<void> {
+export async function pinClip(
+  userId: string,
+  clipId: string,
+  pinned: boolean,
+): Promise<void> {
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `users/${userId}/clips`);
 
     // Find the clip by id field
-    const clipQuery = query(clipsRef, orderByChild('id'), equalTo(clipId));
+    const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
 
     if (snapshot.exists()) {
@@ -388,7 +408,7 @@ export async function pinClip(userId: string, clipId: string, pinned: boolean): 
       log.warn(`Clip not found for pinning`, { userId, clipId });
     }
   } catch (error) {
-    log.error('Failed to update clip pin status', error);
+    log.error("Failed to update clip pin status", error);
     throw error;
   }
 }
@@ -400,7 +420,11 @@ export async function addDevice(userId: string): Promise<void> {
     const platform = os.platform();
 
     const deviceRef = ref(db, `users/${userId}/devices/`);
-    const deviceQuery = query(deviceRef, orderByChild('deviceName'), equalTo(deviceName));
+    const deviceQuery = query(
+      deviceRef,
+      orderByChild("deviceName"),
+      equalTo(deviceName),
+    );
     const device = await get(deviceQuery);
 
     if (device.exists()) {
@@ -411,9 +435,9 @@ export async function addDevice(userId: string): Promise<void> {
       await update(specificDeviceRef, {
         deviceName,
         platform,
-        lastActive: new Date().toISOString()
+        lastActive: new Date().toISOString(),
       });
-      log.debug('Device updated', { userId, deviceName, deviceKey });
+      log.debug("Device updated", { userId, deviceName, deviceKey });
       return;
     }
 
@@ -423,41 +447,47 @@ export async function addDevice(userId: string): Promise<void> {
       id: uuidv4(),
       deviceName,
       platform,
-      lastActive: new Date().toISOString()
+      lastActive: new Date().toISOString(),
     });
-    log.info('New device registered', { userId, deviceName, platform });
+    log.info("New device registered", { userId, deviceName, platform });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log.error('Error managing device registration:', errorMessage);
+    log.error("Error managing device registration:", errorMessage);
     throw new Error(errorMessage);
   }
 }
 
-export async function removeDevice(userId: string, deviceKey: string): Promise<void> {
+export async function removeDevice(
+  userId: string,
+  deviceKey: string,
+): Promise<void> {
   try {
     const db = getDatabase();
     const deviceRef = ref(db, `users/${userId}/devices/${deviceKey}`);
     await remove(deviceRef);
   } catch (error) {
-    log.error('Failed to remove device', error);
+    log.error("Failed to remove device", error);
   }
 }
 
-export function listenDeviceStatus(userId: string, onDeviceRemoved: () => void): () => void {
+export function listenDeviceStatus(
+  userId: string,
+  onDeviceRemoved: () => void,
+): () => void {
   try {
     const db = getDatabase();
     const deviceName = os.hostname();
     const devicesRef = ref(db, `users/${userId}/devices/`);
 
-    log.debug('Setting up device status listener', { userId, deviceName });
+    log.debug("Setting up device status listener", { userId, deviceName });
 
     const unsubscribe = onChildRemoved(devicesRef, (snapshot) => {
       const deviceData = snapshot.val();
       if (deviceData && deviceData.deviceName === deviceName) {
         // Device record removed
-        log.warn('Device record removed from Firebase, triggering logout', {
+        log.warn("Device record removed from Firebase, triggering logout", {
           userId,
-          deviceName
+          deviceName,
         });
         onDeviceRemoved();
       }
@@ -465,7 +495,7 @@ export function listenDeviceStatus(userId: string, onDeviceRemoved: () => void):
 
     return unsubscribe;
   } catch (error) {
-    log.error('Failed to set up device status listener', error);
+    log.error("Failed to set up device status listener", error);
     return () => {};
   }
 }
@@ -475,7 +505,7 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
-      log.warn('No user is currently authenticated');
+      log.warn("No user is currently authenticated");
       return null;
     }
     const db = getDatabase();
@@ -483,14 +513,14 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
     const devices = await get(deviceRef);
 
     if (devices.exists()) {
-      log.debug('Devices found', devices.val());
+      log.debug("Devices found", devices.val());
       return devices.val();
     } else {
-      log.debug('No device found');
+      log.debug("No device found");
       return null;
     }
   } catch (error) {
-    log.error('Failed to get device data', error);
+    log.error("Failed to get device data", error);
     return null;
   }
 }
@@ -504,7 +534,7 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
 export async function saveEncryptionMetadata(
   uid: string,
   salt: string,
-  wrappedKey: string
+  wrappedKey: string,
 ): Promise<void> {
   try {
     const db = getDatabase();
@@ -512,11 +542,11 @@ export async function saveEncryptionMetadata(
     await set(refPath, {
       salt,
       wrappedKey,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
-    log.info('Encryption metadata saved to Firebase');
+    log.info("Encryption metadata saved to Firebase");
   } catch (error) {
-    log.error('Failed to save encryption metadata', error);
+    log.error("Failed to save encryption metadata", error);
   }
 }
 
@@ -525,7 +555,7 @@ export async function saveEncryptionMetadata(
  * @param uid User ID
  */
 export async function getEncryptionMetadata(
-  uid: string
+  uid: string,
 ): Promise<{ salt: string; wrappedKey: string } | null> {
   try {
     const db = getDatabase();
@@ -537,7 +567,7 @@ export async function getEncryptionMetadata(
     }
     return null;
   } catch (error) {
-    log.error('Failed to get encryption metadata', error);
+    log.error("Failed to get encryption metadata", error);
     return null;
   }
 }
@@ -551,9 +581,9 @@ export async function wipeUserClips(userId: string): Promise<void> {
     const db = getDatabase();
     const clipsRef = ref(db, `users/${userId}/clips`);
     await remove(clipsRef);
-    log.info('Successfully wiped all clips for user', { userId });
+    log.info("Successfully wiped all clips for user", { userId });
   } catch (error) {
-    log.error('Failed to wipe user clips', error);
+    log.error("Failed to wipe user clips", error);
     throw error;
   }
 }
@@ -567,9 +597,9 @@ export async function wipeUserDevices(userId: string): Promise<void> {
     const db = getDatabase();
     const devicesRef = ref(db, `users/${userId}/devices`);
     await remove(devicesRef);
-    log.info('Successfully wiped all devices for user', { userId });
+    log.info("Successfully wiped all devices for user", { userId });
   } catch (error) {
-    log.error('Failed to wipe user devices', error);
+    log.error("Failed to wipe user devices", error);
     throw error;
   }
 }
@@ -583,9 +613,9 @@ export async function wipeEncryptionMetadata(userId: string): Promise<void> {
     const db = getDatabase();
     const encryptionRef = ref(db, `users/${userId}/encryption`);
     await remove(encryptionRef);
-    log.info('Successfully wiped encryption metadata for user', { userId });
+    log.info("Successfully wiped encryption metadata for user", { userId });
   } catch (error) {
-    log.error('Failed to wipe encryption metadata', error);
+    log.error("Failed to wipe encryption metadata", error);
     throw error;
   }
 }

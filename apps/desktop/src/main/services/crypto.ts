@@ -1,13 +1,18 @@
-import { createCipheriv, createDecipheriv, pbkdf2Sync, randomBytes } from 'node:crypto';
-import log from 'electron-log/main';
+import {
+  createCipheriv,
+  createDecipheriv,
+  pbkdf2Sync,
+  randomBytes,
+} from "node:crypto";
+import log from "electron-log/main";
 
 // Constants for encryption
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 12; // 96 bits (standard for GCM)
 const SALT_LENGTH = 16;
 const PBKDF2_ITERATIONS = 100000;
-const PBKDF2_DIGEST = 'sha256';
+const PBKDF2_DIGEST = "sha256";
 
 // Singleton to hold the active Data Encryption Key (DEK) in memory
 let activeDEK: Buffer | null = null;
@@ -23,7 +28,7 @@ export function generateDEK(): Buffer {
  * Generates a random 16-byte Salt
  */
 export function generateSalt(): string {
-  return randomBytes(SALT_LENGTH).toString('hex');
+  return randomBytes(SALT_LENGTH).toString("hex");
 }
 
 /**
@@ -32,10 +37,10 @@ export function generateSalt(): string {
 export function deriveKEK(password: string, saltHex: string): Buffer {
   return pbkdf2Sync(
     password,
-    Buffer.from(saltHex, 'hex'),
+    Buffer.from(saltHex, "hex"),
     PBKDF2_ITERATIONS,
     KEY_LENGTH,
-    PBKDF2_DIGEST
+    PBKDF2_DIGEST,
   );
 }
 
@@ -48,16 +53,16 @@ export function encrypt(text: string, key: Buffer): string {
     const iv = randomBytes(IV_LENGTH);
     const cipher = createCipheriv(ALGORITHM, key, iv);
 
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    let encrypted = cipher.update(text, "utf8", "hex");
+    encrypted += cipher.final("hex");
 
     const authTag = cipher.getAuthTag();
 
     // Return format: IV:Tag:Ciphertext
-    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
   } catch (error) {
-    log.error('Encryption failed:', error);
-    throw new Error('Encryption failed');
+    log.error("Encryption failed:", error);
+    throw new Error("Encryption failed");
   }
 }
 
@@ -67,25 +72,25 @@ export function encrypt(text: string, key: Buffer): string {
  */
 export function decrypt(encryptedText: string, key: Buffer): string {
   try {
-    const parts = encryptedText.split(':');
+    const parts = encryptedText.split(":");
     if (parts.length !== 3) {
-      throw new Error('Invalid encrypted data format');
+      throw new Error("Invalid encrypted data format");
     }
 
     const [ivHex, authTagHex, encryptedHex] = parts;
 
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
+    const iv = Buffer.from(ivHex, "hex");
+    const authTag = Buffer.from(authTagHex, "hex");
     const decipher = createDecipheriv(ALGORITHM, key, iv);
 
     decipher.setAuthTag(authTag);
 
-    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(encryptedHex, "hex", "utf8");
+    decrypted += decipher.final("utf8");
 
     return decrypted;
   } catch (error) {
-    log.debug('Decryption failed:', error);
+    log.debug("Decryption failed:", error);
     // Return original text or empty string on failure?
     // For security, we should throw, but for UX we might want to handle gracefully.
     // Throwing ensures we don't accidentally treat ciphertext as plaintext.
@@ -103,7 +108,7 @@ export function wrapKey(dek: Buffer, kek: Buffer): string {
   // Let's write a buffer-specific encrypt/decrypt if needed, or just hex encode the DEK first.
 
   // Simplest: DEK -> Hex String -> Encrypt(KEK)
-  return encrypt(dek.toString('hex'), kek);
+  return encrypt(dek.toString("hex"), kek);
 }
 
 /**
@@ -111,7 +116,7 @@ export function wrapKey(dek: Buffer, kek: Buffer): string {
  */
 export function unwrapKey(wrappedDEK: string, kek: Buffer): Buffer {
   const dekHex = decrypt(wrappedDEK, kek);
-  return Buffer.from(dekHex, 'hex');
+  return Buffer.from(dekHex, "hex");
 }
 
 /**
@@ -122,7 +127,7 @@ export function setActiveDEK(key: Buffer) {
     throw new Error(`Invalid key length. Expected ${KEY_LENGTH} bytes.`);
   }
   activeDEK = key;
-  log.info('Active encryption key set in memory');
+  log.info("Active encryption key set in memory");
 }
 
 /**
@@ -131,7 +136,7 @@ export function setActiveDEK(key: Buffer) {
  */
 export function getActiveDEK(): Buffer {
   if (!activeDEK) {
-    throw new Error('Encryption key not initialized. User must login first.');
+    throw new Error("Encryption key not initialized. User must login first.");
   }
   return activeDEK;
 }

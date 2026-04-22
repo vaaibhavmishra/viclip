@@ -1,6 +1,6 @@
-import { cn } from '@renderer/lib/utils';
-import { Progress as ProgressPrimitive } from 'radix-ui';
-import type * as React from 'react';
+import { cn } from "@renderer/lib/utils";
+import { Progress as ProgressPrimitive } from "radix-ui";
+import type * as React from "react";
 
 function Progress({
   className,
@@ -11,8 +11,8 @@ function Progress({
     <ProgressPrimitive.Root
       data-slot="progress"
       className={cn(
-        'bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden',
-        className
+        "bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden",
+        className,
       )}
       {...props}
     >

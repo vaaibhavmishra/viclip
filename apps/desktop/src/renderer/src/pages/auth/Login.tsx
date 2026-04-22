@@ -1,30 +1,30 @@
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
-import type React from 'react';
-import { useState } from 'react';
+import { Button } from "@renderer/components/ui/button";
+import { Input } from "@renderer/components/ui/input";
+import { Label } from "@renderer/components/ui/label";
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [resetMessage, setResetMessage] = useState('');
+  const [error, setError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setError('');
-    setResetMessage('');
+    setError("");
+    setResetMessage("");
 
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
@@ -32,14 +32,18 @@ export const Login: React.FC = () => {
     try {
       await window.api.loginUser(email, password);
     } catch (err: unknown) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       const errorMessage =
-        err instanceof Error ? err.message : 'Invalid email or password. Please try again.';
+        err instanceof Error
+          ? err.message
+          : "Invalid email or password. Please try again.";
 
-      if (errorMessage.includes('invalid-credential')) {
-        setError('Invalid email or password.');
+      if (errorMessage.includes("invalid-credential")) {
+        setError("Invalid email or password.");
       } else {
-        setError(errorMessage || 'Invalid email or password. Please try again.');
+        setError(
+          errorMessage || "Invalid email or password. Please try again.",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -48,20 +52,22 @@ export const Login: React.FC = () => {
 
   const handleForgotPassword = async (): Promise<void> => {
     if (!email.trim()) {
-      setError('Please enter your email address in the field above to reset your password.');
+      setError(
+        "Please enter your email address in the field above to reset your password.",
+      );
       return;
     }
-    setError('');
-    setResetMessage('');
+    setError("");
+    setResetMessage("");
     setIsLoading(true);
     try {
       await window.api.resetPassword(email.trim());
       setResetMessage(
-        'Check your email to reset your password. Note: Upon resetting and logging in, your existing clips, devices, and encryption data will be securely deleted.'
+        "Check your email to reset your password. Note: Upon resetting and logging in, your existing clips, devices, and encryption data will be securely deleted.",
       );
     } catch (err: unknown) {
-      console.error('Forgot password error:', err);
-      setError('Failed to send reset email. Please try again.');
+      console.error("Forgot password error:", err);
+      setError("Failed to send reset email. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +104,7 @@ export const Login: React.FC = () => {
             <LockIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your secure password"
@@ -111,7 +117,11 @@ export const Login: React.FC = () => {
               className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-transparent"
               onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+              {showPassword ? (
+                <EyeOffIcon className="h-4 w-4" />
+              ) : (
+                <EyeIcon className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -156,21 +166,23 @@ export const Login: React.FC = () => {
       </form>
 
       <div className="flex flex-col justify-center text-xs text-center mt-10 text-muted-foreground gap-1">
-        By signing in, you agree to our{' '}
+        By signing in, you agree to our{" "}
         <div>
-          <span
-            className="underline cursor-pointer hover:text-primary"
-            onClick={() => window.api.openURL('https://viclip.com/terms')}
+          <button
+            type="button"
+            className="underline cursor-pointer hover:text-primary focus:outline-none"
+            onClick={() => window.api.openURL("https://viclip.com/terms")}
           >
             Terms of Service
-          </span>{' '}
-          and{' '}
-          <span
-            className="underline cursor-pointer hover:text-primary"
-            onClick={() => window.api.openURL('https://viclip.com/privacy')}
+          </button>{" "}
+          and{" "}
+          <button
+            type="button"
+            className="underline cursor-pointer hover:text-primary focus:outline-none"
+            onClick={() => window.api.openURL("https://viclip.com/privacy")}
           >
             Privacy Policy
-          </span>
+          </button>
         </div>
       </div>
     </>

@@ -5,36 +5,45 @@
  * and Firebase, allowing clipboard content to be shared across devices.
  */
 
-import os from 'node:os';
-import type { ClipboardConfig, ClipboardSyncState, ClipData } from '@shared/types/clipboard';
-import { clipboard, dialog } from 'electron';
-import log from 'electron-log/main';
-import { getAuth } from 'firebase/auth';
-import { getCachedClips, getMainWindow, setCachedClips } from '../globalStates';
-import { showNotification } from '../modules/notification';
-import { detectClipboardType } from '../utils/utils';
-import { decrypt, encrypt, getActiveDEK, isKeyLoaded } from './crypto';
-import { addClip, enforceClipLimit, getClips, listenClips, updateClip } from './firebase';
-import { captureException } from './sentry';
+import os from "node:os";
+import type {
+  ClipboardConfig,
+  ClipboardSyncState,
+  ClipData,
+} from "@shared/types/clipboard";
+import { clipboard, dialog } from "electron";
+import log from "electron-log/main";
+import { getAuth } from "firebase/auth";
+import { getCachedClips, getMainWindow, setCachedClips } from "../globalStates";
+import { showNotification } from "../modules/notification";
+import { detectClipboardType } from "../utils/utils";
+import { decrypt, encrypt, getActiveDEK, isKeyLoaded } from "./crypto";
+import {
+  addClip,
+  enforceClipLimit,
+  getClips,
+  listenClips,
+  updateClip,
+} from "./firebase";
 
 // Configuration constants
 const SYNC_CONFIG: ClipboardConfig = {
   syncIntervalMs: 1000, // How often to check for clipboard changes
   updateCooldownMs: 2000, // Delay to prevent rapid consecutive updates (must exceed syncIntervalMs)
-  maxContentLength: 10000 // Maximum content length for clipboard data
+  maxContentLength: 10000, // Maximum content length for clipboard data
 };
 
 // State variables with typed interface
 const syncState: ClipboardSyncState = {
   isActive: false,
   isUpdatingFromFirebase: false,
-  isFirebaseUpdating: false
+  isFirebaseUpdating: false,
 };
 
 // Additional typed state variables
 let clipboardInterval: NodeJS.Timeout | null = null;
 let unsubscribeFirebase: (() => void) | null = null;
-let lastText = '';
+let lastText = "";
 
 /**
  * Writes content to the clipboard and updates the local state
@@ -43,13 +52,15 @@ let lastText = '';
 export function writeToClipboard(content: string): void {
   clipboard.writeText(content);
   lastText = content;
-  log.debug('Programmatically wrote to clipboard, updated lastText to prevent loop');
+  log.debug(
+    "Programmatically wrote to clipboard, updated lastText to prevent loop",
+  );
 }
 
 function startWatchers(userId: string): void {
   lastText = clipboard.readText();
   // const lastImage = clipboard.readImage(); // TODO: Image logic paused
-  log.debug('Starting clipboard watchers', { userId });
+  log.debug("Starting clipboard watchers", { userId });
 
   // Monitor local clipboard changes to send to Firebase
   clipboardInterval = setInterval(() => {
@@ -65,23 +76,23 @@ function startWatchers(userId: string): void {
         const contentType = detectClipboardType(currentText, formats);
 
         if (
-          contentType === 'text' ||
-          contentType === 'url' ||
-          contentType === 'text-formatted' ||
-          contentType === 'email' ||
-          contentType === 'color'
+          contentType === "text" ||
+          contentType === "url" ||
+          contentType === "text-formatted" ||
+          contentType === "email" ||
+          contentType === "color"
         ) {
           // Check content length to avoid excessive data transfers
           if (currentText.length > SYNC_CONFIG.maxContentLength) {
-            log.warn('Content exceeds maximum size limit, skipping sync', {
+            log.warn("Content exceeds maximum size limit, skipping sync", {
               contentLength: currentText.length,
-              maxLength: SYNC_CONFIG.maxContentLength
+              maxLength: SYNC_CONFIG.maxContentLength,
             });
             dialog.showMessageBox({
-              type: 'warning',
-              title: 'Clipboard Sync Warning',
-              message: 'Clipboard content is too large to sync.',
-              detail: `The content length is ${currentText.length} characters, which exceeds the limit of ${SYNC_CONFIG.maxContentLength} characters.`
+              type: "warning",
+              title: "Clipboard Sync Warning",
+              message: "Clipboard content is too large to sync.",
+              detail: `The content length is ${currentText.length} characters, which exceeds the limit of ${SYNC_CONFIG.maxContentLength} characters.`,
             });
             lastText = currentText;
             return;
@@ -89,7 +100,7 @@ function startWatchers(userId: string): void {
 
           log.debug(`Local clipboard changed, sending to Firebase`, {
             contentType,
-            contentLength: currentText.length
+            contentLength: currentText.length,
           });
 
           // Set flags to prevent update loops
@@ -108,14 +119,16 @@ function startWatchers(userId: string): void {
                   const dek = getActiveDEK();
                   // Encrypt content before upload
                   contentToSend = encrypt(currentText, dek);
-                  log.debug('Content encrypted successfully before upload');
+                  log.debug("Content encrypted successfully before upload");
                 } else {
                   // In strict Zero-Trust, we should NOT upload if key is missing
                   // But for robustness, we might retry or fail
-                  throw new Error('Encryption key not loaded. Cannot sync securely.');
+                  throw new Error(
+                    "Encryption key not loaded. Cannot sync securely.",
+                  );
                 }
               } catch (cryptoError) {
-                log.error('Encryption failed, aborting sync', cryptoError);
+                log.error("Encryption failed, aborting sync", cryptoError);
                 return;
               }
 
@@ -127,7 +140,8 @@ function startWatchers(userId: string): void {
 
               if (cachedClips) {
                 const existingClip = Object.values(cachedClips).find(
-                  (clip: ClipData) => clip.content === currentText && clip.type === contentType
+                  (clip: ClipData) =>
+                    clip.content === currentText && clip.type === contentType,
                 );
                 if (existingClip) {
                   duplicateClipId = existingClip.id;
@@ -135,22 +149,19 @@ function startWatchers(userId: string): void {
               }
 
               if (duplicateClipId) {
-                log.debug('Duplicate clip found, updating timestamp');
+                log.debug("Duplicate clip found, updating timestamp");
 
                 await updateClip(userId, duplicateClipId, {
                   timestamp: new Date().toISOString(),
-                  sourceDevice: os.hostname()
+                  sourceDevice: os.hostname(),
                 });
               } else {
                 // Send to Firebase with error handling
                 await addClip(userId, contentToSend, contentType);
               }
-              log.debug('Data sync completed successfully');
+              log.debug("Data sync completed successfully");
             } catch (error) {
-              log.error('Error syncing clipboard to Firebase', error);
-              captureException(error as Error, {
-                message: 'Error syncing clipboard to Firebase'
-              });
+              log.error("Error syncing clipboard to Firebase", error);
             } finally {
               // Reset flag after short delay
               setTimeout(() => {
@@ -187,10 +198,7 @@ function startWatchers(userId: string): void {
         }
       }
     } catch (error) {
-      log.error('Error processing clipboard changes', error);
-      captureException(error as Error, {
-        message: 'Error processing clipboard changes'
-      });
+      log.error("Error processing clipboard changes", error);
     }
   }, SYNC_CONFIG.syncIntervalMs);
 
@@ -202,7 +210,7 @@ function startWatchers(userId: string): void {
       try {
         const decryptedClips = decryptClips(clips);
         setCachedClips(decryptedClips);
-        getMainWindow()?.webContents.send('clips-updated', decryptedClips);
+        getMainWindow()?.webContents.send("clips-updated", decryptedClips);
 
         const clipArray = Object.values(clips);
         if (clipArray.length === 0) return;
@@ -210,7 +218,8 @@ function startWatchers(userId: string): void {
         // Sort by timestamp descending to find the true newest clip,
         // regardless of Firebase object key ordering.
         const newest = clipArray.sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         )[0];
 
         // Skip if we already processed this exact clip id (e.g. a
@@ -229,30 +238,33 @@ function startWatchers(userId: string): void {
         try {
           if (isKeyLoaded()) {
             decryptedContent = decrypt(newest.content, getActiveDEK());
-            log.debug('Incoming content decrypted successfully');
+            log.debug("Incoming content decrypted successfully");
           } else {
             log.warn(
-              'Encryption key not loaded while receiving data. Content may remain encrypted.'
+              "Encryption key not loaded while receiving data. Content may remain encrypted.",
             );
           }
         } catch (err) {
-          log.warn('Decryption failed (possibly legacy plaintext):', err);
+          log.warn("Decryption failed (possibly legacy plaintext):", err);
         }
         // DECRYPTION END
 
         if (decryptedContent !== lastText && !syncState.isFirebaseUpdating) {
           lastProcessedClipId = newest.id;
 
-          log.debug('New clip data received from Firebase', {
+          log.debug("New clip data received from Firebase", {
             contentLength: newest.content?.length || 0,
             type: newest.type,
-            sourceDevice: newest.sourceDevice
+            sourceDevice: newest.sourceDevice,
           });
 
-          if (newest.type === 'image') {
+          if (newest.type === "image") {
             // Image logic skipped for now
           } else {
-            showNotification('Clipboard Sync', `New clip received from ${newest.sourceDevice}`);
+            showNotification(
+              "Clipboard Sync",
+              `New clip received from ${newest.sourceDevice}`,
+            );
             // Write to local clipboard with loop-prevention
             syncState.isUpdatingFromFirebase = true;
             writeToClipboard(decryptedContent); // updates lastText atomically
@@ -262,17 +274,11 @@ function startWatchers(userId: string): void {
           }
         }
       } catch (error) {
-        log.error('Error processing incoming clipboard data', error);
-        captureException(error as Error, {
-          message: 'Error processing incoming clipboard data'
-        });
+        log.error("Error processing incoming clipboard data", error);
       }
     });
   } catch (error) {
-    log.error('Failed to subscribe to remote clipboard changes', error);
-    captureException(error as Error, {
-      message: 'Failed to subscribe to remote clipboard changes'
-    });
+    log.error("Failed to subscribe to remote clipboard changes", error);
     unsubscribeFirebase = null;
   }
 }
@@ -282,7 +288,7 @@ function startWatchers(userId: string): void {
  * Called when user logs out or app is shutting down.
  */
 function stopWatchers(): void {
-  log.debug('Stopping clipboard watchers');
+  log.debug("Stopping clipboard watchers");
 
   // Clear clipboard polling interval
   if (clipboardInterval) {
@@ -310,26 +316,23 @@ function stopWatchers(): void {
 export function startClipboardSync(): boolean {
   try {
     if (syncState.isActive) {
-      log.debug('Clipboard sync already active');
+      log.debug("Clipboard sync already active");
       return true;
     }
 
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      log.info('Starting clipboard sync for user', { userId: user.uid });
+      log.info("Starting clipboard sync for user", { userId: user.uid });
       startWatchers(user.uid);
       syncState.isActive = true;
       return true;
     } else {
-      log.info('No user logged in, clipboard sync not started');
+      log.info("No user logged in, clipboard sync not started");
       return false;
     }
   } catch (error) {
-    log.error('Failed to start clipboard sync', error);
-    captureException(error as Error, {
-      message: 'Failed to start clipboard sync'
-    });
+    log.error("Failed to start clipboard sync", error);
     return false;
   }
 }
@@ -353,9 +356,11 @@ export function isClipboardSyncActive(): boolean {
  * Decrypts a record of clips.
  * Useful for processing batch data from Firebase.
  */
-function decryptClips(clips: Record<string, ClipData>): Record<string, ClipData> {
+function decryptClips(
+  clips: Record<string, ClipData>,
+): Record<string, ClipData> {
   if (!isKeyLoaded()) {
-    log.warn('Cannot decrypt clips: Encryption key not loaded');
+    log.warn("Cannot decrypt clips: Encryption key not loaded");
     return clips; // Return encrypted clips if key is missing (or handle differently?)
   }
 
@@ -382,7 +387,10 @@ function decryptClips(clips: Record<string, ClipData>): Record<string, ClipData>
 /**
  * Fetches clips from Firebase and ensures they are decrypted.
  */
-export async function getDecryptedClips(): Promise<Record<string, ClipData> | null> {
+export async function getDecryptedClips(): Promise<Record<
+  string,
+  ClipData
+> | null> {
   const clips = await getClips();
   if (!clips) return null;
 

@@ -1,13 +1,20 @@
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { EyeIcon, EyeOffIcon, InfoIcon, LockIcon, MailIcon, UserIcon } from 'lucide-react';
-import type React from 'react';
-import { useState } from 'react';
+import { Button } from "@renderer/components/ui/button";
+import { Input } from "@renderer/components/ui/input";
+import { Label } from "@renderer/components/ui/label";
+import {
+  EyeIcon,
+  EyeOffIcon,
+  InfoIcon,
+  LockIcon,
+  MailIcon,
+  UserIcon,
+} from "lucide-react";
+import type React from "react";
+import { useState } from "react";
 
 const validatePasswordStrength = (password: string): string | null => {
   if (password.length < 12) {
-    return 'Password must be at least 12 characters long';
+    return "Password must be at least 12 characters long";
   }
 
   const hasUpperCase = /[A-Z]/.test(password);
@@ -15,48 +22,51 @@ const validatePasswordStrength = (password: string): string | null => {
   const hasNumbers = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 
-  const criteriaMet = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(
-    Boolean
-  ).length;
+  const criteriaMet = [
+    hasUpperCase,
+    hasLowerCase,
+    hasNumbers,
+    hasSpecialChar,
+  ].filter(Boolean).length;
 
   if (criteriaMet < 4) {
-    return 'Password must contain an uppercase letter, a lowercase letter, a number, and a special character';
+    return "Password must contain an uppercase letter, a lowercase letter, a number, and a special character";
   }
 
   return null;
 };
 
 export const SignUp: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
     if (!username.trim()) {
-      setError('Username is required');
+      setError("Username is required");
       return;
     }
 
     if (username.trim().length < 3) {
-      setError('Username must be at least 3 characters long');
+      setError("Username must be at least 3 characters long");
       return;
     }
 
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
@@ -67,7 +77,7 @@ export const SignUp: React.FC = () => {
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -78,12 +88,14 @@ export const SignUp: React.FC = () => {
       // Handle successful signup
       // Main process will handle window switch
     } catch (err: unknown) {
-      console.error('Signup error:', err);
+      console.error("Signup error:", err);
       const error = err as { message?: string };
-      if (error?.message?.includes('already-in-use')) {
-        setError('This email is already associated with an account.');
+      if (error?.message?.includes("already-in-use")) {
+        setError("This email is already associated with an account.");
       } else {
-        setError(error?.message || 'Failed to create account. Please try again.');
+        setError(
+          error?.message || "Failed to create account. Please try again.",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -164,7 +176,7 @@ export const SignUp: React.FC = () => {
               <LockIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create password (12+ characters)"
@@ -195,7 +207,7 @@ export const SignUp: React.FC = () => {
               <LockIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
@@ -239,21 +251,23 @@ export const SignUp: React.FC = () => {
         )}
       </form>
       <div className="flex flex-col justify-center text-xs text-center mt-6 text-muted-foreground gap-1">
-        By creating an account, you agree to our{' '}
+        By creating an account, you agree to our{" "}
         <div>
-          <span
-            className="underline cursor-pointer hover:text-primary"
-            onClick={() => window.api.openURL('https://viclip.com/terms')}
+          <button
+            type="button"
+            className="underline cursor-pointer hover:text-primary focus:outline-none"
+            onClick={() => window.api.openURL("https://viclip.com/terms")}
           >
             Terms of Service
-          </span>{' '}
-          and{' '}
-          <span
-            className="underline cursor-pointer hover:text-primary"
-            onClick={() => window.api.openURL('https://viclip.com/privacy')}
+          </button>{" "}
+          and{" "}
+          <button
+            type="button"
+            className="underline cursor-pointer hover:text-primary focus:outline-none"
+            onClick={() => window.api.openURL("https://viclip.com/privacy")}
           >
             Privacy Policy
-          </span>
+          </button>
         </div>
       </div>
     </>

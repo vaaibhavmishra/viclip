@@ -1,46 +1,51 @@
-import Autoplay from 'embla-carousel-autoplay';
-import { ClipboardList, KeyboardIcon, ShieldCheck, Zap } from 'lucide-react';
-import { useRef } from 'react';
-import icon from '../../assets/Icon.png';
-import { Card, CardContent } from '../../components/ui/card';
+import Autoplay from "embla-carousel-autoplay";
+import { ClipboardList, KeyboardIcon, ShieldCheck, Zap } from "lucide-react";
+import { useRef } from "react";
+import icon from "../../assets/Icon.png";
+import { Card, CardContent } from "../../components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
-  CarouselPrevious
-} from '../../components/ui/carousel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Login } from './Login';
-import { SignUp } from './SignUp';
+  CarouselPrevious,
+} from "../../components/ui/carousel";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { Login } from "./Login";
+import { SignUp } from "./SignUp";
 
 export const AuthPage = () => {
   const plugin = useRef(Autoplay({ delay: 4000, stopOnInteraction: true }));
 
   const features = [
     {
-      title: 'Universal Sync',
+      title: "Universal Sync",
       description:
-        'Instantly sync your clipboard across all your devices. Copy on one, paste on another.',
-      icon: Zap
+        "Instantly sync your clipboard across all your devices. Copy on one, paste on another.",
+      icon: Zap,
     },
     {
-      title: 'Secure & Private',
+      title: "Secure & Private",
       description:
-        'Your data is encrypted end-to-end. We prioritize your privacy and security above all.',
-      icon: ShieldCheck
+        "Your data is encrypted end-to-end. We prioritize your privacy and security above all.",
+      icon: ShieldCheck,
     },
     {
-      title: 'History Manager',
+      title: "History Manager",
       description:
-        'Access your clipboard history anytime. Search, filter, and manage your clips with ease.',
-      icon: ClipboardList
+        "Access your clipboard history anytime. Search, filter, and manage your clips with ease.",
+      icon: ClipboardList,
     },
     {
-      title: 'Full Keyboard Control',
-      description: 'Controll the full app with keyboard shortcuts.',
-      icon: KeyboardIcon
-    }
+      title: "Full Keyboard Control",
+      description: "Controll the full app with keyboard shortcuts.",
+      icon: KeyboardIcon,
+    },
   ];
 
   return (
@@ -84,12 +89,17 @@ export const AuthPage = () => {
             <CarouselNext />
           </Carousel>
         </div>
-        <div className="absolute bottom-8 text-xs text-muted-foreground/50 font-mono">v2.0.0</div>
+        <div className="absolute bottom-8 text-xs text-muted-foreground/50 font-mono">
+          v2.0.0
+        </div>
       </div>
 
       {/* Right Side - Forms */}
       <div className="w-1/2 h-full flex flex-col p-8 overflow-y-auto">
-        <Tabs defaultValue="login" className="w-full max-w-md mx-auto space-y-6">
+        <Tabs
+          defaultValue="login"
+          className="w-full max-w-md mx-auto space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-2 bg-transparent border">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>

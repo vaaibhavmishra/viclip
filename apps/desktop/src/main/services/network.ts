@@ -1,5 +1,5 @@
-import { net } from 'electron';
-import log from 'electron-log/main';
+import { net } from "electron";
+import log from "electron-log/main";
 
 // Track network check timeout globally to ensure it can be cleaned up
 let networkCheckTimeout: NodeJS.Timeout | null = null;
@@ -23,27 +23,27 @@ export function startNetworkMonitoring(options: NetworkMonitorOptions): void {
     initialDelay = 5000,
     baseInterval = 5000,
     maxInterval = 60000,
-    backoffMultiplier = 1.5
+    backoffMultiplier = 1.5,
   } = options;
 
   // Don't start monitoring if already monitoring
   if (isMonitoring) {
-    log.debug('Network monitoring already active');
+    log.debug("Network monitoring already active");
     return;
   }
 
   isMonitoring = true;
-  log.debug('Starting network monitoring');
+  log.debug("Starting network monitoring");
 
   // First check if we're already online
   if (net.isOnline()) {
-    log.debug('Network is already online at startup');
+    log.debug("Network is already online at startup");
     handleOnlineState(onOnline);
     return;
   }
 
   // Start monitoring with progressive backoff
-  log.debug('Network offline at startup, will check periodically');
+  log.debug("Network offline at startup, will check periodically");
 
   let attemptCount = 0;
   const checkNetwork = (): void => {
@@ -60,7 +60,10 @@ export function startNetworkMonitoring(options: NetworkMonitorOptions): void {
       attemptCount++;
 
       // Calculate next interval with exponential backoff
-      const nextInterval = Math.min(baseInterval * backoffMultiplier ** attemptCount, maxInterval);
+      const nextInterval = Math.min(
+        baseInterval * backoffMultiplier ** attemptCount,
+        maxInterval,
+      );
 
       // Clear the previous timeout and set a new one
       cleanupNetworkCheck();
@@ -68,7 +71,9 @@ export function startNetworkMonitoring(options: NetworkMonitorOptions): void {
         checkNetwork();
       }, nextInterval);
 
-      log.debug(`Network still offline, next check in ${Math.round(nextInterval / 1000)}s`);
+      log.debug(
+        `Network still offline, next check in ${Math.round(nextInterval / 1000)}s`,
+      );
     }
   };
 
@@ -80,7 +85,7 @@ export function startNetworkMonitoring(options: NetworkMonitorOptions): void {
  * Stop network monitoring and cleanup resources
  */
 export function stopNetworkMonitoring(): void {
-  log.debug('Stopping network monitoring');
+  log.debug("Stopping network monitoring");
   isMonitoring = false;
   cleanupNetworkCheck();
 }
@@ -103,22 +108,22 @@ export function isOnline(): boolean {
  * Handle when network comes online
  */
 function handleOnlineState(onOnline: () => void | Promise<void>): void {
-  log.info('Network is online');
+  log.info("Network is online");
 
   // Stop monitoring since we're now online
   stopNetworkMonitoring();
 
   // Call the callback
-  if (typeof onOnline === 'function') {
+  if (typeof onOnline === "function") {
     try {
       const result = onOnline();
       if (result instanceof Promise) {
         result.catch((error: unknown) => {
-          log.error('Error in network online callback', error as Error);
+          log.error("Error in network online callback", error as Error);
         });
       }
     } catch (error) {
-      log.error('Error in network online callback', error as Error);
+      log.error("Error in network online callback", error as Error);
     }
   }
 }
@@ -130,6 +135,6 @@ function cleanupNetworkCheck(): void {
   if (networkCheckTimeout) {
     clearTimeout(networkCheckTimeout);
     networkCheckTimeout = null;
-    log.debug('Network check timeout cleared');
+    log.debug("Network check timeout cleared");
   }
 }

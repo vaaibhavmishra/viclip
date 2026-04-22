@@ -1,12 +1,19 @@
-import log from 'electron-log/main';
+import log from "electron-log/main";
 import {
   createUserWithEmailAndPassword,
   getAuth,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  updateProfile
-} from 'firebase/auth';
-import { deriveKEK, generateDEK, generateSalt, setActiveDEK, unwrapKey, wrapKey } from './crypto';
+  updateProfile,
+} from "firebase/auth";
+import {
+  deriveKEK,
+  generateDEK,
+  generateSalt,
+  setActiveDEK,
+  unwrapKey,
+  wrapKey,
+} from "./crypto";
 import {
   addDevice,
   addUserProfile,
@@ -14,17 +21,25 @@ import {
   saveEncryptionMetadata,
   wipeEncryptionMetadata,
   wipeUserClips,
-  wipeUserDevices
-} from './firebase';
-import { authStorage } from './secureStorage';
+  wipeUserDevices,
+} from "./firebase";
+import { authStorage } from "./secureStorage";
 
-export async function signupUser(email: string, username: string, password: string): Promise<void> {
+export async function signupUser(
+  email: string,
+  username: string,
+  password: string,
+): Promise<void> {
   const auth = getAuth();
   try {
     // 1. Create User in Firebase
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
     const uid = userCredential.user.uid;
-    log.info('User signed up:', uid);
+    log.info("User signed up:", uid);
 
     // 2. Generate Zero-Trust Encryption Keys
     const dek = generateDEK(); // Data Encryption Key (Random)
@@ -42,12 +57,12 @@ export async function signupUser(email: string, username: string, password: stri
 
     try {
       await updateProfile(userCredential.user, {
-        displayName: username
+        displayName: username,
       });
-      log.info('User profile updated:', uid);
+      log.info("User profile updated:", uid);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        log.error('Error updating user profile:', error.message);
+        log.error("Error updating user profile:", error.message);
       }
       // Non-critical, continue
     }
@@ -58,31 +73,40 @@ export async function signupUser(email: string, username: string, password: stri
     authStorage.saveCredentials(email, password);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      log.error('Error signing up:', error.message);
+      log.error("Error signing up:", error.message);
       throw new Error(error.message);
     }
   }
 }
 
-export async function loginUser(email: string, password: string): Promise<void> {
+export async function loginUser(
+  email: string,
+  password: string,
+): Promise<void> {
   const auth = getAuth();
   try {
     // 1. Authenticate with Firebase
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
     const uid = userCredential.user.uid;
-    log.info('User logged in:', uid);
+    log.info("User logged in:", uid);
 
     // 2. Retrieve Encryption Metadata
     const metadata = await getEncryptionMetadata(uid);
 
     if (!metadata) {
-      log.warn('No encryption metadata found for user. Is this a legacy account?');
+      log.warn(
+        "No encryption metadata found for user. Is this a legacy account?",
+      );
       // TODO: Handle legacy account migration or error
       // For now, we might want to generate keys if missing, but that means data loss for old data?
       // Since this is a new feature, we assume new users.
       // If missing, we could treat it as a fresh start logic or throw.
       // Let's generate new keys to be safe for now, or throw to prompt reset.
-      log.info('Generating new keys for user with missing metadata');
+      log.info("Generating new keys for user with missing metadata");
       const dek = generateDEK();
       const salt = generateSalt();
       const kek = deriveKEK(password, salt);
@@ -101,10 +125,10 @@ export async function loginUser(email: string, password: string): Promise<void> 
         // 4. Save/Activate Keys
         authStorage.saveMasterKey(dek);
         setActiveDEK(dek);
-        log.info('Encryption keys successfully loaded');
+        log.info("Encryption keys successfully loaded");
       } catch (_err) {
         log.warn(
-          'Failed to unwrap key. Password was likely reset. Wiping old data and regenerating keys.'
+          "Failed to unwrap key. Password was likely reset. Wiping old data and regenerating keys.",
         );
         // 4.a Password was reset and the old data can't be decrypted
         // Wipe existing data to start fresh
@@ -121,7 +145,7 @@ export async function loginUser(email: string, password: string): Promise<void> 
         await saveEncryptionMetadata(uid, newSalt, newWrappedKey);
         authStorage.saveMasterKey(dek);
         setActiveDEK(dek);
-        log.info('New encryption keys generated and saved after wipe');
+        log.info("New encryption keys generated and saved after wipe");
       }
     }
     await addDevice(uid);
@@ -129,7 +153,7 @@ export async function loginUser(email: string, password: string): Promise<void> 
     authStorage.saveCredentials(email, password);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      log.error('Error logging in:', error.message);
+      log.error("Error logging in:", error.message);
       throw new Error(error.message);
     }
   }
@@ -144,19 +168,19 @@ export function logoutUser(): void {
   auth
     .signOut()
     .then(() => {
-      log.info('User logged out');
+      log.info("User logged out");
     })
     .catch((error) => {
-      log.error('Error logging out:', error.message);
+      log.error("Error logging out:", error.message);
     });
 }
 
 export async function restoreAuthSession(): Promise<string | null> {
   try {
-    log.info('Attempting to restore auth session...');
+    log.info("Attempting to restore auth session...");
     const credentials = authStorage.getCredentials();
     if (!credentials) {
-      log.info('No stored credentials found');
+      log.info("No stored credentials found");
       return null;
     }
 
@@ -166,9 +190,9 @@ export async function restoreAuthSession(): Promise<string | null> {
 
     const auth = getAuth();
     const user = auth.currentUser;
-    return user?.displayName || user?.email || 'User';
+    return user?.displayName || user?.email || "User";
   } catch (error) {
-    log.error('Session restoration failed', error);
+    log.error("Session restoration failed", error);
     return null;
   }
 }
@@ -177,10 +201,10 @@ export async function resetPassword(email: string): Promise<void> {
   const auth = getAuth();
   try {
     await sendPasswordResetEmail(auth, email);
-    log.info('Password reset email sent to:', email);
+    log.info("Password reset email sent to:", email);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      log.error('Error sending password reset email:', error.message);
+      log.error("Error sending password reset email:", error.message);
       throw new Error(error.message);
     }
   }

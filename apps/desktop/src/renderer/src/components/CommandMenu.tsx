@@ -5,10 +5,10 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator
-} from '@renderer/components/ui/command';
-import { Pin, Trash, Trash2 } from 'lucide-react';
-import type React from 'react';
+  CommandSeparator,
+} from "@renderer/components/ui/command";
+import { Pin, Trash, Trash2 } from "lucide-react";
+import type React from "react";
 
 interface CommandMenuProps {
   open: boolean;
@@ -22,7 +22,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   open,
   onOpenChange,
   selectedClipId,
-  isPinned = false
+  isPinned = false,
 }) => {
   const handlePin = async () => {
     if (selectedClipId) {
@@ -64,7 +64,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
         <CommandGroup heading="Actions">
           <CommandItem onSelect={handlePin} disabled={!selectedClipId}>
             <Pin className="mr-2 h-4 w-4" />
-            <span>{isPinned ? 'Unpin Clip' : 'Pin Clip'}</span>
+            <span>{isPinned ? "Unpin Clip" : "Pin Clip"}</span>
             {/* <CommandShortcut>⌘P</CommandShortcut> */}
           </CommandItem>
         </CommandGroup>

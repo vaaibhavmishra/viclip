@@ -1,25 +1,25 @@
-import { globalShortcut } from 'electron';
-import log from 'electron-log/main';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getMainWindow } from '../globalStates';
+import { globalShortcut } from "electron";
+import log from "electron-log/main";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getMainWindow } from "../globalStates";
 import {
   closeAuthWindow,
   closeMainWindow,
   closeSettingsWindow,
   createAuthWindow,
-  createMainWindow
-} from '../modules/window';
-import { logoutUser, restoreAuthSession } from './auth';
-import { startClipboardSync, stopClipboardSync } from './clipboard';
-import { listenDeviceStatus } from './firebase';
-import { startNetworkMonitoring } from './network';
-import { settingsStorage } from './settings';
+  createMainWindow,
+} from "../modules/window";
+import { logoutUser, restoreAuthSession } from "./auth";
+import { startClipboardSync, stopClipboardSync } from "./clipboard";
+import { listenDeviceStatus } from "./firebase";
+import { startNetworkMonitoring } from "./network";
+import { settingsStorage } from "./settings";
 
 let sessionRestoreAttempted = false;
 let unsubscribeDeviceStatus: (() => void) | null = null;
 
 export function initApp(): void {
-  log.debug('Initializing application');
+  log.debug("Initializing application");
 
   try {
     const auth = getAuth();
@@ -29,7 +29,7 @@ export function initApp(): void {
       if (user) {
         (async () => {
           try {
-            log.info('Starting clipboard sync', { userId: user.uid });
+            log.info("Starting clipboard sync", { userId: user.uid });
             startClipboardSync();
 
             // Close auth window and open main window
@@ -40,21 +40,24 @@ export function initApp(): void {
 
             // Monitor device status
             unsubscribeDeviceStatus = listenDeviceStatus(user.uid, () => {
-              log.info('Device removed remotely, logging out...');
+              log.info("Device removed remotely, logging out...");
               logoutUser();
             });
 
             // Notify renderer that user is authenticated
             const mainWindow = getMainWindow();
             if (mainWindow) {
-              mainWindow.webContents.send('auth-state-changed', user.displayName);
+              mainWindow.webContents.send(
+                "auth-state-changed",
+                user.displayName,
+              );
             }
           } catch (error) {
-            log.error('Failed to setup user for clipboard sync', error);
+            log.error("Failed to setup user for clipboard sync", error);
           }
         })();
       } else {
-        log.info('User logged out, stopping clipboard sync');
+        log.info("User logged out, stopping clipboard sync");
         stopClipboardSync();
 
         if (unsubscribeDeviceStatus) {
@@ -72,7 +75,7 @@ export function initApp(): void {
         // Notify renderer of logout (if main window was still open, but we just closed it, so this might be redundant but safe)
         const mainWindow = getMainWindow();
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('auth-state-changed', null);
+          mainWindow.webContents.send("auth-state-changed", null);
         }
       }
     });
@@ -84,26 +87,26 @@ export function initApp(): void {
       // Mark that we've attempted to restore session
       sessionRestoreAttempted = true;
 
-      log.info('Network is online, attempting to restore session');
+      log.info("Network is online, attempting to restore session");
 
       try {
         const displayName = await restoreAuthSession();
         if (displayName) {
-          log.info('Previous session restored successfully', { displayName });
+          log.info("Previous session restored successfully", { displayName });
         } else {
-          log.info('No previous session to restore');
+          log.info("No previous session to restore");
         }
       } catch (error) {
-        log.error('Failed to restore authentication session', error);
+        log.error("Failed to restore authentication session", error);
       }
     };
 
     // Start network monitoring to attempt session restore when online
     startNetworkMonitoring({
-      onOnline: attemptSessionRestore
+      onOnline: attemptSessionRestore,
     });
   } catch (error) {
-    log.error('Failed to initialize authentication', error);
+    log.error("Failed to initialize authentication", error);
   }
 }
 
@@ -132,6 +135,9 @@ export function registerGlobalShortcut(shortcut?: string): void {
       log.info(`Global shortcut registered: ${shortcutToRegister}`);
     }
   } catch (error) {
-    log.error(`Error registering global shortcut: ${shortcutToRegister}`, error);
+    log.error(
+      `Error registering global shortcut: ${shortcutToRegister}`,
+      error,
+    );
   }
 }

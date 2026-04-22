@@ -1,9 +1,16 @@
-import { useEffect } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
-import { useGlobalStore } from './components/global-context';
-import { AuthPage } from './pages/auth/AuthPage';
-import { MainContent } from './pages/MainContent';
-import { SettingsPanel } from './pages/SettingsPanel';
+import { useEffect } from "react";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router";
+import { useGlobalStore } from "./components/global-context";
+import { AuthPage } from "./pages/auth/AuthPage";
+import { MainContent } from "./pages/MainContent";
+import { SettingsPanel } from "./pages/SettingsPanel";
 
 const App: React.FC = () => {
   const { platform, user, isLoading } = useGlobalStore();
@@ -12,13 +19,17 @@ const App: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && user && (location.pathname === '/' || location.pathname === '/auth')) {
-      navigate('/main');
+    if (
+      !isLoading &&
+      user &&
+      (location.pathname === "/" || location.pathname === "/auth")
+    ) {
+      navigate("/main");
     }
   }, [navigate, location.pathname, user, isLoading]);
 
   return (
-    <div className={`${platform === 'linux' && 'dark:bg-gray-900'} h-screen`}>
+    <div className={`${platform === "linux" && "dark:bg-gray-900"} h-screen`}>
       <Routes>
         {/* Auth Routes */}
         <Route path="/auth" element={<AuthLayout />}>
@@ -42,7 +53,7 @@ const App: React.FC = () => {
             <div className="h-full flex flex-col">
               <div
                 className="absolute top-0 left-0 w-full h-8 z-50"
-                style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
               />
               <SettingsPanel />
             </div>
@@ -76,7 +87,7 @@ const AuthLayout = () => (
   <div className="h-full flex flex-col items-center justify-center">
     <div
       className="absolute top-0 left-0 w-full h-8 z-50"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     />
     <Outlet />
   </div>
