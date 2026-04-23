@@ -1,9 +1,9 @@
 "use client";
 
 import { IconBrandGithub, IconBrandTwitter } from "@tabler/icons-react";
+import { CONTACT } from "@viclip/constants";
 import { motion } from "framer-motion";
 import { ExternalLink, Mail, Send } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 
 interface ContactButton {
@@ -20,7 +20,7 @@ const contactButtons: ContactButton[] = [
     label: "Email",
     gradient: "from-blue-700 to-blue-400",
     delay: 0,
-    href: "mailto:support@viclip.shipby.me",
+    href: `mailto:${CONTACT.supportEmail}`,
   },
   {
     icon: IconBrandGithub,

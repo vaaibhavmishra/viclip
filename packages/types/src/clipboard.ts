@@ -1,7 +1,7 @@
 /**
  * Supported content types for clipboard items
  */
-export type ClipContentType = 'text' | 'url' | 'image' | 'unknown';
+export type ClipContentType = "text" | "url" | "image" | "unknown";
 
 /**
  * Clipboard item data structure

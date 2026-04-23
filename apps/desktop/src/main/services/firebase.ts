@@ -12,6 +12,11 @@ import type {
   ClipData,
   DeviceData,
 } from "@shared/types/clipboard";
+import {
+  CLIPBOARD_CONFIG,
+  DB_PATHS,
+  FIREBASE_ENV_KEYS,
+} from "@viclip/constants";
 import log from "electron-log/main";
 import { initializeApp } from "firebase/app";
 import {
@@ -36,21 +41,10 @@ import {
 } from "firebase/database";
 import { v4 as uuidv4 } from "uuid";
 
-// Configuration constants
-const MAX_CLIP_COUNT = 300; // Maximum number of clips to store per user
-
 export function initFirebase(): void {
   log.debug("Initializing Firebase");
 
-  // Check for required Firebase configuration variables
-  const requiredEnvVars = [
-    "MAIN_VITE_FIREBASE_API_KEY",
-    "MAIN_VITE_FIREBASE_AUTH_DOMAIN",
-    "MAIN_VITE_FIREBASE_DATABASE_URL",
-    "MAIN_VITE_FIREBASE_PROJECT_ID",
-  ];
-
-  const missingVars = requiredEnvVars.filter(
+  const missingVars = FIREBASE_ENV_KEYS.filter(
     (varName) => !import.meta.env[varName],
   );
   if (missingVars.length > 0) {
@@ -88,7 +82,10 @@ export async function addUserProfile(user: User): Promise<void> {
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the user's profile path
-    const userRef = ref(db, `users/${user.uid}/profile`);
+    const userRef = ref(
+      db,
+      `${DB_PATHS.users}/${user.uid}/${DB_PATHS.profile}`,
+    );
     // Check if the user profile already exists
     const existedUser = await get(userRef);
 
@@ -142,7 +139,7 @@ export async function addClip(
     };
 
     // Write data to the user's clipboard path
-    const clipRef = ref(db, `users/${userId}/clips`);
+    const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     const newClipRef = push(clipRef);
 
     await set(newClipRef, clipData);
@@ -159,7 +156,7 @@ export function listenClips(
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the specific data path
-    const cloudData = ref(db, `users/${userId}/clips`);
+    const cloudData = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     log.debug("Setting up Firebase clip listener", { userId });
 
@@ -215,7 +212,7 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the specific data path
-    const cloudData = ref(db, `users/${userId}/clips`);
+    const cloudData = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Fetch the data from Firebase
     const snapshot = await get(cloudData);
@@ -246,7 +243,7 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
 export async function enforceClipLimit(userId: string): Promise<void> {
   try {
     const db = getDatabase();
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     // Order by timestamp to reliably get the oldest clips first
     const clipsQuery = query(clipsRef, orderByChild("timestamp"));
     const snapshot = await get(clipsQuery);
@@ -259,7 +256,7 @@ export async function enforceClipLimit(userId: string): Promise<void> {
     const clips: Record<string, ClipData> = snapshot.val();
     const clipKeys = Object.keys(clips);
 
-    if (clipKeys.length >= MAX_CLIP_COUNT) {
+    if (clipKeys.length >= CLIPBOARD_CONFIG.maxClipCount) {
       // Find the oldest unpinned clip
       let oldestUnpinnedKey: string | null = null;
       for (const key of clipKeys) {
@@ -274,10 +271,15 @@ export async function enforceClipLimit(userId: string): Promise<void> {
           userId,
           clipId: oldestUnpinnedKey,
           currentCount: clipKeys.length,
-          limit: MAX_CLIP_COUNT,
+          limit: CLIPBOARD_CONFIG.maxClipCount,
         });
 
-        await remove(ref(db, `users/${userId}/clips/${oldestUnpinnedKey}`));
+        await remove(
+          ref(
+            db,
+            `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${oldestUnpinnedKey}`,
+          ),
+        );
       } else {
         log.warn("All clips are pinned, cannot enforce clip limit.", {
           userId,
@@ -303,7 +305,7 @@ export async function removeAllClips(): Promise<void> {
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Create a reference to the specific clip path
-    const clipRef = ref(db, `users/${userId}/clips/`);
+    const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/`);
 
     // Fetch all clips first
     const snapshot = await get(clipRef);
@@ -345,7 +347,7 @@ export async function removeClip(
 ): Promise<void> {
   try {
     const db = getDatabase();
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -353,7 +355,9 @@ export async function removeClip(
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      await remove(ref(db, `users/${userId}/clips/${key}`));
+      await remove(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+      );
     }
   } catch (error) {
     log.error("Failed to remove clip", error);
@@ -368,7 +372,7 @@ export async function updateClip(
 ): Promise<void> {
   try {
     const db = getDatabase();
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -376,7 +380,10 @@ export async function updateClip(
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      await update(ref(db, `users/${userId}/clips/${key}`), updates);
+      await update(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+        updates,
+      );
       log.debug(`Clip updated`, { userId, clipId, updates });
     } else {
       log.warn(`Clip not found for update`, { userId, clipId });
@@ -394,7 +401,7 @@ export async function pinClip(
 ): Promise<void> {
   try {
     const db = getDatabase();
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -402,7 +409,10 @@ export async function pinClip(
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      await update(ref(db, `users/${userId}/clips/${key}`), { pinned });
+      await update(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+        { pinned },
+      );
       log.debug(`Clip pinned status updated`, { userId, clipId, pinned });
     } else {
       log.warn(`Clip not found for pinning`, { userId, clipId });
@@ -419,7 +429,10 @@ export async function addDevice(userId: string): Promise<void> {
     const deviceName = os.hostname();
     const platform = os.platform();
 
-    const deviceRef = ref(db, `users/${userId}/devices/`);
+    const deviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`,
+    );
     const deviceQuery = query(
       deviceRef,
       orderByChild("deviceName"),
@@ -430,7 +443,10 @@ export async function addDevice(userId: string): Promise<void> {
     if (device.exists()) {
       const deviceKey = Object.keys(device.val())[0];
       // Create reference to the specific device
-      const specificDeviceRef = ref(db, `users/${userId}/devices/${deviceKey}`);
+      const specificDeviceRef = ref(
+        db,
+        `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
+      );
       // Update the last active timestamp if the device already exists
       await update(specificDeviceRef, {
         deviceName,
@@ -463,7 +479,10 @@ export async function removeDevice(
 ): Promise<void> {
   try {
     const db = getDatabase();
-    const deviceRef = ref(db, `users/${userId}/devices/${deviceKey}`);
+    const deviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
+    );
     await remove(deviceRef);
   } catch (error) {
     log.error("Failed to remove device", error);
@@ -477,7 +496,10 @@ export function listenDeviceStatus(
   try {
     const db = getDatabase();
     const deviceName = os.hostname();
-    const devicesRef = ref(db, `users/${userId}/devices/`);
+    const devicesRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`,
+    );
 
     log.debug("Setting up device status listener", { userId, deviceName });
 
@@ -509,7 +531,10 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
       return null;
     }
     const db = getDatabase();
-    const deviceRef = ref(db, `users/${user.uid}/devices/`);
+    const deviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/`,
+    );
     const devices = await get(deviceRef);
 
     if (devices.exists()) {
@@ -538,7 +563,7 @@ export async function saveEncryptionMetadata(
 ): Promise<void> {
   try {
     const db = getDatabase();
-    const refPath = ref(db, `users/${uid}/encryption`);
+    const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
     await set(refPath, {
       salt,
       wrappedKey,
@@ -559,7 +584,7 @@ export async function getEncryptionMetadata(
 ): Promise<{ salt: string; wrappedKey: string } | null> {
   try {
     const db = getDatabase();
-    const refPath = ref(db, `users/${uid}/encryption`);
+    const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
     const snapshot = await get(refPath);
 
     if (snapshot.exists()) {
@@ -579,7 +604,7 @@ export async function getEncryptionMetadata(
 export async function wipeUserClips(userId: string): Promise<void> {
   try {
     const db = getDatabase();
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     await remove(clipsRef);
     log.info("Successfully wiped all clips for user", { userId });
   } catch (error) {
@@ -595,7 +620,10 @@ export async function wipeUserClips(userId: string): Promise<void> {
 export async function wipeUserDevices(userId: string): Promise<void> {
   try {
     const db = getDatabase();
-    const devicesRef = ref(db, `users/${userId}/devices`);
+    const devicesRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}`,
+    );
     await remove(devicesRef);
     log.info("Successfully wiped all devices for user", { userId });
   } catch (error) {
@@ -611,7 +639,7 @@ export async function wipeUserDevices(userId: string): Promise<void> {
 export async function wipeEncryptionMetadata(userId: string): Promise<void> {
   try {
     const db = getDatabase();
-    const encryptionRef = ref(db, `users/${userId}/encryption`);
+    const encryptionRef = ref(db, `${DB_PATHS.users}/${userId}/encryption`);
     await remove(encryptionRef);
     log.info("Successfully wiped encryption metadata for user", { userId });
   } catch (error) {

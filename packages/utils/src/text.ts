@@ -5,14 +5,14 @@
  */
 export function extractTextFromShare(content: string): string {
   // Split content by lines and filter out URLs
-  const lines = content.split('\n').filter((line) => {
+  const lines = content.split("\n").filter((line) => {
     const trimmedLine = line.trim();
     // Filter out empty lines and URLs
     return (
       trimmedLine &&
-      !trimmedLine.startsWith('http://') &&
-      !trimmedLine.startsWith('https://') &&
-      !trimmedLine.startsWith('www.') &&
+      !trimmedLine.startsWith("http://") &&
+      !trimmedLine.startsWith("https://") &&
+      !trimmedLine.startsWith("www.") &&
       // Also filter out lines that are just domain names
       !/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/.test(trimmedLine)
     );
@@ -20,9 +20,9 @@ export function extractTextFromShare(content: string): string {
 
   // Join lines and remove quotation marks
   return lines
-    .join('\n')
+    .join("\n")
     .trim()
-    .replace(/["""'']/g, '');
+    .replace(/["""'']/g, "");
 }
 
 /**
@@ -33,7 +33,7 @@ export function extractTextFromShare(content: string): string {
 export function isValidUrl(text: string): boolean {
   try {
     const url = new URL(text);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
   }

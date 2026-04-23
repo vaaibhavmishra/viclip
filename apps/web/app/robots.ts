@@ -1,3 +1,4 @@
+import { LINKS } from "@viclip/constants";
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
@@ -19,7 +20,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/"],
       },
     ],
-    sitemap: "https://viclip.shipby.me/sitemap.xml",
-    host: "https://viclip.shipby.me",
+    sitemap: `${LINKS.website}/sitemap.xml`,
+    host: LINKS.website,
   };
 }

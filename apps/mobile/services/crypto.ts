@@ -1,3 +1,4 @@
+import { CRYPTO_CONFIG } from "@viclip/constants";
 import { getRandomBytes } from "expo-crypto";
 import {
   Buffer,
@@ -8,12 +9,12 @@ import {
 } from "react-native-quick-crypto";
 
 // Constants for encryption
-const ALGORITHM = "aes-256-gcm";
-const KEY_LENGTH = 32;
-const IV_LENGTH = 12; // 96 bits (standard for GCM)
-const SALT_LENGTH = 16;
-const PBKDF2_ITERATIONS = 100000;
-const PBKDF2_DIGEST = "sha256";
+const ALGORITHM = CRYPTO_CONFIG.algorithm;
+const KEY_LENGTH = CRYPTO_CONFIG.keyLength;
+const IV_LENGTH = CRYPTO_CONFIG.ivLength; // 96 bits (standard for GCM)
+const SALT_LENGTH = CRYPTO_CONFIG.saltLength;
+const PBKDF2_ITERATIONS = CRYPTO_CONFIG.pbkdf2Iterations;
+const PBKDF2_DIGEST = CRYPTO_CONFIG.pbkdf2Digest;
 
 // Singleton to hold the active Data Encryption Key (DEK) in memory
 let activeDEK: Buffer | null = null;

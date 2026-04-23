@@ -1,3 +1,4 @@
+import { CONTACT } from "@viclip/constants";
 import type { Metadata } from "next/types";
 
 export const metadata: Metadata = {
@@ -273,9 +274,12 @@ export default function Terms() {
           </h2>
           <p>
             If you have any questions about these Terms, please contact us at
-            <a href="mailto:support@viclip.shipby.me" className="text-blue-400">
+            <a
+              href={`mailto:${CONTACT.supportEmail}`}
+              className="text-blue-400"
+            >
               {" "}
-              support@viclip.shipby.me
+              {CONTACT.supportEmail}
             </a>
             .
           </p>

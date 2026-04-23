@@ -1,3 +1,5 @@
+import { CONTACT } from "@viclip/constants";
+
 export default function ShippingDelivery() {
   return (
     <div className="px-4 py-12 min-h-screen bg-background flex flex-col items-center">
@@ -145,8 +147,11 @@ export default function ShippingDelivery() {
             If you experience any delays in accessing the Service after account
             creation or payment, or have any questions about our digital
             delivery process, please contact our support team at{" "}
-            <a href="mailto:support@viclip.shipby.me" className="text-blue-400">
-              support@viclip.shipby.me
+            <a
+              href={`mailto:${CONTACT.supportEmail}`}
+              className="text-blue-400"
+            >
+              {CONTACT.supportEmail}
             </a>
             .
           </p>

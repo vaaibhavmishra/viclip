@@ -157,8 +157,11 @@ if (process.contextIsolated) {
 } else {
   // Fallback for when context isolation is disabled
   // This is less secure and should be avoided in production
+  
+  // biome-ignore lint/suspicious/noTsIgnore: <suppress>
   // @ts-ignore - window augmentation defined in renderer .d.ts
   window.electron = electronAPI;
+  // biome-ignore lint/suspicious/noTsIgnore: <suppress>
   // @ts-ignore - window augmentation defined in renderer .d.ts
   window.api = api;
 }

@@ -12,6 +12,7 @@ import {
   set,
   update,
 } from "@react-native-firebase/database";
+import { CLIPBOARD_CONFIG, DB_PATHS } from "@viclip/constants";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
 import type { User, UserProfile } from "@/types/auth";
@@ -27,7 +28,7 @@ export async function addUserProfile(user: User): Promise<void> {
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
   );
 
-  const userRef = ref(db, `users/${user.uid}/profile`);
+  const userRef = ref(db, `${DB_PATHS.users}/${user.uid}/${DB_PATHS.profile}`);
 
   const existedUser = await get(userRef);
 
@@ -55,7 +56,7 @@ export async function addDevice(userId: string): Promise<void> {
       ? Device.osName
       : "Android";
 
-  const deviceRef = ref(db, `users/${userId}/devices/`);
+  const deviceRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`);
 
   const deviceQuery = query(
     deviceRef,
@@ -68,7 +69,10 @@ export async function addDevice(userId: string): Promise<void> {
   if (device.exists()) {
     const deviceKey = Object.keys(device.val())[0];
 
-    const specificDeviceRef = ref(db, `users/${userId}/devices/${deviceKey}`);
+    const specificDeviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
+    );
 
     await update(specificDeviceRef, {
       deviceName,
@@ -96,7 +100,10 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
     getApp(),
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
   );
-  const devicesRef = ref(db, `users/${user.uid}/devices/`);
+  const devicesRef = ref(
+    db,
+    `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/`,
+  );
   const devices = await get(devicesRef);
 
   if (devices.exists()) {
@@ -130,7 +137,7 @@ export async function addClip(
   };
 
   // Write data to the user's clipboard path
-  const clipRef = ref(db, `users/${userId}/clips`);
+  const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
   const newClipRef = push(clipRef);
 
   await set(newClipRef, clipData);
@@ -149,7 +156,7 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
   );
   // Create a reference to the specific data path
-  const cloudData = ref(db, `users/${userId}/clips`);
+  const cloudData = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
   // Fetch the data from Firebase
   const snapshot = await get(cloudData);
@@ -177,7 +184,7 @@ export async function enforceClipLimit(): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     // Order by timestamp to reliably get the oldest clips first
     const clipsQuery = query(clipsRef, orderByChild("timestamp"));
     const snapshot = await get(clipsQuery);
@@ -190,7 +197,7 @@ export async function enforceClipLimit(): Promise<void> {
     const clips: Record<string, ClipData> = snapshot.val();
     const clipKeys = Object.keys(clips);
 
-    if (clipKeys.length >= 300) {
+    if (clipKeys.length >= CLIPBOARD_CONFIG.maxClipCount) {
       // Find the oldest unpinned clip
       let oldestUnpinnedKey: string | null = null;
       for (const key of clipKeys) {
@@ -205,10 +212,15 @@ export async function enforceClipLimit(): Promise<void> {
           userId,
           clipId: oldestUnpinnedKey,
           currentCount: clipKeys.length,
-          limit: 300,
+          limit: CLIPBOARD_CONFIG.maxClipCount,
         });
 
-        await remove(ref(db, `users/${userId}/clips/${oldestUnpinnedKey}`));
+        await remove(
+          ref(
+            db,
+            `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${oldestUnpinnedKey}`,
+          ),
+        );
       } else {
         console.warn("All clips are pinned, cannot enforce clip limit.", {
           userId,
@@ -237,7 +249,7 @@ export async function saveEncryptionMetadata(
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const refPath = ref(db, `users/${uid}/encryption`);
+    const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
     await set(refPath, {
       salt,
       wrappedKey,
@@ -261,7 +273,7 @@ export async function getEncryptionMetadata(
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const refPath = ref(db, `users/${uid}/encryption`);
+    const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
     const snapshot = await get(refPath);
 
     if (snapshot.exists()) {
@@ -284,7 +296,7 @@ export async function wipeUserClips(userId: string): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     await remove(clipsRef);
     console.info("Successfully wiped all clips for user", { userId });
   } catch (error) {
@@ -303,7 +315,10 @@ export async function wipeUserDevices(userId: string): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const devicesRef = ref(db, `users/${userId}/devices`);
+    const devicesRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}`,
+    );
     await remove(devicesRef);
     console.info("Successfully wiped all devices for user", { userId });
   } catch (error) {
@@ -322,7 +337,7 @@ export async function wipeEncryptionMetadata(userId: string): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const encryptionRef = ref(db, `users/${userId}/encryption`);
+    const encryptionRef = ref(db, `${DB_PATHS.users}/${userId}/encryption`);
     await remove(encryptionRef);
     console.info("Successfully wiped encryption metadata for user", { userId });
   } catch (error) {
@@ -347,7 +362,7 @@ export async function removeAllClips(): Promise<void> {
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
     // Create a reference to the specific clip path
-    const clipRef = ref(db, `users/${userId}/clips/`);
+    const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/`);
 
     // Fetch all clips first
     const snapshot = await get(clipRef);
@@ -396,7 +411,7 @@ export async function removeClip(clipId: string): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -404,7 +419,9 @@ export async function removeClip(clipId: string): Promise<void> {
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      await remove(ref(db, `users/${userId}/clips/${key}`));
+      await remove(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+      );
     }
   } catch (error) {
     console.error("Failed to remove clip", error);
@@ -429,7 +446,7 @@ export async function togglePinClip(
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -437,7 +454,10 @@ export async function togglePinClip(
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      const specificClipRef = ref(db, `users/${userId}/clips/${key}`);
+      const specificClipRef = ref(
+        db,
+        `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`,
+      );
       await update(specificClipRef, { pinned });
     }
   } catch (error) {
@@ -459,7 +479,7 @@ export async function updateClip(clipId: string): Promise<void> {
       getApp(),
       "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
     );
-    const clipsRef = ref(db, `users/${userId}/clips`);
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
@@ -467,10 +487,13 @@ export async function updateClip(clipId: string): Promise<void> {
 
     if (snapshot.exists()) {
       const key = Object.keys(snapshot.val())[0];
-      await update(ref(db, `users/${userId}/clips/${key}`), {
-        timestamp: new Date().toISOString(),
-        sourceDevice: Device.deviceName,
-      });
+      await update(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+        {
+          timestamp: new Date().toISOString(),
+          sourceDevice: Device.deviceName,
+        },
+      );
     } else {
       console.warn(`Clip not found for update`, { userId, clipId });
     }

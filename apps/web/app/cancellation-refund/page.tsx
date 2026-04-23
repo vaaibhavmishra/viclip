@@ -1,3 +1,5 @@
+import { CONTACT } from "@viclip/constants";
+
 export default function CancellationRefund() {
   return (
     <div className="px-4 py-12 min-h-screen bg-background flex flex-col items-center">
@@ -72,10 +74,10 @@ export default function CancellationRefund() {
             <li>
               Contact us at{" "}
               <a
-                href="mailto:support@viclip.shipby.me"
+                href={`mailto:${CONTACT.supportEmail}`}
                 className="text-blue-400"
               >
-                support@viclip.shipby.me
+                {CONTACT.supportEmail}
               </a>
             </li>
             <li>
@@ -125,8 +127,11 @@ export default function CancellationRefund() {
           <p>
             If you have any questions about our Cancellation and Refund Policy,
             please contact us at{" "}
-            <a href="mailto:support@viclip.shipby.me" className="text-blue-400">
-              support@viclip.shipby.me
+            <a
+              href={`mailto:${CONTACT.supportEmail}`}
+              className="text-blue-400"
+            >
+              {CONTACT.supportEmail}
             </a>
             .
           </p>

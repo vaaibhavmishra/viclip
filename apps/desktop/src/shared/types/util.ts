@@ -3,6 +3,8 @@
  * This file defines a mapping of link names to their respective URLs.
  * It is used throughout the application to ensure consistent access to important links.
  */
+import { LINKS as BaseLinks } from "@viclip/constants";
+
 export type LinkType = {
   [key: string]: string;
 };
@@ -12,6 +14,6 @@ export type LinkType = {
  */
 
 export const LINKS: LinkType = {
-  terms: "https://www.viclip.shipby.me/terms",
-  privacy: "https://www.viclip.shipby.me/privacy",
+  terms: BaseLinks.terms,
+  privacy: BaseLinks.privacy,
 };

@@ -1,5 +1,5 @@
 // Date utilities
-export { formatLastActive, getCurrentISOTimestamp } from './date';
+export { formatLastActive, getCurrentISOTimestamp } from "./date";
 
 // Text utilities
-export { extractTextFromShare, isValidUrl, truncateText } from './text';
+export { extractTextFromShare, isValidUrl, truncateText } from "./text";

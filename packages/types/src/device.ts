@@ -1,7 +1,13 @@
 /**
  * Supported platforms
  */
-export type Platform = 'macOS' | 'Windows' | 'Linux' | 'Android' | 'iOS' | 'Web';
+export type Platform =
+  | "macOS"
+  | "Windows"
+  | "Linux"
+  | "Android"
+  | "iOS"
+  | "Web";
 
 /**
  * Device information

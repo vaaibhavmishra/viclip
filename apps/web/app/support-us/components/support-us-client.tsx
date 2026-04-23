@@ -1,5 +1,6 @@
 "use client";
 
+import { CONTACT } from "@viclip/constants";
 import { motion } from "framer-motion";
 import {
   Award,
@@ -434,10 +435,10 @@ export function SupportUsClient() {
                 questions or would like to discuss other ways to help, please
                 don't hesitate to reach out to me at{" "}
                 <a
-                  href="mailto:support@viclip.shipby.me"
+                  href={`mailto:${CONTACT.supportEmail}`}
                   className="text-blue-500 hover:underline break-all"
                 >
-                  vaibhav@viclip.shipby.me
+                  {CONTACT.supportEmail}
                 </a>
                 .
               </p>

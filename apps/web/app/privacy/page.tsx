@@ -1,3 +1,5 @@
+import { CONTACT } from "@viclip/constants";
+
 export const metadata = {
   title: "Privacy Policy",
   description:
@@ -264,9 +266,12 @@ export default function Privacy() {
           <p>
             If you have any questions about this Privacy Policy, please contact
             us at{" "}
-            <a href="mailto:support@viclip.shipby.me" className="text-blue-400">
+            <a
+              href={`mailto:${CONTACT.supportEmail}`}
+              className="text-blue-400"
+            >
               {" "}
-              support@viclip.shipby.me
+              {CONTACT.supportEmail}
             </a>
             .
           </p>

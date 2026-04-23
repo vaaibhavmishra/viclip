@@ -1,7 +1,8 @@
+import { LINKS } from "@viclip/constants";
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://viclip.shipby.me";
+  const baseUrl = LINKS.website;
   const currentDate = new Date();
 
   return [
