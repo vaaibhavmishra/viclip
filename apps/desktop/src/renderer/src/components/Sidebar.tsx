@@ -1,6 +1,6 @@
 "use client";
 
-import type { ClipData } from "@shared/types/clipboard";
+import type { ClipData } from "@viclip/types";
 import { FileText } from "lucide-react";
 import type React from "react";
 import { useEffect } from "react";

@@ -1,4 +1,4 @@
-import type { ClipContentType } from "@shared/types/clipboard";
+import type { ClipContentType } from "@viclip/types";
 
 export function detectClipboardType(
   text: string,

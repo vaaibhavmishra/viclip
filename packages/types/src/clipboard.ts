@@ -1,7 +1,17 @@
 /**
  * Supported content types for clipboard items
  */
-export type ClipContentType = "text" | "url" | "image" | "unknown";
+export type ClipContentType =
+  | "text"
+  | "text-formatted"
+  | "url"
+  | "email"
+  | "color"
+  | "image"
+  | "document"
+  | "spreadsheet"
+  | "presentation"
+  | "unknown";
 
 /**
  * Clipboard item data structure
@@ -12,6 +22,7 @@ export interface ClipData {
   type: ClipContentType;
   timestamp: string;
   sourceDevice: string;
+  pinned?: boolean;
 }
 
 /**

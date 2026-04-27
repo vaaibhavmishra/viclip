@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import type { DeviceData } from "@viclip/types";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -9,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { getDevices } from "@/services/firebase";
-import type { DeviceData } from "@/types/device";
 import { formatLastActive } from "@/utils/util";
 
 export default function Devices() {

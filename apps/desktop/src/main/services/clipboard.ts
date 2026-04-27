@@ -10,7 +10,7 @@ import type {
   ClipboardConfig,
   ClipboardSyncState,
   ClipData,
-} from "@shared/types/clipboard";
+} from "@viclip/types";
 import { clipboard, dialog } from "electron";
 import log from "electron-log/main";
 import { getAuth } from "firebase/auth";

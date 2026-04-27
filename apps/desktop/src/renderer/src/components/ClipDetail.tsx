@@ -1,4 +1,4 @@
-import type { ClipData } from "@shared/types/clipboard";
+import type { ClipData } from "@viclip/types";
 import React from "react";
 
 interface ClipDetailProps {

@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@viclip/constants": "workspace:*",
+    "@viclip/utils": "workspace:*",
+    "@viclip/types": "workspace:*",
     "@expo/metro-runtime": "^55.0.10",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-firebase/app": "^24.0.0",

@@ -7,16 +7,12 @@
  */
 
 import os from "node:os";
-import type {
-  ClipContentType,
-  ClipData,
-  DeviceData,
-} from "@shared/types/clipboard";
 import {
   CLIPBOARD_CONFIG,
   DB_PATHS,
   FIREBASE_ENV_KEYS,
 } from "@viclip/constants";
+import type { ClipContentType, ClipData, DeviceData } from "@viclip/types";
 import log from "electron-log/main";
 import { initializeApp } from "firebase/app";
 import {
@@ -315,7 +311,7 @@ export async function removeAllClips(): Promise<void> {
     }
 
     const clips = snapshot.val();
-    const updates = {};
+    const updates: Record<string, unknown> = {};
     let removedCount = 0;
 
     // Iterate through clips and identify unpinned ones

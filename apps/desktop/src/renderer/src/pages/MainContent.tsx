@@ -1,4 +1,4 @@
-import type { ClipContentType, ClipData } from "@shared/types/clipboard";
+import type { ClipContentType, ClipData } from "@viclip/types";
 import {
   FileText,
   Image,

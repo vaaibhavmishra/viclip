@@ -13,11 +13,15 @@ import {
   update,
 } from "@react-native-firebase/database";
 import { CLIPBOARD_CONFIG, DB_PATHS } from "@viclip/constants";
+import type {
+  ClipContentType,
+  ClipData,
+  DeviceData,
+  User,
+  UserProfile,
+} from "@viclip/types";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
-import type { User, UserProfile } from "@/types/auth";
-import type { ClipContentType, ClipData } from "@/types/clips";
-import type { DeviceData } from "@/types/device";
 
 export async function addUserProfile(user: User): Promise<void> {
   if (!user) {

@@ -1,5 +1,5 @@
+import type { ClipContentType } from "@viclip/types";
 import * as Clipboard from "expo-clipboard";
-import type { ClipContentType } from "@/types/clips";
 
 // Helper function to format the last active timestamp
 export function formatLastActive(timestamp: string): string {

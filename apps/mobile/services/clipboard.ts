@@ -1,4 +1,4 @@
-import type { ClipContentType, ClipData } from "@/types/clips";
+import type { ClipContentType, ClipData } from "@viclip/types";
 import { decrypt, encrypt, getActiveDEK, isKeyLoaded } from "./crypto";
 import { addClip, updateClip } from "./firebase";
 

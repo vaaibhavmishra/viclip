@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import type { ClipData } from "@viclip/types";
 import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -27,7 +28,6 @@ import {
   removeClip,
   togglePinClip,
 } from "@/services/firebase";
-import type { ClipData } from "@/types/clips";
 import { detectClipboardType, extractTextFromShare } from "@/utils/util";
 
 export default function Index() {

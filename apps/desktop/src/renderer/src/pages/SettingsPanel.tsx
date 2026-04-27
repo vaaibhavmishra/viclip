@@ -1,5 +1,5 @@
 import { useGlobalStore } from "@renderer/components/global-context";
-import type { DeviceData } from "@shared/types/clipboard";
+import type { DeviceData } from "@viclip/types";
 import {
   Bell,
   Keyboard,
