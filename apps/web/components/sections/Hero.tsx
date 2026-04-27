@@ -4,47 +4,9 @@ import { motion } from "framer-motion";
 import { Download, HeartIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 
 export function Hero() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [_message, _setMessage] = useState("");
-
-  const _handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    try {
-      setStatus("loading");
-      const response = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
-      }
-
-      setStatus("success");
-      _setMessage("Thank you! We'll be in touch soon.");
-      setEmail("");
-    } catch (error) {
-      setStatus("error");
-      _setMessage(
-        error instanceof Error ? error.message : "Failed to join waitlist",
-      );
-    }
-  };
-
   return (
     <section className="relative min-h-[90vh] flex items-center py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10 w-full">
@@ -148,10 +110,9 @@ export function Hero() {
               className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto"
             >
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg blur opacity-0 group-hover:opacity-75 transition duration-300"></div>
+                <div className="absolute -inset-0.5 bg-linear-to-r from-blue-600 to-blue-400 rounded-lg blur opacity-0 group-hover:opacity-75 transition duration-300"></div>
                 <Button
                   type="submit"
-                  disabled={status === "loading"}
                   className="relative bg-linear-to-r from-blue-700 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-sm sm:text-base py-1.5 h-auto sm:h-10 cursor-pointer w-full"
                 >
                   <span className="flex items-center">
@@ -165,83 +126,6 @@ export function Hero() {
               </p>
             </motion.div>
           </Link>
-
-          {/* Waitlist Form */}
-          {/* <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto"
-          >
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-2"
-            >
-              <div className="flex-1 relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg blur opacity-0 transition duration-300 group-focus-within:opacity-70 group-focus-within:blur-md"></div>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="relative w-full px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg bg-background border border-border focus:outline-none focus:border-transparent focus:z-10"
-                  disabled={status === "loading"}
-                  required
-                />
-              </div>
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg blur opacity-0 group-hover:opacity-75 transition duration-300"></div>
-                <Button
-                  type="submit"
-                  disabled={status === "loading"}
-                  className="relative bg-linear-to-r from-blue-700 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-sm sm:text-base py-1.5 h-auto sm:h-10 cursor-pointer w-full"
-                >
-                  {status === "loading" ? (
-                    <span className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing
-                    </span>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                      Join Waitlist
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-            {message && (
-              <p
-                className={`text-xs sm:text-sm mt-2 ${
-                  status === "success" ? "text-green-500" : "text-red-500"
-                }`}
-              >
-                {message}
-              </p>
-            )}
-            <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-              Get early access when we launch. We respect your inbox.
-            </p>
-          </motion.div> */}
         </div>
       </div>
     </section>
