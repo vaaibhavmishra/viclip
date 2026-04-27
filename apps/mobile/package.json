@@ -1,5 +1,6 @@
 {
   "name": "@viclip/mobile",
+  "license": "GPL-3.0-or-later",
   "main": "expo-router/entry",
   "scripts": {
     "start": "dotenv -e ../../.env -- expo start",

@@ -1,5 +1,6 @@
 {
   "name": "@viclip/web",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --turbopack",
     "build": "dotenv -e ../../.env -- next build --turbopack",

@@ -4,7 +4,7 @@
   "private": true,
   "description": "ViClip monorepo for the website, desktop app, and mobile app.",
   "author": "Vaibhav Mishra <vaibhav@viclip.shipby.me>",
-  "license": "Proprietary",
+  "license": "GPL-3.0-or-later",
   "homepage": "https://viclip.shipby.me",
   "scripts": {
     "start": "turbo run start",
