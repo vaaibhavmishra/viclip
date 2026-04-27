@@ -1,5 +1,10 @@
 {
   "extends": "@viclip/tsconfig/base.json",
+  "references": [
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/types" },
+    { "path": "../../packages/constants" }
+  ],
   "include": [
     "electron.vite.config.*",
     "src/main/**/*",
@@ -7,6 +12,7 @@
     "src/shared/**/*"
   ],
   "compilerOptions": {
+    "outDir": "dist",
     "composite": true,
     "types": ["electron-vite/node"],
     "paths": {

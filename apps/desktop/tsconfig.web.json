@@ -1,5 +1,10 @@
 {
   "extends": "@viclip/tsconfig/base.json",
+  "references": [
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/types" },
+    { "path": "../../packages/constants" }
+  ],
   "include": [
     "src/renderer/src/env.d.ts",
     "src/renderer/src/**/*",
@@ -8,6 +13,7 @@
     "src/shared/**/*"
   ],
   "compilerOptions": {
+    "outDir": "dist",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "composite": true,
     "jsx": "react-jsx",

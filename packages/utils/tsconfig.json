@@ -1,6 +1,7 @@
 {
   "extends": "@viclip/tsconfig/library.json",
   "compilerOptions": {},
+  "references": [{ "path": "../types" }, { "path": "../constants" }],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

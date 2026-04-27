@@ -1,4 +1,5 @@
 import type { ElectronAPI } from "@electron-toolkit/preload";
+import type { ClipData, DeviceData } from "@viclip/types";
 
 export interface PreloadAPI {
   toggleClipboardSync: (shouldEnable: boolean) => Promise<boolean>;
