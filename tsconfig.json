@@ -1,8 +1,12 @@
 {
+  "extends": "@viclip/tsconfig/base.json",
   "files": [],
   "references": [
-    { "path": "packages/constants" },
-    { "path": "packages/types" },
-    { "path": "packages/utils" }
+    { "path": "./apps/web" },
+    { "path": "./apps/mobile" },
+    { "path": "./apps/desktop" },
+    { "path": "./packages/utils" },
+    { "path": "./packages/types" },
+    { "path": "./packages/constants" }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "extends": "@viclip/tsconfig/base.json",
   "include": [
     "src/renderer/src/env.d.ts",
     "src/renderer/src/**/*",
@@ -8,6 +8,7 @@
     "src/shared/**/*"
   ],
   "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "composite": true,
     "jsx": "react-jsx",
     "paths": {

@@ -16,7 +16,6 @@
     "clean": "rm -rf out .turbo node_modules"
   },
   "dependencies": {
-    "@viclip/constants": "workspace:*",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@fontsource-variable/nunito-sans": "^5.2.7",
@@ -55,6 +54,9 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@viclip/constants": "workspace:*",
+    "@viclip/utils": "workspace:*",
+    "@viclip/types": "workspace:*",
     "@biomejs/biome": "2.4.11",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@tailwindcss/vite": "^4.2.2",

@@ -1,9 +1,6 @@
 {
   "extends": "@viclip/tsconfig/library.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
+  "compilerOptions": {},
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

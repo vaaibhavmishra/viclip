@@ -17,9 +17,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^20.5.0
         version: 20.5.0
-      '@types/react':
-        specifier: 19.2.14
-        version: 19.2.14
+      '@viclip/tsconfig':
+        specifier: workspace:*
+        version: link:packages/tsconfig
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -56,9 +56,6 @@ importers:
       '@radix-ui/react-tabs':
         specifier: ^1.1.13
         version: 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@viclip/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -168,6 +165,15 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      '@viclip/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
+      '@viclip/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@viclip/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@vitejs/plugin-react':
         specifier: ^5.2.0
         version: 5.2.0(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(yaml@2.8.3))
@@ -225,6 +231,12 @@ importers:
       '@viclip/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@viclip/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@viclip/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       expo:
         specifier: ~55.0.17
         version: 55.0.17(@babel/core@7.29.0)(@expo/dom-webview@55.0.5)(@expo/metro-runtime@55.0.10)(expo-router@55.0.13)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.0(react-native@0.83.6(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.6(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.6(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
@@ -429,6 +441,13 @@ importers:
         version: 5.9.3
 
   packages/utils:
+    dependencies:
+      '@viclip/constants':
+        specifier: workspace:*
+        version: link:../constants
+      '@viclip/types':
+        specifier: workspace:*
+        version: link:../types
     devDependencies:
       '@viclip/tsconfig':
         specifier: workspace:*
