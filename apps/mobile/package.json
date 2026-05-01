@@ -4,7 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "dotenv -e ../../.env -- expo start",
-    "dev": "dotenv -e ../../.env -- APP_VARIANT=development expo start",
+    "dev": "dotenv -v APP_VARIANT=development -e ../../.env -- expo start",
     "build": "dotenv -e ../../.env -- expo export",
     "build:android": "dotenv -e ../../.env -- expo run:android",
     "build:ios": "dotenv -e ../../.env -- expo run:ios",
@@ -20,7 +20,6 @@
     "@react-native-firebase/app": "^24.0.0",
     "@react-native-firebase/auth": "^24.0.0",
     "@react-native-firebase/database": "^24.0.0",
-    "@react-native-google-signin/google-signin": "^16.1.2",
     "expo": "~55.0.17",
     "expo-blur": "^55.0.14",
     "expo-build-properties": "~55.0.13",

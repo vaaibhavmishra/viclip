@@ -4,6 +4,8 @@ import {
   equalTo,
   get,
   getDatabase,
+  onChildRemoved,
+  onValue,
   orderByChild,
   push,
   query,
@@ -115,6 +117,102 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
   } else {
     return null;
   }
+}
+
+/**
+ * Remove a device by its Firebase key.
+ * Used for remote device logout from the devices screen.
+ */
+export async function removeDevice(deviceKey: string): Promise<void> {
+  const user = getAuth().currentUser;
+  if (!user) {
+    console.warn("No user is currently authenticated");
+    return;
+  }
+  const db = getDatabase(
+    getApp(),
+    "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
+  );
+  const deviceRef = ref(
+    db,
+    `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/${deviceKey}`,
+  );
+  await remove(deviceRef);
+}
+
+/**
+ * Subscribe to real-time changes on the devices list.
+ * Returns an unsubscribe function.
+ */
+export function listenDevices(
+  onDevicesChanged: (devices: Record<string, DeviceData> | null) => void,
+): () => void {
+  const user = getAuth().currentUser;
+  if (!user) {
+    console.warn("No user is currently authenticated");
+    onDevicesChanged(null);
+    return () => {};
+  }
+  const db = getDatabase(
+    getApp(),
+    "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
+  );
+  const devicesRef = ref(
+    db,
+    `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/`,
+  );
+
+  const unsubscribe = onValue(
+    devicesRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        onDevicesChanged(snapshot.val());
+      } else {
+        onDevicesChanged(null);
+      }
+    },
+    (error) => {
+      console.error("Device listener error:", error);
+    },
+  );
+
+  return unsubscribe;
+}
+
+/**
+ * Listen for the current device being removed from Firebase.
+ * When another device removes this device's entry, the callback fires
+ * so the app can trigger a logout.
+ *
+ * Uses `onChildRemoved` — the same pattern as the desktop app's
+ * `listenDeviceStatus()`.
+ */
+export function listenOwnDeviceRemoval(
+  currentDeviceName: string,
+  onRemoved: () => void,
+): () => void {
+  const user = getAuth().currentUser;
+  if (!user) {
+    return () => {};
+  }
+  const db = getDatabase(
+    getApp(),
+    "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
+  );
+  const devicesRef = ref(
+    db,
+    `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/`,
+  );
+
+  const unsubscribe = onChildRemoved(devicesRef, (snapshot) => {
+    const deviceData = snapshot.val() as DeviceData | null;
+    if (deviceData && deviceData.deviceName === currentDeviceName) {
+      console.warn("This device was removed remotely, triggering logout");
+      onRemoved();
+    }
+  });
+
+  return unsubscribe;
 }
 
 export async function addClip(

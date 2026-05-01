@@ -73,3 +73,5 @@ android/
 # =========================
 google-services.json
 GoogleService-Info.plist
+
+notes.md

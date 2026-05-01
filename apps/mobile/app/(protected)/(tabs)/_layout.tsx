@@ -19,10 +19,8 @@ const TabIcon = ({
   return (
     <View className="items-center justify-center w-20">
       <View
-        className={`w-16 h-8 items-center justify-center rounded-2xl transition-all duration-300 ${
-          focused
-            ? "bg-blue-600/15 dark:bg-blue-500/20 scale-110"
-            : "bg-transparent scale-100"
+        className={`w-16 h-8 items-center justify-center rounded-2xl ${
+          focused ? "bg-blue-600/15 dark:bg-blue-500/20" : "bg-transparent"
         }`}
       >
         <Ionicons
@@ -37,7 +35,7 @@ const TabIcon = ({
         />
       </View>
       <Text
-        className={`text-[11px] mt-1.5 font-semibold tracking-wide transition-all duration-300 ${
+        className={`text-[11px] mt-1.5 font-semibold tracking-wide ${
           focused
             ? "text-blue-600 dark:text-blue-400 opacity-100"
             : "text-gray-500 dark:text-gray-400 opacity-70"
@@ -94,7 +92,7 @@ export default function TabsLayout() {
         sceneStyle: {
           backgroundColor: isDark ? "#000000" : "#f9fafb",
         },
-        animation: "shift",
+        animation: "none",
         tabBarShowLabel: false,
         tabBarStyle: {
           position: "absolute",
