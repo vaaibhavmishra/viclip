@@ -49,8 +49,8 @@ pnpm-debug.log*
 # =========================
 # Native Platform (Android/iOS)
 # =========================
-ios/
-android/
+/ios
+/android
 .gradle/
 **/modules/**/android/.gradle/
 **/modules/**/android/build/
