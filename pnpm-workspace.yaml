@@ -2,13 +2,6 @@ packages:
   - apps/*
   - packages/*
 
-peerDependencyRules:
-  ignoreMissing:
-    - "@expo/dom-webview"
-  allowedVersions:
-    # expo-share-intent@6.1.1 hasn't updated peerDeps to include ^56 yet but works fine
-    expo-share-intent>expo: "56"
-
 onlyBuiltDependencies:
   - '@firebase/util'
   - '@vercel/speed-insights'
@@ -18,3 +11,12 @@ onlyBuiltDependencies:
   - msgpackr-extract
   - protobufjs
   - sharp
+patchedDependencies:
+  react-native-css-interop@0.1.22: patches/react-native-css-interop@0.1.22.patch
+
+peerDependencyRules:
+  allowedVersions:
+    # expo-share-intent@6.1.1 hasn't updated peerDeps to include ^56 yet but works fine
+    expo-share-intent>expo: "56"
+  ignoreMissing:
+    - "@expo/dom-webview"
