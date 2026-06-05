@@ -422,23 +422,27 @@ export default function Index() {
       />
 
       {/* Floating Action Area */}
-      <View className="absolute bottom-[110px] left-5 right-5 overflow-hidden rounded-[28px] border border-gray-200/50 dark:border-zinc-800/80 shadow-lg shadow-blue-900/10">
+      <View className="absolute bottom-[110px] left-5 right-5 overflow-hidden rounded-3xl border border-gray-200/50 dark:border-zinc-800/80 shadow-lg shadow-blue-900/10">
         <BlurView
           intensity={80}
           tint={isDark ? "dark" : "light"}
-          className="flex-row justify-between items-center p-2.5"
+          style={{ flexDirection: "row", alignItems: "center", padding: 10 }}
         >
           <TouchableOpacity
-            className="flex-1 bg-green-600 dark:bg-green-500 py-3.5 rounded-[22px] flex-row items-center justify-center gap-2 ml-1.5 shadow-md shadow-green-500/30"
-            activeOpacity={0.8}
+            style={{ flex: 1, marginRight: 6 }}
+            className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 py-3.5 rounded-2xl flex-row items-center justify-center gap-2"
+            activeOpacity={0.7}
             onPress={handleReceive}
           >
-            <Ionicons name="cloud-download" size={20} color="#ffffff" />
-            <Text className="text-white font-bold text-[15px]">Receive</Text>
+            <Ionicons name="cloud-download-outline" size={20} color="#2563eb" />
+            <Text className="text-blue-600 dark:text-blue-400 font-bold text-[15px]">
+              Receive
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-blue-600 dark:bg-blue-500 py-3.5 rounded-[22px] flex-row items-center justify-center gap-2 ml-1.5 shadow-md shadow-blue-500/30"
+            style={{ flex: 1, marginLeft: 6 }}
+            className="bg-blue-600 dark:bg-blue-500 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-md shadow-blue-500/30"
             activeOpacity={0.8}
             onPress={handleSend}
           >

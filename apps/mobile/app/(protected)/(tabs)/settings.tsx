@@ -6,6 +6,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -20,52 +21,112 @@ function SyncStatusCard() {
     accessibilityEnabled,
     serviceRunning,
     isSyncing,
+    syncEnabled,
+    toggleSync,
     openAccessibilitySettings,
   } = useBackgroundSync();
 
-  // Determine status pill color and label
-  const statusColor = serviceRunning
-    ? "#22c55e" // green
-    : accessibilityEnabled
-      ? "#f59e0b" // amber – enabled but service not yet alive
-      : "#ef4444"; // red  – not enabled
+  // Once the accessibility service is granted we show a simple in-app toggle.
+  // Before that, we guide the user to enable the service in Android Settings.
+  const serviceGranted = accessibilityEnabled;
 
-  const statusLabel = serviceRunning
-    ? "Active"
-    : accessibilityEnabled
-      ? "Starting…"
-      : "Disabled";
+  // The toggle reflects the in-app syncEnabled state (not accessibilityEnabled).
+  // When the service isn't granted yet, the toggle reflects whether the service
+  // is enabled at the OS level (read-only at that point).
+  const toggleValue = serviceGranted ? syncEnabled : false;
 
-  const statusDesc = serviceRunning
-    ? "Clipboard changes are being synced in the background."
-    : accessibilityEnabled
-      ? "The service is enabled but not yet running. Try restarting the app."
-      : "Enable the accessibility service so ViClip can sync clipboard changes even when the app is closed.";
+  // Status badge
+  const statusColor = !serviceGranted
+    ? "#ef4444" // red  – not set up
+    : syncEnabled && serviceRunning
+      ? isSyncing
+        ? "#3b82f6"
+        : "#22c55e" // blue while syncing, green active
+      : syncEnabled
+        ? "#f59e0b" // amber – enabled but not yet live
+        : "#6b7280"; // grey  – paused
+
+  const statusLabel = !serviceGranted
+    ? "Not Set Up"
+    : syncEnabled && serviceRunning
+      ? isSyncing
+        ? "Syncing…"
+        : "Active"
+      : syncEnabled
+        ? "Starting…"
+        : "Paused";
+
+  const handleToggle = (value: boolean) => {
+    if (!serviceGranted) {
+      // Service not set up — send user to Accessibility Settings
+      openAccessibilitySettings();
+      return;
+    }
+    // Service already granted — simply pause/resume in-app
+    toggleSync(value);
+  };
 
   return (
     <View className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl mb-6 shadow-sm shadow-blue-900/5 overflow-hidden">
-      {/* Header row */}
-      <View className="flex-row items-center justify-between p-5 border-b border-gray-100 dark:border-zinc-800/50">
-        <View className="flex-row items-center gap-3">
-          <View className="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-xl">
-            <Ionicons name="sync" size={20} color="#2563eb" />
+      {/* ── Main toggle row ── */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => handleToggle(!toggleValue)}
+        className="flex-row items-center justify-between px-5 py-4"
+      >
+        <View className="flex-row items-center gap-3 flex-1 mr-3">
+          <View
+            className="p-2.5 rounded-xl"
+            style={{
+              backgroundColor: toggleValue ? "#2563eb18" : "#6b728018",
+            }}
+          >
+            <Ionicons
+              name={toggleValue ? "sync" : "sync-outline"}
+              size={20}
+              color={toggleValue ? "#2563eb" : "#6b7280"}
+            />
           </View>
-          <View>
+          <View className="flex-1">
             <Text className="text-base font-semibold dark:text-white text-gray-900">
-              Background Sync
+              Clipboard Sync
             </Text>
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Accessibility Service
+            <Text
+              className="text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+              numberOfLines={1}
+            >
+              {!serviceGranted
+                ? "Tap to enable in Accessibility Settings"
+                : toggleValue
+                  ? "Syncing across your devices"
+                  : "Sync is paused"}
             </Text>
           </View>
         </View>
 
-        {/* Status pill */}
+        {/* Switch — taps also handled by the parent TouchableOpacity */}
+        <Switch
+          value={toggleValue}
+          onValueChange={handleToggle}
+          thumbColor={toggleValue ? "#ffffff" : "#f4f4f5"}
+          trackColor={{ false: "#e4e4e7", true: "#2563eb" }}
+          ios_backgroundColor="#e4e4e7"
+        />
+      </TouchableOpacity>
+
+      {/* ── Divider ── */}
+      <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+
+      {/* ── Status row ── */}
+      <View className="flex-row items-center justify-between px-5 py-3.5">
+        <Text className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+          Status
+        </Text>
         <View
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full"
+          className="flex-row items-center gap-1.5 px-3 py-1 rounded-full"
           style={{ backgroundColor: `${statusColor}18` }}
         >
-          {isSyncing ? (
+          {isSyncing && syncEnabled ? (
             <ActivityIndicator size={10} color={statusColor} />
           ) : (
             <View
@@ -74,40 +135,54 @@ function SyncStatusCard() {
             />
           )}
           <Text className="text-xs font-bold" style={{ color: statusColor }}>
-            {isSyncing ? "Syncing…" : statusLabel}
+            {statusLabel}
           </Text>
         </View>
       </View>
 
-      {/* Description */}
-      <View className="px-5 pt-4 pb-2">
-        <Text className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-          {statusDesc}
-        </Text>
-      </View>
+      {/* ── Info rows depending on state ── */}
 
-      {/* CTA button – only when not yet enabled */}
-      {!accessibilityEnabled && (
-        <TouchableOpacity
-          onPress={openAccessibilitySettings}
-          activeOpacity={0.75}
-          className="mx-5 mb-5 mt-3 bg-blue-600 rounded-2xl flex-row items-center justify-center gap-2 py-3"
-        >
-          <Ionicons name="accessibility" size={18} color="white" />
-          <Text className="text-white font-bold text-sm">
-            Enable in Accessibility Settings
-          </Text>
-        </TouchableOpacity>
+      {/* Active + syncing */}
+      {serviceGranted && syncEnabled && serviceRunning && (
+        <>
+          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+          <View className="flex-row items-center gap-2.5 px-5 py-3.5">
+            <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+            <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
+              Your text is being synced to all connected devices
+            </Text>
+          </View>
+        </>
       )}
 
-      {/* Service live indicator */}
-      {serviceRunning && (
-        <View className="flex-row items-center gap-2 mx-5 mb-5 mt-3 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-2xl px-4 py-3">
-          <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-          <Text className="text-green-700 dark:text-green-400 text-sm font-medium">
-            Service is running — clipboard syncs automatically
-          </Text>
-        </View>
+      {/* Paused */}
+      {serviceGranted && !syncEnabled && (
+        <>
+          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+          <View className="flex-row items-center gap-2.5 px-5 py-3.5">
+            <Ionicons name="pause-circle-outline" size={16} color="#6b7280" />
+            <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
+              Sync is paused — flip the toggle above to resume
+            </Text>
+          </View>
+        </>
+      )}
+
+      {/* Not set up — first-time CTA */}
+      {!serviceGranted && (
+        <>
+          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+          <TouchableOpacity
+            onPress={openAccessibilitySettings}
+            activeOpacity={0.75}
+            className="mx-5 my-4 bg-blue-600 rounded-2xl flex-row items-center justify-center gap-2 py-3"
+          >
+            <Ionicons name="accessibility" size={18} color="white" />
+            <Text className="text-white font-bold text-sm">
+              Enable in Accessibility Settings
+            </Text>
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );
