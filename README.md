@@ -206,6 +206,3 @@ The following checks run automatically on every commit:
 
 Distributed under the **GPL-3.0 License**. See [`LICENSE`](LICENSE) for more information.
 
----
-
-<p align="center">Built with ❤️ by <a href="https://github.com/vaaibhavmishra">Vaibhav Mishra</a></p>

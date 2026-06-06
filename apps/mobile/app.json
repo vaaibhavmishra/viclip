@@ -3,6 +3,7 @@
     "name": "ViClip",
     "slug": "ViClip",
     "version": "2.0.0",
+    "runtimeVersion": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/viclip-icon.png",
     "scheme": "viclip",
@@ -95,9 +96,6 @@
 
     "updates": {
       "url": "https://u.expo.dev/f4f1bef5-c85d-4aec-bdb2-608ca5827507"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     }
   }
 }
