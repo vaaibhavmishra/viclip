@@ -2,7 +2,16 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalDependencies": ["**/.env", "**/.env.*", "biome.json"],
-  "globalEnv": ["NODE_ENV", "CI"],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI",
+    "APP_VARIANT",
+    "GOOGLE_SERVICES_PLIST",
+    "GOOGLE_SERVICES_JSON",
+    "REVERSED_CLIENT_ID",
+    "MAIN_VITE_*"
+  ],
+  "globalPassThroughEnv": ["ELECTRON_RENDERER_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

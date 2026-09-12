@@ -604,3 +604,48 @@ export async function updateClip(clipId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Update the content of an existing clip.
+ * The content should already be encrypted before calling this function.
+ */
+export async function updateClipContent(
+  clipId: string,
+  content: string,
+): Promise<void> {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      console.warn("No user is currently authenticated");
+      return;
+    }
+    const userId = user.uid;
+    const db = getDatabase(
+      getApp(),
+      "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
+    );
+    const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
+
+    // Find the clip by id field
+    const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
+    const snapshot = await get(clipQuery);
+
+    if (snapshot.exists()) {
+      const key = Object.keys(snapshot.val())[0];
+      await update(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+        {
+          content,
+          timestamp: new Date().toISOString(),
+          sourceDevice: Device.deviceName ?? "Unknown Device",
+        },
+      );
+    } else {
+      console.warn(`Clip not found for content update`, { userId, clipId });
+    }
+  } catch (error) {
+    console.error("Failed to update clip content", error);
+    throw error;
+  }
+}

@@ -1,6 +1,6 @@
 import type { ClipContentType, ClipData } from "@viclip/types";
 import { decrypt, encrypt, getActiveDEK, isKeyLoaded } from "./crypto";
-import { addClip, updateClip } from "./firebase";
+import { addClip, updateClip, updateClipContent } from "./firebase";
 
 export async function sendClip(
   clipboard: string,
@@ -76,4 +76,24 @@ export function decryptClips(
   }
 
   return decryptedClips;
+}
+
+/**
+ * Edit a clip's content with encryption.
+ * Encrypts the new content and updates it in Firebase.
+ */
+export async function editClip(
+  clipId: string,
+  newContent: string,
+): Promise<void> {
+  let contentToSave = newContent;
+
+  if (isKeyLoaded()) {
+    const dek = getActiveDEK();
+    contentToSave = encrypt(newContent, dek);
+  } else {
+    throw new Error("Encryption key not loaded. Cannot save clip securely.");
+  }
+
+  await updateClipContent(clipId, contentToSave);
 }

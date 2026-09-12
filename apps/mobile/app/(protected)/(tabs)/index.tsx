@@ -5,13 +5,17 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
 import { useShareIntentContext } from "expo-share-intent";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  Dimensions,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   useColorScheme,
@@ -19,7 +23,7 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
-import { decryptClips, sendClip } from "@/services/clipboard";
+import { decryptClips, editClip, sendClip } from "@/services/clipboard";
 import {
   addClip,
   enforceClipLimit,
@@ -30,6 +34,8 @@ import {
 } from "@/services/firebase";
 import { detectClipboardType, extractTextFromShare } from "@/utils/util";
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 export default function Index() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -39,6 +45,12 @@ export default function Index() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedClip, setSelectedClip] = useState<string>();
   const [lastClip, setLastClip] = useState<string | null>(null);
+
+  // Edit modal state
+  const [editingClip, setEditingClip] = useState<ClipData | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const editInputRef = useRef<TextInput>(null);
 
   const { hasShareIntent, shareIntent, resetShareIntent } =
     useShareIntentContext();
@@ -265,6 +277,59 @@ export default function Index() {
     }
   };
 
+  const handleOpenEdit = useCallback((clip: ClipData) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingClip(clip);
+    setEditContent(clip.content);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingClip || editContent === editingClip.content) {
+      setEditingClip(null);
+      return;
+    }
+
+    if (editContent.trim().length === 0) {
+      Toast.show({
+        type: "error",
+        text1: "Cannot Save Empty Clip",
+        text2: "Please enter some content.",
+      });
+      return;
+    }
+
+    setIsSavingEdit(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Optimistic UI update
+    const clipId = editingClip.id;
+    setClipboardContent((prev) =>
+      prev.map((c) => (c.id === clipId ? { ...c, content: editContent } : c)),
+    );
+    setEditingClip(null);
+
+    try {
+      await editClip(clipId, editContent);
+      await fetchClips();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show({
+        type: "success",
+        text1: "Clip Updated",
+        text2: "Your changes have been saved.",
+      });
+    } catch {
+      // Revert on error
+      await fetchClips();
+      Toast.show({
+        type: "error",
+        text1: "Failed to Update Clip",
+        text2: "Please try again later.",
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }, [editingClip, editContent, fetchClips]);
+
   const renderItem = useCallback(
     ({ item, index }: { item: ClipData; index: number }) => (
       <Animated.View
@@ -343,6 +408,12 @@ export default function Index() {
           </View>
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
+              onPress={() => handleOpenEdit(item)}
+              className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
+            >
+              <Ionicons name="create-outline" size={16} color="#2563eb" />
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => handleTogglePin(item.id, !!item.pinned)}
               className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
             >
@@ -362,7 +433,7 @@ export default function Index() {
         </View>
       </Animated.View>
     ),
-    [selectedClip, handleTogglePin, handleDelete],
+    [selectedClip, handleTogglePin, handleDelete, handleOpenEdit],
   );
 
   if (isLoading && !refreshing) {
@@ -420,6 +491,181 @@ export default function Index() {
           ) : null
         }
       />
+
+      {/* Edit Clip Modal */}
+      <Modal
+        visible={editingClip !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditingClip(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setEditingClip(null)}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "flex-end",
+            }}
+          >
+            <TouchableWithoutFeedback>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <View
+                  style={{
+                    backgroundColor: isDark ? "#18181b" : "#ffffff",
+                    borderTopLeftRadius: 28,
+                    borderTopRightRadius: 28,
+                    minHeight: SCREEN_HEIGHT * 0.55,
+                    maxHeight: SCREEN_HEIGHT * 0.85,
+                    borderTopWidth: 1,
+                    borderColor: isDark
+                      ? "rgba(255,255,255,0.1)"
+                      : "rgba(0,0,0,0.05)",
+                  }}
+                >
+                  {/* Drag Handle */}
+                  <View className="items-center pt-3 pb-1">
+                    <View
+                      className="rounded-full"
+                      style={{
+                        width: 40,
+                        height: 5,
+                        backgroundColor: isDark
+                          ? "rgba(255,255,255,0.2)"
+                          : "rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  </View>
+
+                  {/* Header */}
+                  <View className="flex-row items-center justify-between px-6 py-4">
+                    <View className="flex-row items-center gap-2">
+                      <View className="bg-blue-600 p-1.5 rounded-xl">
+                        <Ionicons name="create" size={18} color="white" />
+                      </View>
+                      <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                        Edit Clip
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setEditingClip(null)}
+                      className="p-2 rounded-full bg-gray-100 dark:bg-zinc-800"
+                    >
+                      <Ionicons
+                        name="close"
+                        size={20}
+                        color={isDark ? "#9ca3af" : "#6b7280"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Text Input */}
+                  <View className="flex-1 px-6 pb-2">
+                    <TextInput
+                      ref={editInputRef}
+                      multiline
+                      autoFocus
+                      value={editContent}
+                      onChangeText={setEditContent}
+                      placeholder="Enter clip content..."
+                      placeholderTextColor={isDark ? "#52525b" : "#a1a1aa"}
+                      style={{
+                        flex: 1,
+                        minHeight: SCREEN_HEIGHT * 0.25,
+                        fontSize: 15,
+                        lineHeight: 22,
+                        color: isDark ? "#fafafa" : "#18181b",
+                        fontFamily:
+                          Platform.OS === "ios" ? "Menlo" : "monospace",
+                        textAlignVertical: "top",
+                        padding: 16,
+                        backgroundColor: isDark
+                          ? "rgba(255,255,255,0.05)"
+                          : "rgba(0,0,0,0.03)",
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: isDark
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(0,0,0,0.06)",
+                      }}
+                    />
+                  </View>
+
+                  {/* Footer Info */}
+                  <View className="flex-row items-center justify-between px-6 py-2">
+                    <View className="flex-row items-center gap-3">
+                      <View className="flex-row items-center gap-1.5 bg-gray-100 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+                        <Ionicons
+                          name="text-outline"
+                          size={13}
+                          color="#6b7280"
+                        />
+                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                          {editContent.length} chars
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-1.5 bg-gray-100 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+                        <Ionicons
+                          name="document-text-outline"
+                          size={13}
+                          color="#6b7280"
+                        />
+                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                          {editContent.split(/\s+/).filter(Boolean).length}{" "}
+                          words
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View
+                    className="flex-row px-6 gap-3"
+                    style={{
+                      paddingBottom: Platform.OS === "ios" ? 36 : 20,
+                      paddingTop: 8,
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      className="bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 py-3.5 rounded-2xl items-center justify-center"
+                      activeOpacity={0.7}
+                      onPress={() => setEditingClip(null)}
+                    >
+                      <Text className="text-gray-600 dark:text-gray-400 font-bold text-[15px]">
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      className="bg-blue-600 dark:bg-blue-500 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-md shadow-blue-500/30"
+                      activeOpacity={0.8}
+                      onPress={handleSaveEdit}
+                      disabled={isSavingEdit}
+                    >
+                      {isSavingEdit ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color="#ffffff"
+                          />
+                          <Text className="text-white font-bold text-[15px]">
+                            Save
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Floating Action Area */}
       <View className="absolute bottom-[110px] left-5 right-5 overflow-hidden rounded-3xl border border-gray-200/50 dark:border-zinc-800/80 shadow-lg shadow-blue-900/10">

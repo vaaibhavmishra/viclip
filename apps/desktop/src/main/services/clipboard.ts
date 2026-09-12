@@ -57,17 +57,19 @@ export function writeToClipboard(content: string): void {
   );
 }
 
-function startWatchers(userId: string): void {
-  lastText = clipboard.readText();
+async function startWatchers(userId: string): Promise<void> {
+  lastText = await clipboard.readText();
   // const lastImage = clipboard.readImage(); // TODO: Image logic paused
   log.debug("Starting clipboard watchers", { userId });
 
   // Monitor local clipboard changes to send to Firebase
-  clipboardInterval = setInterval(() => {
+  clipboardInterval = setInterval(async () => {
     try {
       if (!syncState.isUpdatingFromFirebase) {
-        const currentText = clipboard.readText();
-        const formats = clipboard.availableFormats();
+        const currentText = await clipboard.readText();
+        const formats = ["text/html", "text/rtf", "text/uri-list"].filter(
+          (format) => clipboard.has(format),
+        );
 
         // Skip processing if content hasn't changed
         if (currentText === lastText) return;

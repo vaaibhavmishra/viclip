@@ -19,7 +19,7 @@ export default function RootLayout() {
           <Stack.Screen name="(protected)" />
           <Stack.Screen name="login" />
         </Stack>
-        <Toast autoHide visibilityTime={2000} />
+        <Toast />
       </ShareIntentProvider>
     </SafeAreaProvider>
   );

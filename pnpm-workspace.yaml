@@ -15,8 +15,5 @@ patchedDependencies:
   react-native-css-interop@0.1.22: patches/react-native-css-interop@0.1.22.patch
 
 peerDependencyRules:
-  allowedVersions:
-    # expo-share-intent@6.1.1 hasn't updated peerDeps to include ^56 yet but works fine
-    expo-share-intent>expo: "56"
   ignoreMissing:
     - "@expo/dom-webview"

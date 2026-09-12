@@ -1,4 +1,5 @@
 import { exec } from "node:child_process";
+import os from "node:os";
 import { app, ipcMain, shell } from "electron";
 import log from "electron-log/main";
 import { getAuth } from "firebase/auth";
@@ -26,7 +27,6 @@ import {
   updateClip,
 } from "../services/firebase";
 import { registerGlobalShortcut } from "../services/initApp";
-
 import { settingsStorage } from "../services/settings";
 import { createSettingsWindow } from "./window";
 
@@ -92,7 +92,9 @@ export function initIPC(): void {
   ipcMain.handle("remove-all-clips", removeAllClips);
 
   // Get Clips
-  ipcMain.handle("get-clips", getDecryptedClips);
+  ipcMain.handle("get-clips", () => {
+    return getDecryptedClips();
+  });
 
   ipcMain.on("sign-out-user", () => {
     logoutUser();
@@ -176,7 +178,7 @@ export function initIPC(): void {
         // Explicitly update timestamp to move clip to top
         updateClip(user.uid, id, {
           timestamp: new Date().toISOString(),
-          sourceDevice: process.env.computerName || "Desktop",
+          sourceDevice: os.hostname() || "Desktop",
         });
       }
     }
