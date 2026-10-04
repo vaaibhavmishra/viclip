@@ -25,11 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.destroyerv.viclip",
-      "permissions": [
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.WAKE_LOCK",
-        "android.permission.IGNORE_BATTERY_OPTIMIZATION"
-      ]
+      "permissions": ["android.permission.POST_NOTIFICATIONS"]
     },
     "web": {
       "bundler": "metro",
@@ -79,7 +75,7 @@
         }
       ],
       "expo-font",
-      "./modules/viclip-sync/app.plugin.js"
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true,

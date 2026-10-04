@@ -14,6 +14,7 @@ node_modules/
 dist/
 out/
 build/
+lib/
 web-build/
 *.tsbuildinfo
 

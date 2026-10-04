@@ -18,6 +18,7 @@
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/auth": "^26.4.0",
     "@react-native-firebase/database": "^26.4.0",
+    "@react-native-firebase/messaging": "^26.4.0",
     "@viclip/constants": "workspace:*",
     "@viclip/types": "workspace:*",
     "@viclip/utils": "workspace:*",

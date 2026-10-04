@@ -51,7 +51,10 @@ export async function addUserProfile(user: User): Promise<void> {
   await set(userRef, userData);
 }
 
-export async function addDevice(userId: string): Promise<void> {
+export async function addDevice(
+  userId: string,
+  fcmToken?: string,
+): Promise<void> {
   const db = getDatabase(
     getApp(),
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
@@ -80,21 +83,60 @@ export async function addDevice(userId: string): Promise<void> {
       `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
     );
 
-    await update(specificDeviceRef, {
-      deviceName,
+    const updatePayload: Partial<DeviceData> = {
+      deviceName: deviceName ?? "Unknown Device",
       platform,
       lastActive: new Date().toISOString(),
-    });
+    };
+    if (fcmToken) {
+      updatePayload.fcmToken = fcmToken;
+    }
+
+    await update(specificDeviceRef, updatePayload);
     return;
   }
 
   const newDeviceRef = push(deviceRef);
-  await set(newDeviceRef, {
+  const newPayload: DeviceData = {
     id: Crypto.randomUUID(),
-    deviceName,
+    deviceName: deviceName ?? "Unknown Device",
     platform,
     lastActive: new Date().toISOString(),
-  });
+    ...(fcmToken ? { fcmToken } : {}),
+  };
+  await set(newDeviceRef, newPayload);
+}
+
+export async function updateDeviceFCMToken(
+  userId: string,
+  fcmToken: string,
+): Promise<void> {
+  const db = getDatabase(
+    getApp(),
+    "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
+  );
+  const deviceName = Device.deviceName;
+  if (!deviceName) return;
+
+  const deviceRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`);
+  const deviceQuery = query(
+    deviceRef,
+    orderByChild("deviceName"),
+    equalTo(deviceName),
+  );
+
+  const device = await get(deviceQuery);
+  if (device.exists()) {
+    const deviceKey = Object.keys(device.val())[0];
+    const specificDeviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
+    );
+    await update(specificDeviceRef, {
+      fcmToken,
+      lastActive: new Date().toISOString(),
+    });
+  }
 }
 
 export async function getDevices(): Promise<Record<string, DeviceData> | null> {
