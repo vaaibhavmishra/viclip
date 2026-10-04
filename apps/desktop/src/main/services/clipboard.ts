@@ -248,7 +248,8 @@ async function startWatchers(userId: string): Promise<void> {
             );
           }
         } catch (err) {
-          log.warn("Decryption failed (possibly legacy plaintext):", err);
+          const errMsg = err instanceof Error ? err.message : String(err);
+          log.warn(`Decryption failed (possibly legacy plaintext): ${errMsg}`);
         }
         // DECRYPTION END
 
@@ -378,7 +379,8 @@ function decryptClips(
         newClip.content = decrypt(clip.content, dek);
       }
     } catch (error) {
-      log.warn(`Failed to decrypt clip ${key}:`, error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      log.warn(`Failed to decrypt clip ${key} (using raw content): ${errMsg}`);
       // Keep original content (might be plaintext legacy data)
     }
     decryptedClips[key] = newClip;

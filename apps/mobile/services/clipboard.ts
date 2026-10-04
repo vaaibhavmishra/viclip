@@ -77,7 +77,10 @@ export function decryptClips(
         newClip.content = decrypt(clip.content, dek);
       }
     } catch (error) {
-      console.warn(`Failed to decrypt clip ${key}:`, error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `Failed to decrypt clip ${key} (using raw content): ${errMsg}`,
+      );
       // Keep original content (might be plaintext legacy data)
     }
     decryptedClips[key] = newClip;

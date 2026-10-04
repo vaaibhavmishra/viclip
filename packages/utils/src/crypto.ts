@@ -43,28 +43,23 @@ export const createCryptoService = <TBuffer extends BufferLike = BufferLike>(
     },
 
     decrypt: (encryptedText: string, key: Uint8Array): string => {
-      try {
-        const parts = encryptedText.split(":");
-        if (parts.length !== 3) {
-          throw new Error("Invalid encrypted data format");
-        }
-
-        const [ivHex, authTagHex, encryptedHex] = parts;
-
-        const iv = api.Buffer.from(ivHex, "hex");
-        const authTag = api.Buffer.from(authTagHex, "hex");
-        const decipher = api.createDecipheriv(CRYPTO_CONFIG.algorithm, key, iv);
-
-        decipher.setAuthTag(authTag);
-
-        let decrypted = decipher.update(encryptedHex, "hex", "utf8");
-        decrypted += decipher.final("utf8");
-
-        return decrypted;
-      } catch (error) {
-        console.debug("Decryption failed:", error);
-        throw error;
+      const parts = encryptedText.split(":");
+      if (parts.length !== 3) {
+        throw new Error("Invalid encrypted data format");
       }
+
+      const [ivHex, authTagHex, encryptedHex] = parts;
+
+      const iv = api.Buffer.from(ivHex, "hex");
+      const authTag = api.Buffer.from(authTagHex, "hex");
+      const decipher = api.createDecipheriv(CRYPTO_CONFIG.algorithm, key, iv);
+
+      decipher.setAuthTag(authTag);
+
+      let decrypted = decipher.update(encryptedHex, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+
+      return decrypted;
     },
 
     wrapKey: function (dek: TBuffer, kek: Uint8Array): string {
