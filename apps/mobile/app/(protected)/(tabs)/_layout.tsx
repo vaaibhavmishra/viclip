@@ -3,7 +3,8 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import type React from "react";
-import { Platform, Text, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { colors } from "@/constants/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -16,17 +17,23 @@ const TabIcon = ({
   icon: IconName;
   label: string;
 }) => {
+  const isDark = useColorScheme() === "dark";
+
   return (
-    <View className="items-center justify-center w-20">
+    <View style={styles.tabIconContainer}>
       <View
-        className={`w-16 h-8 items-center justify-center rounded-2xl ${
-          focused ? "bg-blue-600/15 dark:bg-blue-500/20" : "bg-transparent"
-        }`}
+        style={[
+          styles.tabIconPill,
+          focused &&
+            (isDark
+              ? styles.tabIconPillFocusedDark
+              : styles.tabIconPillFocusedLight),
+        ]}
       >
         <Ionicons
           name={focused ? icon : (`${icon}-outline` as IconName)}
           size={focused ? 24 : 22}
-          color={focused ? "#2563eb" : "#9ca3af"}
+          color={focused ? colors.primary : "#9ca3af"}
           style={
             focused
               ? { textShadowColor: "#2563eb40", textShadowRadius: 8 }
@@ -35,11 +42,19 @@ const TabIcon = ({
         />
       </View>
       <Text
-        className={`text-[11px] mt-1.5 font-semibold tracking-wide ${
-          focused
-            ? "text-blue-600 dark:text-blue-400 opacity-100"
-            : "text-gray-500 dark:text-gray-400 opacity-70"
-        }`}
+        style={[
+          styles.tabLabel,
+          {
+            color: focused
+              ? isDark
+                ? colors.primaryLight
+                : colors.primary
+              : isDark
+                ? colors.text.mutedDark
+                : colors.text.mutedLight,
+            opacity: focused ? 1 : 0.7,
+          },
+        ]}
       >
         {label}
       </Text>
@@ -48,12 +63,19 @@ const TabIcon = ({
 };
 
 const HeaderTitle = ({ icon, title }: { icon: IconName; title: string }) => {
+  const isDark = useColorScheme() === "dark";
+
   return (
-    <View className="flex-row items-center gap-2">
-      <View className="bg-blue-600 p-1.5 rounded-xl">
+    <View style={styles.headerTitleRow}>
+      <View style={styles.headerIconBox}>
         <Ionicons name={icon} size={20} color="white" />
       </View>
-      <Text className="text-[28px] font-black tracking-tight text-gray-900 dark:text-white">
+      <Text
+        style={[
+          styles.headerText,
+          { color: isDark ? colors.text.dark : colors.text.light },
+        ]}
+      >
         {title}
       </Text>
     </View>
@@ -115,7 +137,7 @@ export default function TabsLayout() {
           paddingBottom: 20,
         },
         tabBarBackground: () => (
-          <View className="flex-1 overflow-hidden rounded-[36px]">
+          <View style={styles.tabBarBgWrapper}>
             <BlurView
               tint={isDark ? "dark" : "light"}
               intensity={80}
@@ -170,3 +192,51 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 80,
+  },
+  tabIconPill: {
+    width: 64,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor: "transparent",
+  },
+  tabIconPillFocusedLight: {
+    backgroundColor: "rgba(37, 99, 235, 0.15)",
+  },
+  tabIconPillFocusedDark: {
+    backgroundColor: "rgba(59, 130, 246, 0.20)",
+  },
+  tabLabel: {
+    fontSize: 11,
+    marginTop: 6,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerIconBox: {
+    backgroundColor: colors.primary,
+    padding: 6,
+    borderRadius: 12,
+  },
+  headerText: {
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  tabBarBgWrapper: {
+    flex: 1,
+    overflow: "hidden",
+    borderRadius: 36,
+  },
+});

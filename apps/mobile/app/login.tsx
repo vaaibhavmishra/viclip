@@ -8,9 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import Animated, {
@@ -21,10 +23,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { colors } from "@/constants/theme";
 import { loginUser, resetPassword, signupUser } from "../services/auth";
 
 export default function Login() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -132,27 +138,35 @@ export default function Login() {
     }
   };
 
-  const getInputStyle = (inputName: string) => {
+  const getInputContainerStyle = (inputName: string) => {
     const isFocused = focusedInput === inputName;
-    return `flex-row items-center border rounded-2xl px-4 py-3.5 ${
-      isFocused
-        ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-400 dark:border-blue-500"
-        : "bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-700/50"
-    }`;
+    if (isFocused) {
+      return isDark
+        ? styles.inputContainerFocusedDark
+        : styles.inputContainerFocusedLight;
+    }
+    return isDark
+      ? styles.inputContainerNormalDark
+      : styles.inputContainerNormalLight;
   };
 
   const getIconColor = (inputName: string) => {
-    return focusedInput === inputName ? "#3b82f6" : "#6b7280";
+    return focusedInput === inputName ? colors.primaryLight : "#6b7280";
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f9fafb] dark:bg-black">
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        isDark ? styles.safeAreaDark : styles.safeAreaLight,
+      ]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerClassName="flex-grow justify-center px-5 py-8"
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -160,44 +174,82 @@ export default function Login() {
           <Animated.View
             entering={FadeInDown.duration(500)}
             layout={LinearTransition.duration(200)}
-            className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[36px] px-6 py-10 shadow-lg shadow-blue-900/5"
+            style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
           >
-            <View className="items-center mb-8">
-              <View className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-[28px] mb-5 shadow-sm border border-blue-100 dark:border-blue-900/30">
+            <View style={styles.header}>
+              <View
+                style={[
+                  styles.logoBox,
+                  isDark ? styles.logoBoxDark : styles.logoBoxLight,
+                ]}
+              >
                 <Image
                   source={require("../assets/images/viclip-icon.png")}
-                  className="w-20 h-20"
+                  style={styles.logo}
                   resizeMode="contain"
                 />
               </View>
-              <Text className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+              <Text
+                style={[
+                  styles.title,
+                  { color: isDark ? colors.text.dark : colors.text.light },
+                ]}
+              >
                 Welcome to ViClip
               </Text>
-              <Text className="text-[15px] font-medium text-gray-500 dark:text-gray-400 mt-2.5 text-center px-2 leading-relaxed">
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    color: isDark
+                      ? colors.text.mutedDark
+                      : colors.text.mutedLight,
+                  },
+                ]}
+              >
                 Sync your clipboard seamlessly across all your devices
               </Text>
             </View>
 
-            <View className="w-full gap-5">
+            <View style={styles.form}>
               {/* Username for Signup */}
               {!isLogin && (
                 <Animated.View
                   entering={FadeInUp.duration(300)}
                   exiting={FadeOutUp.duration(200)}
                   layout={LinearTransition.duration(200)}
-                  className="gap-2"
+                  style={styles.inputGroup}
                 >
-                  <Text className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      {
+                        color: isDark
+                          ? colors.text.subDark
+                          : colors.text.subLight,
+                      },
+                    ]}
+                  >
                     Username
                   </Text>
-                  <Animated.View className={getInputStyle("username")}>
+                  <Animated.View
+                    style={[
+                      styles.inputContainer,
+                      getInputContainerStyle("username"),
+                    ]}
+                  >
                     <Feather
                       name="user"
                       size={20}
                       color={getIconColor("username")}
                     />
                     <TextInput
-                      className="flex-1 ml-3 text-base font-medium text-gray-900 dark:text-white"
+                      style={[
+                        styles.textInput,
+                        {
+                          color: isDark ? colors.text.dark : colors.text.light,
+                        },
+                      ]}
                       placeholder="Choose a username"
                       placeholderTextColor="#9ca3af"
                       value={username}
@@ -214,19 +266,38 @@ export default function Login() {
               {/* Email */}
               <Animated.View
                 layout={LinearTransition.duration(200)}
-                className="gap-2"
+                style={styles.inputGroup}
               >
-                <Text className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">
+                <Text
+                  style={[
+                    styles.inputLabel,
+                    {
+                      color: isDark
+                        ? colors.text.subDark
+                        : colors.text.subLight,
+                    },
+                  ]}
+                >
                   Email Address
                 </Text>
-                <Animated.View className={getInputStyle("email")}>
+                <Animated.View
+                  style={[
+                    styles.inputContainer,
+                    getInputContainerStyle("email"),
+                  ]}
+                >
                   <Feather
                     name="mail"
                     size={20}
                     color={getIconColor("email")}
                   />
                   <TextInput
-                    className="flex-1 ml-3 text-base font-medium text-gray-900 dark:text-white"
+                    style={[
+                      styles.textInput,
+                      {
+                        color: isDark ? colors.text.dark : colors.text.light,
+                      },
+                    ]}
                     placeholder="you@example.com"
                     placeholderTextColor="#9ca3af"
                     value={email}
@@ -244,11 +315,21 @@ export default function Login() {
               {/* Password */}
               <Animated.View
                 layout={LinearTransition.duration(200)}
-                className="gap-2"
+                style={styles.inputGroup}
               >
-                <View className="flex-row items-center justify-between ml-1 pr-1">
-                  <View className="flex-row items-center">
-                    <Text className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                <View style={styles.passwordHeaderRow}>
+                  <View style={styles.passwordLabelRow}>
+                    <Text
+                      style={[
+                        styles.inputLabel,
+                        {
+                          color: isDark
+                            ? colors.text.subDark
+                            : colors.text.subLight,
+                          marginLeft: 0,
+                        },
+                      ]}
+                    >
                       Password
                     </Text>
                     {!isLogin && (
@@ -261,33 +342,51 @@ export default function Login() {
                             !showPasswordRequirements,
                           );
                         }}
-                        className="p-1 ml-1"
+                        style={styles.infoIconBtn}
                       >
                         <Feather name="info" size={16} color="#6b7280" />
                       </TouchableOpacity>
                     )}
                   </View>
-                  {/* Forgot Password Link specifically placed here for Login */}
                   {isLogin && (
                     <TouchableOpacity
                       onPress={handleForgotPassword}
                       disabled={isLoading}
                     >
-                      <Text className="text-blue-600 dark:text-blue-400 text-[13px] font-bold">
+                      <Text
+                        style={[
+                          styles.forgotPasswordText,
+                          {
+                            color: isDark
+                              ? colors.primaryLight
+                              : colors.primary,
+                          },
+                        ]}
+                      >
                         Forgot Password?
                       </Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
-                <Animated.View className={getInputStyle("password")}>
+                <Animated.View
+                  style={[
+                    styles.inputContainer,
+                    getInputContainerStyle("password"),
+                  ]}
+                >
                   <Feather
                     name="lock"
                     size={20}
                     color={getIconColor("password")}
                   />
                   <TextInput
-                    className="flex-1 ml-3 text-base font-medium text-gray-900 dark:text-white"
+                    style={[
+                      styles.textInput,
+                      {
+                        color: isDark ? colors.text.dark : colors.text.light,
+                      },
+                    ]}
                     placeholder="Enter your password"
                     placeholderTextColor="#9ca3af"
                     value={password}
@@ -302,7 +401,7 @@ export default function Login() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setShowPassword(!showPassword);
                     }}
-                    className="p-1"
+                    style={styles.eyeIconBtn}
                   >
                     <Feather
                       name={showPassword ? "eye" : "eye-off"}
@@ -317,12 +416,35 @@ export default function Login() {
                     entering={FadeInUp.duration(300)}
                     exiting={FadeOutUp.duration(200)}
                     layout={LinearTransition.duration(200)}
-                    className="mt-1 px-1 bg-gray-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800"
+                    style={[
+                      styles.passwordReqBox,
+                      isDark
+                        ? styles.passwordReqBoxDark
+                        : styles.passwordReqBoxLight,
+                    ]}
                   >
-                    <Text className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <Text
+                      style={[
+                        styles.passwordReqTitle,
+                        {
+                          color: isDark
+                            ? colors.text.subDark
+                            : colors.text.subLight,
+                        },
+                      ]}
+                    >
                       Password requirements:
                     </Text>
-                    <Text className="text-[13px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+                    <Text
+                      style={[
+                        styles.passwordReqText,
+                        {
+                          color: isDark
+                            ? colors.text.mutedDark
+                            : colors.text.mutedLight,
+                        },
+                      ]}
+                    >
                       • At least 12 characters long{"\n"}• Must contain 3 of the
                       following:{"\n"}
                       {"  "}• Uppercase letter (A-Z){"\n"}
@@ -340,19 +462,38 @@ export default function Login() {
                   entering={FadeInUp.duration(300)}
                   exiting={FadeOutUp.duration(200)}
                   layout={LinearTransition.duration(200)}
-                  className="gap-2"
+                  style={styles.inputGroup}
                 >
-                  <Text className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      {
+                        color: isDark
+                          ? colors.text.subDark
+                          : colors.text.subLight,
+                      },
+                    ]}
+                  >
                     Confirm Password
                   </Text>
-                  <Animated.View className={getInputStyle("confirmPassword")}>
+                  <Animated.View
+                    style={[
+                      styles.inputContainer,
+                      getInputContainerStyle("confirmPassword"),
+                    ]}
+                  >
                     <Feather
                       name="lock"
                       size={20}
                       color={getIconColor("confirmPassword")}
                     />
                     <TextInput
-                      className="flex-1 ml-3 text-base font-medium text-gray-900 dark:text-white"
+                      style={[
+                        styles.textInput,
+                        {
+                          color: isDark ? colors.text.dark : colors.text.light,
+                        },
+                      ]}
                       placeholder="Confirm your password"
                       placeholderTextColor="#9ca3af"
                       value={confirmPassword}
@@ -367,7 +508,7 @@ export default function Login() {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setShowConfirmPassword(!showConfirmPassword);
                       }}
-                      className="p-1"
+                      style={styles.eyeIconBtn}
                     >
                       <Feather
                         name={showConfirmPassword ? "eye" : "eye-off"}
@@ -385,28 +526,35 @@ export default function Login() {
                   entering={FadeInUp.duration(300)}
                   exiting={FadeOutUp.duration(200)}
                   layout={LinearTransition.duration(200)}
-                  className="bg-red-50 dark:bg-red-900/10 p-4 rounded-2xl flex-row items-center border border-red-100 dark:border-red-900/30 mt-1"
+                  style={[
+                    styles.errorBox,
+                    isDark ? styles.errorBoxDark : styles.errorBoxLight,
+                  ]}
                 >
-                  <Feather name="alert-circle" size={18} color="#ef4444" />
-                  <Text className="text-red-500 text-sm font-medium ml-2.5 flex-1">
-                    {error}
-                  </Text>
+                  <Feather
+                    name="alert-circle"
+                    size={18}
+                    color={colors.danger}
+                  />
+                  <Text style={styles.errorText}>{error}</Text>
                 </Animated.View>
               )}
 
               {/* Submit Button */}
               <Animated.View layout={LinearTransition.duration(200)}>
                 <TouchableOpacity
-                  className={`w-full bg-blue-600 active:bg-blue-700 rounded-2xl py-4 flex-row items-center justify-center mt-3 shadow-md shadow-blue-500/30 ${
-                    isLoading ? "opacity-80" : ""
-                  }`}
+                  style={[
+                    styles.submitButton,
+                    isLoading && styles.submitButtonDisabled,
+                  ]}
                   onPress={handleAuth}
                   disabled={isLoading}
+                  activeOpacity={0.8}
                 >
                   {isLoading ? (
                     <ActivityIndicator color="white" size="small" />
                   ) : (
-                    <Text className="text-[17px] font-bold text-white tracking-wide">
+                    <Text style={styles.submitButtonText}>
                       {isLogin ? "Sign In" : "Create Account"}
                     </Text>
                   )}
@@ -416,15 +564,24 @@ export default function Login() {
               {/* Toggle Mode */}
               <Animated.View
                 layout={LinearTransition.duration(200)}
-                className="flex-row justify-center items-center mt-2"
+                style={styles.toggleRow}
               >
-                <Text className="text-gray-500 dark:text-gray-400 text-[15px] font-medium">
+                <Text
+                  style={[
+                    styles.toggleText,
+                    {
+                      color: isDark
+                        ? colors.text.mutedDark
+                        : colors.text.mutedLight,
+                    },
+                  ]}
+                >
                   {isLogin
                     ? "Don't have an account?"
                     : "Already have an account?"}
                 </Text>
                 <TouchableOpacity
-                  className="ml-2"
+                  style={{ marginLeft: 8 }}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setIsLogin(!isLogin);
@@ -434,7 +591,14 @@ export default function Login() {
                   }}
                   disabled={isLoading}
                 >
-                  <Text className="text-blue-600 dark:text-blue-400 text-[15px] font-bold">
+                  <Text
+                    style={[
+                      styles.toggleBtnText,
+                      {
+                        color: isDark ? colors.primaryLight : colors.primary,
+                      },
+                    ]}
+                  >
                     {isLogin ? "Sign up" : "Log in"}
                   </Text>
                 </TouchableOpacity>
@@ -445,15 +609,30 @@ export default function Login() {
           {/* Footer text Outside the Card */}
           <Animated.View
             entering={FadeInDown.duration(600).delay(150)}
-            className="mt-8 px-4"
+            style={styles.footerBox}
           >
-            <Text className="text-gray-400 dark:text-gray-500 text-sm font-medium text-center leading-loose">
+            <Text
+              style={[
+                styles.footerText,
+                { color: isDark ? "#71717a" : "#9ca3af" },
+              ]}
+            >
               By continuing, you agree to ViClip's{"\n"}
-              <Text className="text-gray-600 dark:text-gray-400 font-bold underline">
+              <Text
+                style={[
+                  styles.footerLink,
+                  { color: isDark ? colors.text.mutedDark : "#4b5563" },
+                ]}
+              >
                 Terms of Service
               </Text>{" "}
               and{" "}
-              <Text className="text-gray-600 dark:text-gray-400 font-bold underline">
+              <Text
+                style={[
+                  styles.footerLink,
+                  { color: isDark ? colors.text.mutedDark : "#4b5563" },
+                ]}
+              >
                 Privacy Policy
               </Text>
             </Text>
@@ -463,3 +642,241 @@ export default function Login() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  safeAreaLight: {
+    backgroundColor: colors.background.light,
+  },
+  safeAreaDark: {
+    backgroundColor: colors.background.dark,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  card: {
+    borderRadius: 36,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    borderWidth: 1,
+    shadowColor: "#1e3a8a",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  cardLight: {
+    backgroundColor: colors.card.light,
+    borderColor: colors.border.light,
+  },
+  cardDark: {
+    backgroundColor: colors.card.dark,
+    borderColor: colors.border.dark,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  logoBox: {
+    padding: 20,
+    borderRadius: 28,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  logoBoxLight: {
+    backgroundColor: colors.primaryTint,
+    borderColor: "#dbeafe",
+  },
+  logoBoxDark: {
+    backgroundColor: colors.primaryTintDark,
+    borderColor: "rgba(59, 130, 246, 0.3)",
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: "500",
+    marginTop: 10,
+    textAlign: "center",
+    paddingHorizontal: 8,
+    lineHeight: 22,
+  },
+  form: {
+    width: "100%",
+    gap: 20,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inputContainerNormalLight: {
+    backgroundColor: colors.input.bgLight,
+    borderColor: colors.input.borderLight,
+  },
+  inputContainerNormalDark: {
+    backgroundColor: colors.input.bgDark,
+    borderColor: colors.input.borderDark,
+  },
+  inputContainerFocusedLight: {
+    backgroundColor: colors.input.bgFocusLight,
+    borderColor: colors.input.borderFocusLight,
+  },
+  inputContainerFocusedDark: {
+    backgroundColor: colors.input.bgFocusDark,
+    borderColor: colors.input.borderFocusDark,
+  },
+  textInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  passwordHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginLeft: 4,
+    paddingRight: 4,
+  },
+  passwordLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoIconBtn: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  eyeIconBtn: {
+    padding: 4,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  passwordReqBox: {
+    marginTop: 4,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  passwordReqBoxLight: {
+    backgroundColor: colors.subtleCard.light,
+    borderColor: colors.border.light,
+  },
+  passwordReqBoxDark: {
+    backgroundColor: "rgba(39, 39, 42, 0.3)",
+    borderColor: colors.border.dark,
+  },
+  passwordReqTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  passwordReqText: {
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
+  errorBox: {
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  errorBoxLight: {
+    backgroundColor: colors.dangerTint,
+    borderColor: colors.dangerBorder,
+  },
+  errorBoxDark: {
+    backgroundColor: colors.dangerTintDark,
+    borderColor: colors.dangerBorderDark,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 10,
+    flex: 1,
+  },
+  submitButton: {
+    width: "100%",
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  submitButtonDisabled: {
+    opacity: 0.8,
+  },
+  submitButtonText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: 0.5,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  toggleText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  toggleBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  footerBox: {
+    marginTop: 32,
+    paddingHorizontal: 16,
+  },
+  footerText: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  footerLink: {
+    fontWeight: "700",
+    textDecorationLine: "underline",
+  },
+});

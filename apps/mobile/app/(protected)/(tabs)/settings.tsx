@@ -6,17 +6,23 @@ import {
   Image,
   Platform,
   ScrollView,
+  StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
+import { colors } from "@/constants/theme";
 import { logoutUser } from "@/services/auth";
 import { useBackgroundSync } from "@/services/backgroundSync";
 
 // ─── Background Sync Status Card ──────────────────────────────────────────────
 
 function SyncStatusCard() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const {
     accessibilityEnabled,
     serviceRunning,
@@ -37,13 +43,13 @@ function SyncStatusCard() {
 
   // Status badge
   const statusColor = !serviceGranted
-    ? "#ef4444" // red  – not set up
+    ? colors.danger // red  – not set up
     : syncEnabled && serviceRunning
       ? isSyncing
-        ? "#3b82f6"
-        : "#22c55e" // blue while syncing, green active
+        ? colors.primaryLight
+        : colors.success // blue while syncing, green active
       : syncEnabled
-        ? "#f59e0b" // amber – enabled but not yet live
+        ? colors.warning // amber – enabled but not yet live
         : "#6b7280"; // grey  – paused
 
   const statusLabel = !serviceGranted
@@ -67,32 +73,46 @@ function SyncStatusCard() {
   };
 
   return (
-    <View className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl mb-6 shadow-sm shadow-blue-900/5 overflow-hidden">
+    <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
       {/* ── Main toggle row ── */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => handleToggle(!toggleValue)}
-        className="flex-row items-center justify-between px-5 py-4"
+        style={styles.toggleRow}
       >
-        <View className="flex-row items-center gap-3 flex-1 mr-3">
+        <View style={styles.toggleLeft}>
           <View
-            className="p-2.5 rounded-xl"
-            style={{
-              backgroundColor: toggleValue ? "#2563eb18" : "#6b728018",
-            }}
+            style={[
+              styles.toggleIconBox,
+              {
+                backgroundColor: toggleValue
+                  ? "rgba(37, 99, 235, 0.1)"
+                  : "rgba(107, 114, 128, 0.1)",
+              },
+            ]}
           >
             <Ionicons
               name={toggleValue ? "sync" : "sync-outline"}
               size={20}
-              color={toggleValue ? "#2563eb" : "#6b7280"}
+              color={toggleValue ? colors.primary : "#6b7280"}
             />
           </View>
-          <View className="flex-1">
-            <Text className="text-base font-semibold dark:text-white text-gray-900">
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.toggleTitle,
+                { color: isDark ? colors.text.dark : colors.text.light },
+              ]}
+            >
               Clipboard Sync
             </Text>
             <Text
-              className="text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+              style={[
+                styles.toggleSubtitle,
+                {
+                  color: isDark ? colors.text.mutedDark : "#9ca3af",
+                },
+              ]}
               numberOfLines={1}
             >
               {!serviceGranted
@@ -109,32 +129,42 @@ function SyncStatusCard() {
           value={toggleValue}
           onValueChange={handleToggle}
           thumbColor={toggleValue ? "#ffffff" : "#f4f4f5"}
-          trackColor={{ false: "#e4e4e7", true: "#2563eb" }}
+          trackColor={{ false: "#e4e4e7", true: colors.primary }}
           ios_backgroundColor="#e4e4e7"
         />
       </TouchableOpacity>
 
       {/* ── Divider ── */}
-      <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+      <View
+        style={[
+          styles.divider,
+          isDark ? styles.dividerDark : styles.dividerLight,
+        ]}
+      />
 
       {/* ── Status row ── */}
-      <View className="flex-row items-center justify-between px-5 py-3.5">
-        <Text className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+      <View style={styles.statusRow}>
+        <Text
+          style={[
+            styles.statusLabelText,
+            {
+              color: isDark ? colors.text.mutedDark : colors.text.mutedLight,
+            },
+          ]}
+        >
           Status
         </Text>
         <View
-          className="flex-row items-center gap-1.5 px-3 py-1 rounded-full"
-          style={{ backgroundColor: `${statusColor}18` }}
+          style={[styles.statusBadge, { backgroundColor: `${statusColor}18` }]}
         >
           {isSyncing && syncEnabled ? (
             <ActivityIndicator size={10} color={statusColor} />
           ) : (
             <View
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: statusColor }}
+              style={[styles.statusDot, { backgroundColor: statusColor }]}
             />
           )}
-          <Text className="text-xs font-bold" style={{ color: statusColor }}>
+          <Text style={[styles.statusBadgeText, { color: statusColor }]}>
             {statusLabel}
           </Text>
         </View>
@@ -145,10 +175,28 @@ function SyncStatusCard() {
       {/* Active + syncing */}
       {serviceGranted && syncEnabled && serviceRunning && (
         <>
-          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
-          <View className="flex-row items-center gap-2.5 px-5 py-3.5">
-            <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
-            <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
+          <View
+            style={[
+              styles.divider,
+              isDark ? styles.dividerDark : styles.dividerLight,
+            ]}
+          />
+          <View style={styles.infoRow}>
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={colors.success}
+            />
+            <Text
+              style={[
+                styles.infoText,
+                {
+                  color: isDark
+                    ? colors.text.mutedDark
+                    : colors.text.mutedLight,
+                },
+              ]}
+            >
               Your text is being synced to all connected devices
             </Text>
           </View>
@@ -158,10 +206,24 @@ function SyncStatusCard() {
       {/* Paused */}
       {serviceGranted && !syncEnabled && (
         <>
-          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
-          <View className="flex-row items-center gap-2.5 px-5 py-3.5">
+          <View
+            style={[
+              styles.divider,
+              isDark ? styles.dividerDark : styles.dividerLight,
+            ]}
+          />
+          <View style={styles.infoRow}>
             <Ionicons name="pause-circle-outline" size={16} color="#6b7280" />
-            <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
+            <Text
+              style={[
+                styles.infoText,
+                {
+                  color: isDark
+                    ? colors.text.mutedDark
+                    : colors.text.mutedLight,
+                },
+              ]}
+            >
               Sync is paused — flip the toggle above to resume
             </Text>
           </View>
@@ -171,14 +233,19 @@ function SyncStatusCard() {
       {/* Not set up — first-time CTA */}
       {!serviceGranted && (
         <>
-          <View className="h-px bg-gray-100 dark:bg-zinc-800/50 mx-5" />
+          <View
+            style={[
+              styles.divider,
+              isDark ? styles.dividerDark : styles.dividerLight,
+            ]}
+          />
           <TouchableOpacity
             onPress={openAccessibilitySettings}
             activeOpacity={0.75}
-            className="mx-5 my-4 bg-blue-600 rounded-2xl flex-row items-center justify-center gap-2 py-3"
+            style={styles.ctaButton}
           >
             <Ionicons name="accessibility" size={18} color="white" />
-            <Text className="text-white font-bold text-sm">
+            <Text style={styles.ctaButtonText}>
               Enable in Accessibility Settings
             </Text>
           </TouchableOpacity>
@@ -191,6 +258,9 @@ function SyncStatusCard() {
 // ─── Main Settings Screen ──────────────────────────────────────────────────────
 
 export default function Settings() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const auth = getAuth();
   const user = auth.currentUser;
   const userEmail = user?.email;
@@ -199,7 +269,14 @@ export default function Settings() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#f9fafb] dark:bg-black"
+      style={[
+        styles.scrollView,
+        {
+          backgroundColor: isDark
+            ? colors.background.dark
+            : colors.background.light,
+        },
+      ]}
       contentContainerStyle={{
         padding: 20,
         paddingBottom: 150,
@@ -207,21 +284,43 @@ export default function Settings() {
       }}
     >
       {/* Profile Section */}
-      <View className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-6 rounded-3xl mb-6 shadow-sm shadow-blue-900/5 items-center">
-        <View className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-4">
+      <View
+        style={[
+          styles.profileCard,
+          isDark ? styles.cardDark : styles.cardLight,
+        ]}
+      >
+        <View
+          style={[
+            styles.avatarWrapper,
+            isDark ? styles.avatarWrapperDark : styles.avatarWrapperLight,
+          ]}
+        >
           <Image
             source={
               userPhoto
                 ? { uri: userPhoto }
                 : require("../../../assets/images/default-avatar.png")
             }
-            className="w-24 h-24 rounded-full"
+            style={styles.avatarImage}
           />
         </View>
-        <Text className="font-bold text-2xl dark:text-white text-gray-900 mb-1 text-center">
+        <Text
+          style={[
+            styles.userName,
+            { color: isDark ? colors.text.dark : colors.text.light },
+          ]}
+        >
           {userName?.slice(0, 25) || "User"}
         </Text>
-        <Text className="text-gray-500 dark:text-gray-400 font-medium text-base text-center">
+        <Text
+          style={[
+            styles.userEmail,
+            {
+              color: isDark ? colors.text.mutedDark : colors.text.mutedLight,
+            },
+          ]}
+        >
           {userEmail?.slice(0, 35)}
         </Text>
       </View>
@@ -235,14 +334,194 @@ export default function Settings() {
           logoutUser();
           router.replace("/login");
         }}
-        className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-4 rounded-3xl flex-row items-center justify-center gap-2 mt-4"
+        style={[
+          styles.logoutBtn,
+          isDark ? styles.logoutBtnDark : styles.logoutBtnLight,
+        ]}
         activeOpacity={0.7}
       >
-        <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-        <Text className="text-center text-red-500 font-bold text-lg">
-          Log Out
-        </Text>
+        <Ionicons name="log-out-outline" size={24} color={colors.danger} />
+        <Text style={styles.logoutBtnText}>Log Out</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    marginBottom: 24,
+    overflow: "hidden",
+    shadowColor: "#1e3a8a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  cardLight: {
+    backgroundColor: colors.card.light,
+    borderColor: colors.border.light,
+  },
+  cardDark: {
+    backgroundColor: colors.card.dark,
+    borderColor: colors.border.dark,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  toggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleIconBox: {
+    padding: 10,
+    borderRadius: 12,
+  },
+  toggleTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  toggleSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 20,
+  },
+  dividerLight: {
+    backgroundColor: colors.border.light,
+  },
+  dividerDark: {
+    backgroundColor: "rgba(39, 39, 42, 0.5)",
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  statusLabelText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  infoText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  ctaButton: {
+    marginHorizontal: 20,
+    marginVertical: 16,
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  ctaButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  profileCard: {
+    borderWidth: 1,
+    padding: 24,
+    borderRadius: 24,
+    marginBottom: 24,
+    alignItems: "center",
+    shadowColor: "#1e3a8a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  avatarWrapper: {
+    padding: 6,
+    borderRadius: 999,
+    marginBottom: 16,
+  },
+  avatarWrapperLight: {
+    backgroundColor: colors.primaryTint,
+  },
+  avatarWrapperDark: {
+    backgroundColor: colors.primaryTintDark,
+  },
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  userName: {
+    fontWeight: "700",
+    fontSize: 24,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  userEmail: {
+    fontWeight: "500",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  logoutBtn: {
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 16,
+  },
+  logoutBtnLight: {
+    backgroundColor: colors.dangerTint,
+    borderColor: colors.dangerBorder,
+  },
+  logoutBtnDark: {
+    backgroundColor: colors.dangerTintDark,
+    borderColor: colors.dangerBorderDark,
+  },
+  logoutBtnText: {
+    textAlign: "center",
+    color: colors.danger,
+    fontWeight: "700",
+    fontSize: 18,
+  },
+});

@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -24,9 +25,9 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
+import { colors } from "@/constants/theme";
 import { decryptClips, editClip, sendClip } from "@/services/clipboard";
 import {
-  addClip,
   enforceClipLimit,
   getClips,
   removeAllClips,
@@ -80,6 +81,11 @@ export default function Index() {
     }
   }, []);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchClips();
+  }, [fetchClips]);
+
   useEffect(() => {
     if (hasShareIntent && shareIntent) {
       let exitTimer: ReturnType<typeof setTimeout> | undefined;
@@ -99,7 +105,7 @@ export default function Index() {
           } else {
             setRefreshing(true);
             await enforceClipLimit();
-            await addClip(contentToSave, "text");
+            await sendClip(contentToSave, "text");
             await fetchClips();
             setRefreshing(false);
           }
@@ -119,24 +125,25 @@ export default function Index() {
         }
       };
     }
-  }, [hasShareIntent, shareIntent, fetchClips, resetShareIntent]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchClips();
-  }, [fetchClips]);
+  }, [hasShareIntent, shareIntent, resetShareIntent, fetchClips]);
 
   useFocusEffect(
     useCallback(() => {
       fetchClips();
-      return () => {};
     }, [fetchClips]),
   );
+
+  useEffect(() => {
+    Clipboard.getStringAsync().then((content) => {
+      setLastClip(content);
+    });
+  }, []);
 
   const handleSend = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const clipboard = await Clipboard.getStringAsync();
-    if (clipboard && clipboard !== lastClip && clipboard.length < 1000) {
+
+    if (clipboard && clipboard !== lastClip) {
       setRefreshing(true);
       const contentType = await detectClipboardType(clipboard);
       if (
@@ -146,10 +153,10 @@ export default function Index() {
         contentType === "email" ||
         contentType === "color"
       ) {
-        if (clipboard.length > 10000) {
+        if (clipboard.length > CLIPBOARD_CONFIG.maxContentLength) {
           console.warn("Content exceeds maximum size limit, skipping sync", {
             contentLength: clipboard.length,
-            maxLength: 10000,
+            maxLength: CLIPBOARD_CONFIG.maxContentLength,
           });
           Toast.show({
             type: "warning",
@@ -352,24 +359,41 @@ export default function Index() {
     ({ item, index }: { item: ClipData; index: number }) => (
       <Animated.View
         entering={FadeInDown.delay(index * 50).duration(400)}
-        className={[
-          "p-5 rounded-3xl mb-4 shadow-sm shadow-blue-900/5",
+        style={[
+          styles.clipCard,
           item.pinned
-            ? "bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800/40 relative"
-            : "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800",
-        ].join(" ")}
+            ? isDark
+              ? styles.clipCardPinnedDark
+              : styles.clipCardPinnedLight
+            : isDark
+              ? styles.clipCardDark
+              : styles.clipCardLight,
+        ]}
       >
         {item.pinned && (
-          <View className="absolute -top-3 right-6 bg-amber-100 dark:bg-amber-900/60 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-700/50">
-            <Text className="text-amber-800 dark:text-amber-400 text-[10px] font-bold tracking-widest uppercase">
+          <View
+            style={[
+              styles.pinnedBadge,
+              isDark ? styles.pinnedBadgeDark : styles.pinnedBadgeLight,
+            ]}
+          >
+            <Text
+              style={[
+                styles.pinnedBadgeText,
+                { color: isDark ? colors.amber : "#92400e" },
+              ]}
+            >
               Pinned
             </Text>
           </View>
         )}
-        <View className="flex-row justify-between items-start mb-3 mt-1">
-          <View className="flex-1 mr-4">
+        <View style={styles.clipContentRow}>
+          <View style={styles.clipTextWrapper}>
             <Text
-              className="dark:text-white text-gray-900 font-medium text-lg leading-6"
+              style={[
+                styles.clipContentText,
+                { color: isDark ? colors.text.dark : colors.text.light },
+              ]}
               numberOfLines={4}
             >
               {item.content}
@@ -392,80 +416,155 @@ export default function Index() {
               }, 2000);
             }}
           >
-            <View className="bg-gray-50 dark:bg-zinc-800 p-2.5 rounded-full">
+            <View
+              style={[
+                styles.copyButton,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
+            >
               {item.id === selectedClip ? (
-                <Ionicons name="checkmark" size={20} color="#10b981" />
+                <Ionicons
+                  name="checkmark"
+                  size={20}
+                  color={colors.successAlt}
+                />
               ) : (
-                <Ionicons name="copy-outline" size={20} color="#2563eb" />
+                <Ionicons
+                  name="copy-outline"
+                  size={20}
+                  color={colors.primary}
+                />
               )}
             </View>
           </TouchableWithoutFeedback>
         </View>
 
-        <View className="flex-row justify-between items-center mt-2 border-t border-gray-100 dark:border-zinc-800/50 pt-3">
-          <View className="flex-row items-center justify-start gap-2">
-            <View className="flex-row items-center gap-1.5 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+        <View
+          style={[
+            styles.clipMetaRow,
+            isDark ? styles.clipMetaRowDark : styles.clipMetaRowLight,
+          ]}
+        >
+          <View style={styles.metaLeftGroup}>
+            <View
+              style={[
+                styles.metaBadge,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
+            >
               <Ionicons name="time-outline" size={14} color="#6b7280" />
-              <Text className="dark:text-gray-400 text-gray-500 text-xs font-medium">
+              <Text
+                style={[
+                  styles.metaText,
+                  {
+                    color: isDark
+                      ? colors.text.mutedDark
+                      : colors.text.mutedLight,
+                  },
+                ]}
+              >
                 {new Date(item.timestamp).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </Text>
             </View>
-            <View className="flex-row items-center gap-1.5 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+            <View
+              style={[
+                styles.metaBadge,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
+            >
               <Ionicons name="desktop-outline" size={14} color="#6b7280" />
               <Text
-                className="dark:text-gray-400 text-gray-500 text-xs font-medium"
+                style={[
+                  styles.metaText,
+                  {
+                    color: isDark
+                      ? colors.text.mutedDark
+                      : colors.text.mutedLight,
+                    maxWidth: 100,
+                  },
+                ]}
                 numberOfLines={1}
-                style={{ maxWidth: 100 }}
               >
                 {item.sourceDevice}
               </Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-2">
+          <View style={styles.actionButtonGroup}>
             <TouchableOpacity
               onPress={() => handleOpenEdit(item)}
-              className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
+              style={[
+                styles.actionIconBtn,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
             >
-              <Ionicons name="create-outline" size={16} color="#2563eb" />
+              <Ionicons
+                name="create-outline"
+                size={16}
+                color={colors.primary}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleTogglePin(item.id, !!item.pinned)}
-              className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
+              style={[
+                styles.actionIconBtn,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
             >
               <Ionicons
                 name={item.pinned ? "pin" : "pin-outline"}
                 size={16}
-                color={item.pinned ? "#eab308" : "#6b7280"}
+                color={item.pinned ? colors.amber : "#6b7280"}
               />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDelete(item.id)}
-              className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full"
+              style={[
+                styles.actionIconBtn,
+                isDark ? styles.subtleIconBoxDark : styles.subtleIconBoxLight,
+              ]}
             >
-              <Ionicons name="trash-outline" size={16} color="#ef4444" />
+              <Ionicons name="trash-outline" size={16} color={colors.danger} />
             </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
     ),
-    [selectedClip, handleTogglePin, handleDelete, handleOpenEdit],
+    [isDark, selectedClip, handleTogglePin, handleDelete, handleOpenEdit],
   );
 
   if (isLoading && !refreshing) {
     return (
-      <View className="flex-1 justify-center items-center dark:bg-black bg-[#f9fafb]">
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View
+        style={[
+          styles.loadingContainer,
+          {
+            backgroundColor: isDark
+              ? colors.background.dark
+              : colors.background.light,
+          },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 dark:bg-black bg-[#f9fafb]">
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark
+            ? colors.background.dark
+            : colors.background.light,
+        },
+      ]}
+    >
       <FlatList
-        className="flex-1 px-5"
+        style={styles.list}
         contentContainerStyle={{
           paddingBottom: 180,
           paddingTop: Platform.OS === "ios" ? 130 : 110,
@@ -477,18 +576,37 @@ export default function Index() {
         keyExtractor={(item) => item.id}
         extraData={selectedClip}
         ListEmptyComponent={
-          <View className="flex-1 justify-center items-center mt-20 px-8">
-            <View className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-full mb-6">
+          <View style={styles.emptyContainer}>
+            <View
+              style={[
+                styles.emptyIconBox,
+                isDark ? styles.emptyIconBoxDark : styles.emptyIconBoxLight,
+              ]}
+            >
               <Ionicons
                 name={error ? "alert-circle-outline" : "clipboard-outline"}
                 size={56}
-                color={error ? "#ef4444" : "#2563eb"}
+                color={error ? colors.danger : colors.primary}
               />
             </View>
-            <Text className="dark:text-white text-gray-900 text-xl font-bold mb-2 text-center">
+            <Text
+              style={[
+                styles.emptyTitle,
+                { color: isDark ? colors.text.dark : colors.text.light },
+              ]}
+            >
               {error ? "Oops! Something went wrong" : "Your Clipboard is Empty"}
             </Text>
-            <Text className="dark:text-gray-400 text-gray-500 text-center leading-relaxed">
+            <Text
+              style={[
+                styles.emptyDescription,
+                {
+                  color: isDark
+                    ? colors.text.mutedDark
+                    : colors.text.mutedLight,
+                },
+              ]}
+            >
               {error
                 ? error
                 : "Send text from any of your connected devices, and it will magically appear right here."}
@@ -498,11 +616,11 @@ export default function Index() {
         ListFooterComponent={
           clipboardContent.filter((c) => !c.pinned).length > 0 ? (
             <TouchableOpacity
-              className="mt-6 mb-10 py-4 flex-row justify-center items-center opacity-80"
+              style={styles.clearHistoryButton}
               activeOpacity={0.7}
               onPress={handleClearHistory}
             >
-              <Text className="text-red-500 font-semibold tracking-wide">
+              <Text style={styles.clearHistoryText}>
                 Clear Unpinned History
               </Text>
             </TouchableOpacity>
@@ -518,68 +636,76 @@ export default function Index() {
         onRequestClose={() => setEditingClip(null)}
       >
         <TouchableWithoutFeedback onPress={() => setEditingClip(null)}>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              justifyContent: "flex-end",
-            }}
-          >
+          <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
               >
                 <View
-                  style={{
-                    backgroundColor: isDark ? "#18181b" : "#ffffff",
-                    borderTopLeftRadius: 28,
-                    borderTopRightRadius: 28,
-                    minHeight: SCREEN_HEIGHT * 0.55,
-                    maxHeight: SCREEN_HEIGHT * 0.85,
-                    borderTopWidth: 1,
-                    borderColor: isDark
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(0,0,0,0.05)",
-                  }}
+                  style={[
+                    styles.modalContent,
+                    {
+                      backgroundColor: isDark
+                        ? colors.card.dark
+                        : colors.card.light,
+                      borderColor: isDark
+                        ? "rgba(255,255,255,0.1)"
+                        : "rgba(0,0,0,0.05)",
+                    },
+                  ]}
                 >
                   {/* Drag Handle */}
-                  <View className="items-center pt-3 pb-1">
+                  <View style={styles.dragHandleWrapper}>
                     <View
-                      className="rounded-full"
-                      style={{
-                        width: 40,
-                        height: 5,
-                        backgroundColor: isDark
-                          ? "rgba(255,255,255,0.2)"
-                          : "rgba(0,0,0,0.15)",
-                      }}
+                      style={[
+                        styles.dragHandle,
+                        {
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.2)"
+                            : "rgba(0,0,0,0.15)",
+                        },
+                      ]}
                     />
                   </View>
 
                   {/* Header */}
-                  <View className="flex-row items-center justify-between px-6 py-4">
-                    <View className="flex-row items-center gap-2">
-                      <View className="bg-blue-600 p-1.5 rounded-xl">
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalHeaderTitleGroup}>
+                      <View style={styles.modalHeaderIconBox}>
                         <Ionicons name="create" size={18} color="white" />
                       </View>
-                      <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                      <Text
+                        style={[
+                          styles.modalHeaderTitle,
+                          {
+                            color: isDark
+                              ? colors.text.dark
+                              : colors.text.light,
+                          },
+                        ]}
+                      >
                         Edit Clip
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => setEditingClip(null)}
-                      className="p-2 rounded-full bg-gray-100 dark:bg-zinc-800"
+                      style={[
+                        styles.modalCloseBtn,
+                        isDark
+                          ? styles.modalCloseBtnDark
+                          : styles.modalCloseBtnLight,
+                      ]}
                     >
                       <Ionicons
                         name="close"
                         size={20}
-                        color={isDark ? "#9ca3af" : "#6b7280"}
+                        color={isDark ? colors.text.mutedDark : "#6b7280"}
                       />
                     </TouchableOpacity>
                   </View>
 
                   {/* Text Input */}
-                  <View className="flex-1 px-6 pb-2">
+                  <View style={styles.modalInputWrapper}>
                     <TextInput
                       ref={editInputRef}
                       multiline
@@ -588,48 +714,75 @@ export default function Index() {
                       onChangeText={setEditContent}
                       placeholder="Enter clip content..."
                       placeholderTextColor={isDark ? "#52525b" : "#a1a1aa"}
-                      style={{
-                        flex: 1,
-                        minHeight: SCREEN_HEIGHT * 0.25,
-                        fontSize: 15,
-                        lineHeight: 22,
-                        color: isDark ? "#fafafa" : "#18181b",
-                        fontFamily:
-                          Platform.OS === "ios" ? "Menlo" : "monospace",
-                        textAlignVertical: "top",
-                        padding: 16,
-                        backgroundColor: isDark
-                          ? "rgba(255,255,255,0.05)"
-                          : "rgba(0,0,0,0.03)",
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: isDark
-                          ? "rgba(255,255,255,0.08)"
-                          : "rgba(0,0,0,0.06)",
-                      }}
+                      style={[
+                        styles.modalTextInput,
+                        {
+                          color: isDark ? "#fafafa" : "#18181b",
+                          fontFamily:
+                            Platform.OS === "ios" ? "Menlo" : "monospace",
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.05)"
+                            : "rgba(0,0,0,0.03)",
+                          borderColor: isDark
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(0,0,0,0.06)",
+                        },
+                      ]}
                     />
                   </View>
 
                   {/* Footer Info */}
-                  <View className="flex-row items-center justify-between px-6 py-2">
-                    <View className="flex-row items-center gap-3">
-                      <View className="flex-row items-center gap-1.5 bg-gray-100 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+                  <View style={styles.modalStatsRow}>
+                    <View style={styles.modalStatsGroup}>
+                      <View
+                        style={[
+                          styles.metaBadge,
+                          isDark
+                            ? styles.subtleIconBoxDark
+                            : styles.subtleIconBoxLight,
+                        ]}
+                      >
                         <Ionicons
                           name="text-outline"
                           size={13}
                           color="#6b7280"
                         />
-                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                        <Text
+                          style={[
+                            styles.metaText,
+                            {
+                              color: isDark
+                                ? colors.text.mutedDark
+                                : colors.text.mutedLight,
+                            },
+                          ]}
+                        >
                           {editContent.length} chars
                         </Text>
                       </View>
-                      <View className="flex-row items-center gap-1.5 bg-gray-100 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
+                      <View
+                        style={[
+                          styles.metaBadge,
+                          isDark
+                            ? styles.subtleIconBoxDark
+                            : styles.subtleIconBoxLight,
+                        ]}
+                      >
                         <Ionicons
                           name="document-text-outline"
                           size={13}
                           color="#6b7280"
                         />
-                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                        <Text
+                          style={[
+                            styles.metaText,
+                            {
+                              color: isDark
+                                ? colors.text.mutedDark
+                                : colors.text.mutedLight,
+                            },
+                          ]}
+                        >
                           {editContent.split(/\s+/).filter(Boolean).length}{" "}
                           words
                         </Text>
@@ -639,25 +792,36 @@ export default function Index() {
 
                   {/* Action Buttons */}
                   <View
-                    className="flex-row px-6 gap-3"
-                    style={{
-                      paddingBottom: Platform.OS === "ios" ? 36 : 20,
-                      paddingTop: 8,
-                    }}
+                    style={[
+                      styles.modalActionButtonsRow,
+                      {
+                        paddingBottom: Platform.OS === "ios" ? 36 : 20,
+                      },
+                    ]}
                   >
                     <TouchableOpacity
-                      style={{ flex: 1 }}
-                      className="bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 py-3.5 rounded-2xl items-center justify-center"
+                      style={[
+                        styles.modalCancelBtn,
+                        isDark
+                          ? styles.modalCancelBtnDark
+                          : styles.modalCancelBtnLight,
+                      ]}
                       activeOpacity={0.7}
                       onPress={() => setEditingClip(null)}
                     >
-                      <Text className="text-gray-600 dark:text-gray-400 font-bold text-[15px]">
+                      <Text
+                        style={[
+                          styles.modalCancelText,
+                          {
+                            color: isDark ? colors.text.mutedDark : "#4b5563",
+                          },
+                        ]}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={{ flex: 1 }}
-                      className="bg-blue-600 dark:bg-blue-500 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-md shadow-blue-500/30"
+                      style={styles.modalSaveBtn}
                       activeOpacity={0.8}
                       onPress={handleSaveEdit}
                       disabled={isSavingEdit}
@@ -671,9 +835,7 @@ export default function Index() {
                             size={20}
                             color="#ffffff"
                           />
-                          <Text className="text-white font-bold text-[15px]">
-                            Save
-                          </Text>
+                          <Text style={styles.modalSaveText}>Save</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -686,35 +848,422 @@ export default function Index() {
       </Modal>
 
       {/* Floating Action Area */}
-      <View className="absolute bottom-[110px] left-5 right-5 overflow-hidden rounded-3xl border border-gray-200/50 dark:border-zinc-800/80 shadow-lg shadow-blue-900/10">
+      <View
+        style={[
+          styles.floatingActionArea,
+          {
+            borderColor: isDark
+              ? "rgba(39, 39, 42, 0.8)"
+              : "rgba(229, 231, 235, 0.5)",
+          },
+        ]}
+      >
         <BlurView
           intensity={80}
           tint={isDark ? "dark" : "light"}
-          style={{ flexDirection: "row", alignItems: "center", padding: 10 }}
+          style={styles.floatingActionBlur}
         >
           <TouchableOpacity
-            style={{ flex: 1, marginRight: 6 }}
-            className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 py-3.5 rounded-2xl flex-row items-center justify-center gap-2"
+            style={[
+              styles.floatingActionBtnReceive,
+              isDark
+                ? styles.floatingActionBtnReceiveDark
+                : styles.floatingActionBtnReceiveLight,
+            ]}
             activeOpacity={0.7}
             onPress={handleReceive}
           >
-            <Ionicons name="cloud-download-outline" size={20} color="#2563eb" />
-            <Text className="text-blue-600 dark:text-blue-400 font-bold text-[15px]">
+            <Ionicons
+              name="cloud-download-outline"
+              size={20}
+              color={colors.primary}
+            />
+            <Text
+              style={[
+                styles.floatingActionBtnReceiveText,
+                { color: isDark ? colors.primaryLight : colors.primary },
+              ]}
+            >
               Receive
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={{ flex: 1, marginLeft: 6 }}
-            className="bg-blue-600 dark:bg-blue-500 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-md shadow-blue-500/30"
+            style={styles.floatingActionBtnSend}
             activeOpacity={0.8}
             onPress={handleSend}
           >
             <Ionicons name="paper-plane" size={20} color="#ffffff" />
-            <Text className="text-white font-bold text-[15px]">Send</Text>
+            <Text style={styles.floatingActionBtnSendText}>Send</Text>
           </TouchableOpacity>
         </BlurView>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  list: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  clipCard: {
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: "#1e3a8a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  clipCardLight: {
+    backgroundColor: colors.card.light,
+    borderColor: colors.border.light,
+  },
+  clipCardDark: {
+    backgroundColor: colors.card.dark,
+    borderColor: colors.border.dark,
+  },
+  clipCardPinnedLight: {
+    backgroundColor: colors.amberTint,
+    borderColor: colors.amberBorder,
+    borderWidth: 2,
+    position: "relative",
+  },
+  clipCardPinnedDark: {
+    backgroundColor: colors.amberTintDark,
+    borderColor: colors.amberBorderDark,
+    borderWidth: 2,
+    position: "relative",
+  },
+  pinnedBadge: {
+    position: "absolute",
+    top: -12,
+    right: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  pinnedBadgeLight: {
+    backgroundColor: "#fef3c7",
+    borderColor: "#fde68a",
+  },
+  pinnedBadgeDark: {
+    backgroundColor: "rgba(180, 83, 9, 0.6)",
+    borderColor: "rgba(217, 119, 6, 0.5)",
+  },
+  pinnedBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+  clipContentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  clipTextWrapper: {
+    flex: 1,
+    marginRight: 16,
+  },
+  clipContentText: {
+    fontWeight: "500",
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  copyButton: {
+    padding: 10,
+    borderRadius: 999,
+  },
+  subtleIconBoxLight: {
+    backgroundColor: "#f9fafb",
+  },
+  subtleIconBoxDark: {
+    backgroundColor: colors.border.dark,
+  },
+  clipMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+    borderTopWidth: 1,
+    paddingTop: 12,
+  },
+  clipMetaRowLight: {
+    borderTopColor: colors.border.light,
+  },
+  clipMetaRowDark: {
+    borderTopColor: "rgba(39, 39, 42, 0.5)",
+  },
+  metaLeftGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  metaText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  actionButtonGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionIconBtn: {
+    padding: 6,
+    borderRadius: 999,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 80,
+    paddingHorizontal: 32,
+  },
+  emptyIconBox: {
+    padding: 24,
+    borderRadius: 999,
+    marginBottom: 24,
+  },
+  emptyIconBoxLight: {
+    backgroundColor: colors.primaryTint,
+  },
+  emptyIconBoxDark: {
+    backgroundColor: colors.primaryTintDark,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyDescription: {
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  clearHistoryButton: {
+    marginTop: 24,
+    marginBottom: 40,
+    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    opacity: 0.8,
+  },
+  clearHistoryText: {
+    color: colors.danger,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    minHeight: SCREEN_HEIGHT * 0.55,
+    maxHeight: SCREEN_HEIGHT * 0.85,
+    borderTopWidth: 1,
+  },
+  dragHandleWrapper: {
+    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  dragHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 999,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  modalHeaderTitleGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  modalHeaderIconBox: {
+    backgroundColor: colors.primary,
+    padding: 6,
+    borderRadius: 12,
+  },
+  modalHeaderTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  modalCloseBtn: {
+    padding: 8,
+    borderRadius: 999,
+  },
+  modalCloseBtnLight: {
+    backgroundColor: "#f3f4f6",
+  },
+  modalCloseBtnDark: {
+    backgroundColor: colors.border.dark,
+  },
+  modalInputWrapper: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  modalTextInput: {
+    flex: 1,
+    minHeight: SCREEN_HEIGHT * 0.25,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlignVertical: "top",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  modalStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+  },
+  modalStatsGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  modalActionButtonsRow: {
+    flexDirection: "row",
+    paddingHorizontal: 24,
+    gap: 12,
+    paddingTop: 8,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCancelBtnLight: {
+    backgroundColor: "#f3f4f6",
+    borderColor: colors.border.lightStrong,
+  },
+  modalCancelBtnDark: {
+    backgroundColor: colors.border.dark,
+    borderColor: colors.border.darkStrong,
+  },
+  modalCancelText: {
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  modalSaveBtn: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  modalSaveText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  floatingActionArea: {
+    position: "absolute",
+    bottom: 110,
+    left: 20,
+    right: 20,
+    overflow: "hidden",
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: "#1e3a8a",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  floatingActionBlur: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+  },
+  floatingActionBtnReceive: {
+    flex: 1,
+    marginRight: 6,
+    borderWidth: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  floatingActionBtnReceiveLight: {
+    backgroundColor: colors.primaryTint,
+    borderColor: "#bfdbfe",
+  },
+  floatingActionBtnReceiveDark: {
+    backgroundColor: colors.primaryTintDark,
+    borderColor: "rgba(30, 64, 175, 0.4)",
+  },
+  floatingActionBtnReceiveText: {
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  floatingActionBtnSend: {
+    flex: 1,
+    marginLeft: 6,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  floatingActionBtnSendText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+});
