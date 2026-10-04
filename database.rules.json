@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "users": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid",
+
+        "profile": {
+          ".validate": "newData.hasChildren(['email', 'name', 'createdAt'])"
+        },
+
+        "devices": {
+          ".indexOn": ["deviceName"],
+          "$deviceId": {
+            ".validate": "newData.hasChildren(['deviceName', 'platform', 'lastActive'])"
+          }
+        },
+
+        "clips": {
+          ".indexOn": ["id", "timestamp"],
+          "$clipId": {
+            ".validate": "newData.hasChildren(['content', 'type', 'timestamp', 'sourceDevice']) && newData.child('type').val().matches(/^(text|text-formatted|url|email|color|image|document|spreadsheet|presentation|unknown)$/)"
+          }
+        },
+
+        "encryption": {
+          ".validate": "newData.hasChildren(['salt', 'wrappedKey'])"
+        },
+
+        "settings": {
+          ".validate": "newData.hasChildren(['autoSync', 'maxClipHistory'])"
+        }
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ node_modules/
 dist/
 out/
 build/
-lib/
+/functions/lib/
 web-build/
 *.tsbuildinfo
 
@@ -76,3 +76,5 @@ google-services.json
 GoogleService-Info.plist
 
 notes.md
+
+.firebaserc
