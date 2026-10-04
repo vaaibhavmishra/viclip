@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { getAuth } from "@react-native-firebase/auth";
 import { router } from "expo-router";
 import {
-  ActivityIndicator,
   Image,
   Platform,
   ScrollView,
@@ -24,51 +23,37 @@ function SyncStatusCard() {
   const isDark = colorScheme === "dark";
 
   const {
-    accessibilityEnabled,
-    serviceRunning,
-    isSyncing,
+    notificationsEnabled,
     syncEnabled,
+    tokenRegistered,
     toggleSync,
-    openAccessibilitySettings,
+    requestNotificationPermission,
   } = useBackgroundSync();
 
-  // Once the accessibility service is granted we show a simple in-app toggle.
-  // Before that, we guide the user to enable the service in Android Settings.
-  const serviceGranted = accessibilityEnabled;
-
-  // The toggle reflects the in-app syncEnabled state (not accessibilityEnabled).
-  // When the service isn't granted yet, the toggle reflects whether the service
-  // is enabled at the OS level (read-only at that point).
-  const toggleValue = serviceGranted ? syncEnabled : false;
+  const toggleValue = notificationsEnabled ? syncEnabled : false;
 
   // Status badge
-  const statusColor = !serviceGranted
-    ? colors.danger // red  – not set up
-    : syncEnabled && serviceRunning
-      ? isSyncing
-        ? colors.primaryLight
-        : colors.success // blue while syncing, green active
+  const statusColor = !notificationsEnabled
+    ? colors.warning // amber – permission needed
+    : syncEnabled && tokenRegistered
+      ? colors.success // green – active
       : syncEnabled
-        ? colors.warning // amber – enabled but not yet live
-        : "#6b7280"; // grey  – paused
+        ? colors.primary // blue – connecting
+        : "#6b7280"; // grey – paused
 
-  const statusLabel = !serviceGranted
-    ? "Not Set Up"
-    : syncEnabled && serviceRunning
-      ? isSyncing
-        ? "Syncing…"
-        : "Active"
+  const statusLabel = !notificationsEnabled
+    ? "Permission Needed"
+    : syncEnabled && tokenRegistered
+      ? "Active"
       : syncEnabled
-        ? "Starting…"
+        ? "Connecting…"
         : "Paused";
 
   const handleToggle = (value: boolean) => {
-    if (!serviceGranted) {
-      // Service not set up — send user to Accessibility Settings
-      openAccessibilitySettings();
+    if (!notificationsEnabled) {
+      requestNotificationPermission();
       return;
     }
-    // Service already granted — simply pause/resume in-app
     toggleSync(value);
   };
 
@@ -92,7 +77,7 @@ function SyncStatusCard() {
             ]}
           >
             <Ionicons
-              name={toggleValue ? "sync" : "sync-outline"}
+              name={toggleValue ? "notifications" : "notifications-outline"}
               size={20}
               color={toggleValue ? colors.primary : "#6b7280"}
             />
@@ -104,7 +89,7 @@ function SyncStatusCard() {
                 { color: isDark ? colors.text.dark : colors.text.light },
               ]}
             >
-              Clipboard Sync
+              Clip Notifications
             </Text>
             <Text
               style={[
@@ -115,16 +100,16 @@ function SyncStatusCard() {
               ]}
               numberOfLines={1}
             >
-              {!serviceGranted
-                ? "Tap to enable in Accessibility Settings"
+              {!notificationsEnabled
+                ? "Tap to enable push notifications"
                 : toggleValue
-                  ? "Syncing across your devices"
-                  : "Sync is paused"}
+                  ? "Receiving clips from all your devices"
+                  : "Sync notifications are paused"}
             </Text>
           </View>
         </View>
 
-        {/* Switch — taps also handled by the parent TouchableOpacity */}
+        {/* Switch */}
         <Switch
           value={toggleValue}
           onValueChange={handleToggle}
@@ -157,23 +142,15 @@ function SyncStatusCard() {
         <View
           style={[styles.statusBadge, { backgroundColor: `${statusColor}18` }]}
         >
-          {isSyncing && syncEnabled ? (
-            <ActivityIndicator size={10} color={statusColor} />
-          ) : (
-            <View
-              style={[styles.statusDot, { backgroundColor: statusColor }]}
-            />
-          )}
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusBadgeText, { color: statusColor }]}>
             {statusLabel}
           </Text>
         </View>
       </View>
 
-      {/* ── Info rows depending on state ── */}
-
-      {/* Active + syncing */}
-      {serviceGranted && syncEnabled && serviceRunning && (
+      {/* ── Active info row ── */}
+      {notificationsEnabled && syncEnabled && (
         <>
           <View
             style={[
@@ -197,41 +174,14 @@ function SyncStatusCard() {
                 },
               ]}
             >
-              Your text is being synced to all connected devices
+              You'll be alerted whenever another device adds a new clip
             </Text>
           </View>
         </>
       )}
 
-      {/* Paused */}
-      {serviceGranted && !syncEnabled && (
-        <>
-          <View
-            style={[
-              styles.divider,
-              isDark ? styles.dividerDark : styles.dividerLight,
-            ]}
-          />
-          <View style={styles.infoRow}>
-            <Ionicons name="pause-circle-outline" size={16} color="#6b7280" />
-            <Text
-              style={[
-                styles.infoText,
-                {
-                  color: isDark
-                    ? colors.text.mutedDark
-                    : colors.text.mutedLight,
-                },
-              ]}
-            >
-              Sync is paused — flip the toggle above to resume
-            </Text>
-          </View>
-        </>
-      )}
-
-      {/* Not set up — first-time CTA */}
-      {!serviceGranted && (
+      {/* ── Permission Request CTA ── */}
+      {!notificationsEnabled && (
         <>
           <View
             style={[
@@ -240,14 +190,12 @@ function SyncStatusCard() {
             ]}
           />
           <TouchableOpacity
-            onPress={openAccessibilitySettings}
+            onPress={requestNotificationPermission}
             activeOpacity={0.75}
             style={styles.ctaButton}
           >
-            <Ionicons name="accessibility" size={18} color="white" />
-            <Text style={styles.ctaButtonText}>
-              Enable in Accessibility Settings
-            </Text>
+            <Ionicons name="notifications" size={18} color="white" />
+            <Text style={styles.ctaButtonText}>Enable Push Notifications</Text>
           </TouchableOpacity>
         </>
       )}

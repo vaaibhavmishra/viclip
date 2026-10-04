@@ -51,8 +51,8 @@ export default function ProtectedLayout() {
   return (
     <StateProvider>
       {/*
-       * BackgroundSyncProvider registers the native Accessibility Service
-       * event listeners exactly once for the entire authenticated session.
+       * BackgroundSyncProvider registers the FCM push notification and sync
+       * listeners exactly once for the entire authenticated session.
        * Any screen can read the current sync state via useBackgroundSync().
        */}
       <BackgroundSyncProvider>

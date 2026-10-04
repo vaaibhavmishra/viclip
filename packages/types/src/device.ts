@@ -17,6 +17,7 @@ export interface DeviceData {
   deviceName: string;
   platform: string;
   lastActive: string;
+  fcmToken?: string;
 }
 
 /**
