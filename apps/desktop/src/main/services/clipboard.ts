@@ -6,6 +6,7 @@
  */
 
 import os from "node:os";
+import { CLIPBOARD_CONFIG } from "@viclip/constants";
 import type {
   ClipboardConfig,
   ClipboardSyncState,
@@ -28,9 +29,9 @@ import {
 
 // Configuration constants
 const SYNC_CONFIG: ClipboardConfig = {
-  syncIntervalMs: 1000, // How often to check for clipboard changes
+  syncIntervalMs: CLIPBOARD_CONFIG.syncIntervalMs, // How often to check for clipboard changes
   updateCooldownMs: 2000, // Delay to prevent rapid consecutive updates (must exceed syncIntervalMs)
-  maxContentLength: 10000, // Maximum content length for clipboard data
+  maxContentLength: CLIPBOARD_CONFIG.maxContentLength, // Maximum content length for clipboard data
 };
 
 // State variables with typed interface

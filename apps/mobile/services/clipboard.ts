@@ -1,3 +1,4 @@
+import { CLIPBOARD_CONFIG } from "@viclip/constants";
 import type { ClipContentType, ClipData } from "@viclip/types";
 import { decrypt, encrypt, getActiveDEK, isKeyLoaded } from "./crypto";
 import { addClip, updateClip, updateClipContent } from "./firebase";
@@ -6,6 +7,13 @@ export async function sendClip(
   clipboard: string,
   contentType: ClipContentType,
 ) {
+  if (clipboard.length > CLIPBOARD_CONFIG.maxContentLength) {
+    console.warn(
+      `[Clipboard] Content length (${clipboard.length}) exceeds maximum limit (${CLIPBOARD_CONFIG.maxContentLength}), skipping sync`,
+    );
+    return;
+  }
+
   let contentToSend = clipboard;
   try {
     if (isKeyLoaded()) {
@@ -86,6 +94,12 @@ export async function editClip(
   clipId: string,
   newContent: string,
 ): Promise<void> {
+  if (newContent.length > CLIPBOARD_CONFIG.maxContentLength) {
+    throw new Error(
+      `Content exceeds maximum allowed length of ${CLIPBOARD_CONFIG.maxContentLength} characters.`,
+    );
+  }
+
   let contentToSave = newContent;
 
   if (isKeyLoaded()) {

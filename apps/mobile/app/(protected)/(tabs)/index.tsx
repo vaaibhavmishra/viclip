@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { CLIPBOARD_CONFIG } from "@viclip/constants";
 import type { ClipData } from "@viclip/types";
 import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
@@ -88,12 +89,20 @@ export default function Index() {
         const cleanContent = extractTextFromShare(originalContent);
         const contentToSave = cleanContent.trim() || originalContent.trim();
 
-        if (contentToSave && contentToSave.length < 1000) {
-          setRefreshing(true);
-          await enforceClipLimit();
-          await addClip(contentToSave, "text");
-          await fetchClips();
-          setRefreshing(false);
+        if (contentToSave) {
+          if (contentToSave.length > CLIPBOARD_CONFIG.maxContentLength) {
+            Toast.show({
+              type: "error",
+              text1: "Content Too Large",
+              text2: `Shared content exceeds ${CLIPBOARD_CONFIG.maxContentLength.toLocaleString()} characters limit.`,
+            });
+          } else {
+            setRefreshing(true);
+            await enforceClipLimit();
+            await addClip(contentToSave, "text");
+            await fetchClips();
+            setRefreshing(false);
+          }
         }
 
         exitTimer = setTimeout(() => {
@@ -294,6 +303,15 @@ export default function Index() {
         type: "error",
         text1: "Cannot Save Empty Clip",
         text2: "Please enter some content.",
+      });
+      return;
+    }
+
+    if (editContent.length > CLIPBOARD_CONFIG.maxContentLength) {
+      Toast.show({
+        type: "error",
+        text1: "Clip Too Large",
+        text2: `Content exceeds ${CLIPBOARD_CONFIG.maxContentLength.toLocaleString()} characters limit.`,
       });
       return;
     }

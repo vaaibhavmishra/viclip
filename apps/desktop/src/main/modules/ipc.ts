@@ -1,5 +1,6 @@
 import { exec } from "node:child_process";
 import os from "node:os";
+import { CLIPBOARD_CONFIG } from "@viclip/constants";
 import { app, ipcMain, shell } from "electron";
 import log from "electron-log/main";
 import { getAuth } from "firebase/auth";
@@ -128,6 +129,12 @@ export function initIPC(): void {
   });
 
   ipcMain.handle("update-clip", async (_, clipId: string, content: string) => {
+    if (content.length > CLIPBOARD_CONFIG.maxContentLength) {
+      throw new Error(
+        `Content exceeds maximum length of ${CLIPBOARD_CONFIG.maxContentLength} characters.`,
+      );
+    }
+
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
