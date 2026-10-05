@@ -176,7 +176,7 @@ export default function Login() {
                 ]}
               >
                 <Image
-                  source={require("../assets/images/viclip-icon.png")}
+                  source={require("../assets/images/viclip-icon-small.png")}
                   style={styles.logo}
                   resizeMode="contain"
                 />

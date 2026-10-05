@@ -1,7 +1,7 @@
 import Autoplay from "embla-carousel-autoplay";
 import { ClipboardList, KeyboardIcon, ShieldCheck, Zap } from "lucide-react";
 import { useRef } from "react";
-import icon from "../../assets/Icon.png";
+import icon from "../../assets/Icon.webp";
 import { Card, CardContent } from "../../components/ui/card";
 import {
   Carousel,
