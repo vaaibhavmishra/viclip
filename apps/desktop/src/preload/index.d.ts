@@ -20,6 +20,12 @@ export interface PreloadAPI {
     username: string,
     password: string,
   ) => Promise<void>;
+  resetAccountData: (email: string, password: string) => Promise<void>;
+  recoverAccount: (
+    email: string,
+    currentPassword: string,
+    oldPassword: string,
+  ) => Promise<void>;
   getCurrentUser: () => Promise<{
     email: string | null;
     displayName: string | null;

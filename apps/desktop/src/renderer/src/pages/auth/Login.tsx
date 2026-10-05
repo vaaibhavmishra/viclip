@@ -1,8 +1,23 @@
 import { Button } from "@renderer/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@renderer/components/ui/dialog";
 import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
 import { LINKS } from "@viclip/constants";
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from "lucide-react";
+import {
+  EyeIcon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  LockIcon,
+  MailIcon,
+  ShieldAlertIcon,
+} from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 
@@ -13,6 +28,15 @@ export const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Key mismatch recovery state
+  const [keyMismatch, setKeyMismatch] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+  const [isWiping, setIsWiping] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -39,6 +63,15 @@ export const Login: React.FC = () => {
           ? err.message
           : "Invalid email or password. Please try again.";
 
+      if (errorMessage.includes("ERR_KEY_DECRYPTION_FAILED")) {
+        setKeyMismatch(true);
+        setError("");
+        setRecoveryError("");
+        setShowWipeConfirm(false);
+        setOldPassword("");
+        return;
+      }
+
       if (errorMessage.includes("invalid-credential")) {
         setError("Invalid email or password.");
       } else {
@@ -48,6 +81,53 @@ export const Login: React.FC = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRecoverAccount = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    if (!oldPassword) {
+      setRecoveryError("Please enter your previous password.");
+      return;
+    }
+    setIsRecovering(true);
+    setRecoveryError("");
+    try {
+      await window.api.recoverAccount(email.trim(), password, oldPassword);
+      setKeyMismatch(false);
+      setOldPassword("");
+    } catch (err: unknown) {
+      console.error("Account recovery error:", err);
+      const msg = err instanceof Error ? err.message : "Recovery failed.";
+      if (msg.includes("ERR_OLD_PASSWORD_INVALID")) {
+        setRecoveryError(
+          "The previous password is incorrect. Please try again.",
+        );
+      } else {
+        setRecoveryError(msg || "Failed to recover account.");
+      }
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
+  const handleResetAccountData = async (): Promise<void> => {
+    setIsWiping(true);
+    setRecoveryError("");
+    try {
+      await window.api.resetAccountData(email.trim(), password);
+      setKeyMismatch(false);
+      setShowWipeConfirm(false);
+      setOldPassword("");
+    } catch (err: unknown) {
+      console.error("Account reset error:", err);
+      setRecoveryError(
+        err instanceof Error
+          ? err.message
+          : "Failed to reset account data. Please try again.",
+      );
+    } finally {
+      setIsWiping(false);
     }
   };
 
@@ -64,7 +144,7 @@ export const Login: React.FC = () => {
     try {
       await window.api.resetPassword(email.trim());
       setResetMessage(
-        "Check your email to reset your password. Note: Upon resetting and logging in, your existing clips, devices, and encryption data will be securely deleted.",
+        "Check your email to reset your password. Note: If your password is reset, you can unlock previous clips with your old password upon signing in, or choose to start fresh.",
       );
     } catch (err: unknown) {
       console.error("Forgot password error:", err);
@@ -186,6 +266,136 @@ export const Login: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Decryption Key Mismatch Recovery Dialog */}
+      <Dialog open={keyMismatch} onOpenChange={setKeyMismatch}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-500 mb-1">
+              <KeyRoundIcon className="h-5 w-5" />
+              <DialogTitle>Encryption Key Mismatch</DialogTitle>
+            </div>
+            <DialogDescription>
+              Your password is correct, but your clipboard history is encrypted
+              with a previous password (likely after a password reset).
+            </DialogDescription>
+          </DialogHeader>
+
+          {!showWipeConfirm ? (
+            <form onSubmit={handleRecoverAccount} className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="old-password">Previous Password</Label>
+                <div className="relative">
+                  <Input
+                    id="old-password"
+                    type={showOldPassword ? "text" : "password"}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="Enter previous password"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                  >
+                    {showOldPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter your previous password to unlock your existing clips and
+                  re-encrypt them with your new password.
+                </p>
+              </div>
+
+              {recoveryError && (
+                <div className="text-red-500 dark:text-red-400 text-xs text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
+                  {recoveryError}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  type="submit"
+                  disabled={isRecovering}
+                  className="w-full"
+                >
+                  {isRecovering
+                    ? "Unlocking & Re-encrypting..."
+                    : "Unlock & Recover Data"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isRecovering}
+                  onClick={() => {
+                    setShowWipeConfirm(true);
+                    setRecoveryError("");
+                  }}
+                  className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  Forgot Previous Password? Start Fresh
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-red-600 dark:text-red-400 text-xs">
+                <ShieldAlertIcon className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold mb-1">
+                    Permanent Data Loss Warning
+                  </p>
+                  <p>
+                    Without your previous password, old clips cannot be
+                    decrypted. Wiping will permanently delete all existing clips
+                    and registered devices from your account. Fresh encryption
+                    keys will be created for future clips.
+                  </p>
+                </div>
+              </div>
+
+              {recoveryError && (
+                <div className="text-red-500 dark:text-red-400 text-xs text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
+                  {recoveryError}
+                </div>
+              )}
+
+              <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowWipeConfirm(false);
+                    setRecoveryError("");
+                  }}
+                  disabled={isWiping}
+                  className="w-full sm:w-auto"
+                >
+                  Back to Recovery
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleResetAccountData}
+                  disabled={isWiping}
+                  className="w-full sm:w-auto"
+                >
+                  {isWiping
+                    ? "Wiping & Starting Fresh..."
+                    : "Confirm Wipe & Start Fresh"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

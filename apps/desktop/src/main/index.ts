@@ -1,6 +1,6 @@
 import path from "node:path";
 import { electronApp } from "@electron-toolkit/utils";
-import { app, dialog } from "electron";
+import { app } from "electron";
 import log from "electron-log/main";
 import { configureDevTools } from "./modules/devTools";
 import { initIPC } from "./modules/ipc";
@@ -31,14 +31,15 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on("second-instance", (_event, commandLine, _workingDirectory) => {
-    log.info("Second instance detected. Focusing the main window.");
+    log.info("Second instance detected. Focusing the main window.", {
+      commandLine,
+    });
     showWindow();
 
-    // the commandLine is array of strings in which last element is deep link url
-    dialog.showErrorBox(
-      "Welcome Back",
-      `You arrived from: ${commandLine.pop()}`,
-    );
+    const deepLinkUrl = commandLine.find((arg) => arg.startsWith("viclip://"));
+    if (deepLinkUrl) {
+      log.info("Received deep link from second instance:", deepLinkUrl);
+    }
   });
 }
 
@@ -93,12 +94,9 @@ app.whenReady().then(() => {
   configureDarkMode();
 });
 
-// Handle window-all-closed event
+// Keep running in system tray when all windows are closed across all platforms
 app.on("window-all-closed", () => {
-  // On macOS, applications typically stay running even when all windows are closed
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  // Intentional no-op: ViClip is a background clipboard sync tool in the system tray
 });
 
 // Clean up clipboard sync when quitting
@@ -112,7 +110,7 @@ if (process.platform === "darwin" && app.dock) {
   app.dock.hide();
 }
 
-app.on("open-url", (_event, _url) => {
-  // dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+app.on("open-url", (_event, url) => {
+  log.info("Received open-url event:", url);
   showWindow();
 });

@@ -106,6 +106,16 @@ const api = {
   ): Promise<void> =>
     ipcRenderer.invoke("sign-up-user", email, username, password),
 
+  resetAccountData: (email: string, password: string): Promise<void> =>
+    ipcRenderer.invoke("reset-account-data", email, password),
+
+  recoverAccount: (
+    email: string,
+    currentPassword: string,
+    oldPassword: string,
+  ): Promise<void> =>
+    ipcRenderer.invoke("recover-account", email, currentPassword, oldPassword),
+
   /**
    * Get the current logged-in user details
    */

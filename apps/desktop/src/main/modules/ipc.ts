@@ -8,6 +8,8 @@ import { getMainWindow, setNotificationsEnabled } from "../globalStates";
 import {
   loginUser,
   logoutUser,
+  recoverAccountWithOldPassword,
+  resetAccountData,
   resetPassword,
   signupUser,
 } from "../services/auth";
@@ -156,6 +158,20 @@ export function initIPC(): void {
   ipcMain.handle("reset-password", async (_, email: string) => {
     await resetPassword(email);
   });
+
+  ipcMain.handle(
+    "reset-account-data",
+    async (_, email: string, password: string) => {
+      await resetAccountData(email, password);
+    },
+  );
+
+  ipcMain.handle(
+    "recover-account",
+    async (_, email: string, currentPassword: string, oldPassword: string) => {
+      await recoverAccountWithOldPassword(email, currentPassword, oldPassword);
+    },
+  );
 
   // Get Current User
   ipcMain.handle("get-current-user", () => {

@@ -104,7 +104,7 @@ export function createMainWindow(): void {
   mainWindow.on("ready-to-show", () => mainWindow.show());
 
   mainWindow.on("close", (event) => {
-    if (process.platform === "darwin" && !isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
     }
