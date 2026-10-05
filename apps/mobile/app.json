@@ -25,9 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.destroyerv.viclip",
-      "permissions": [
-        "android.permission.POST_NOTIFICATIONS"
-      ]
+      "permissions": ["android.permission.POST_NOTIFICATIONS"]
     },
     "web": {
       "bundler": "metro",
@@ -35,9 +33,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "expo-status-bar"
-      ],
+      ["expo-status-bar"],
       [
         "expo-secure-store",
         {
