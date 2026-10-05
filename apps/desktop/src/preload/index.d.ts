@@ -30,6 +30,7 @@ export interface PreloadAPI {
   pinClip: (id: string, pinned: boolean) => Promise<void>;
   updateClip: (id: string, content: string) => Promise<void>;
   openURL: (url: string) => void;
+  openUrl: (url: string) => void;
   pasteClip: (content: string, id?: string) => Promise<void>;
   getShortcut: () => Promise<string>;
   setShortcut: (shortcut: string) => Promise<boolean>;

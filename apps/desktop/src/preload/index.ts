@@ -129,6 +129,7 @@ const api = {
   updateClip: (id: string, content: string): Promise<void> =>
     ipcRenderer.invoke("update-clip", id, content),
 
+  openURL: (url: string): void => ipcRenderer.send("open-url", url),
   openUrl: (url: string): void => ipcRenderer.send("open-url", url),
   pasteClip: (content: string, id?: string): Promise<void> =>
     ipcRenderer.invoke("paste-clip", content, id),

@@ -1,6 +1,7 @@
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
+import { LINKS } from "@viclip/constants";
 import {
   EyeIcon,
   EyeOffIcon,
@@ -256,7 +257,7 @@ export const SignUp: React.FC = () => {
           <button
             type="button"
             className="underline cursor-pointer hover:text-primary focus:outline-none"
-            onClick={() => window.api.openURL("https://viclip.com/terms")}
+            onClick={() => window.api.openURL(LINKS.terms)}
           >
             Terms of Service
           </button>{" "}
@@ -264,7 +265,7 @@ export const SignUp: React.FC = () => {
           <button
             type="button"
             className="underline cursor-pointer hover:text-primary focus:outline-none"
-            onClick={() => window.api.openURL("https://viclip.com/privacy")}
+            onClick={() => window.api.openURL(LINKS.privacy)}
           >
             Privacy Policy
           </button>
