@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from "@react-native-firebase/auth";
+import { getMessaging, getToken } from "@react-native-firebase/messaging";
 import {
   deriveKEK,
   generateDEK,
@@ -66,7 +67,12 @@ export async function signupUser(
     }
 
     await addUserProfile(userCredential.user);
-    await addDevice(userCredential.user.uid);
+    let fcmToken: string | undefined;
+    try {
+      const messagingInstance = getMessaging();
+      fcmToken = await getToken(messagingInstance);
+    } catch {}
+    await addDevice(userCredential.user.uid, fcmToken);
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("Error signing up:", error.message);
@@ -128,7 +134,12 @@ export async function loginUser(
       console.info("New encryption keys generated and saved after wipe");
     }
 
-    await addDevice(uid);
+    let fcmToken: string | undefined;
+    try {
+      const messagingInstance = getMessaging();
+      fcmToken = await getToken(messagingInstance);
+    } catch {}
+    await addDevice(uid, fcmToken);
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("Error logging in:", error.message);

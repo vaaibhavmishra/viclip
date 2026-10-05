@@ -1,7 +1,13 @@
 import * as admin from "firebase-admin";
+import { getDatabaseWithUrl } from "firebase-admin/database";
 import { onValueCreated } from "firebase-functions/v2/database";
 
-admin.initializeApp();
+const TEST_RTDB_URL =
+  "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/";
+
+admin.initializeApp({
+  databaseURL: TEST_RTDB_URL,
+});
 
 /**
  * Triggers automatically whenever a new clip is created in Firebase Realtime Database.
@@ -19,8 +25,8 @@ export const sendClipPushNotification = onValueCreated(
     const { userId, clipId } = event.params;
     const sourceDevice = clip.sourceDevice || "another device";
 
-    // 1. Fetch user's registered devices
-    const db = admin.database();
+    // 1. Fetch user's registered devices from the active database instance
+    const db = getDatabaseWithUrl(TEST_RTDB_URL);
     const devicesSnap = await db.ref(`/users/${userId}/devices`).get();
     if (!devicesSnap.exists()) {
       return;
@@ -42,6 +48,10 @@ export const sendClipPushNotification = onValueCreated(
       console.log(`No recipient FCM tokens for user ${userId}`);
       return;
     }
+
+    console.log(
+      `Found ${fcmTokens.length} recipient device token(s) for user ${userId} (source: ${sourceDevice})`,
+    );
 
     // 2. Prepare notification payload
     const title = `New Clip from ${sourceDevice}`;
@@ -66,7 +76,19 @@ export const sendClipPushNotification = onValueCreated(
         priority: "high",
         notification: {
           sound: "default",
-          channelId: "viclip_sync_channel",
+          priority: "high",
+        },
+      },
+      apns: {
+        headers: {
+          "apns-priority": "10",
+        },
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            contentAvailable: true,
+          },
         },
       },
     });
@@ -74,5 +96,16 @@ export const sendClipPushNotification = onValueCreated(
     console.log(
       `Push notification sent for clip ${clipId}: ${response.successCount} succeeded, ${response.failureCount} failed`,
     );
+
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error(
+            `FCM delivery error for token [${fcmTokens[idx]}]:`,
+            resp.error,
+          );
+        }
+      });
+    }
   },
 );

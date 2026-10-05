@@ -190,7 +190,9 @@ function SyncStatusCard() {
             ]}
           />
           <TouchableOpacity
-            onPress={requestNotificationPermission}
+            onPress={() => {
+              requestNotificationPermission();
+            }}
             activeOpacity={0.75}
             style={styles.ctaButton}
           >

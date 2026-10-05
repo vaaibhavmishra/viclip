@@ -25,7 +25,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.destroyerv.viclip",
-      "permissions": ["android.permission.POST_NOTIFICATIONS"]
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +35,9 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      ["expo-status-bar"],
+      [
+        "expo-status-bar"
+      ],
       [
         "expo-secure-store",
         {
@@ -60,22 +64,23 @@
         {
           "ios": {
             "useFrameworks": "static"
+          },
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
           }
         }
       ],
-
-      [
-        "expo-share-intent",
-        {
-          "iosActivationRules": {
-            "NSExtensionActivationSupportsText": true,
-            "NSExtensionActivationSupportsWebURLWithMaxCount": 1
-          },
-          "androidIntentFilters": ["text/*"]
-        }
-      ],
       "expo-font",
-      "@react-native-firebase/messaging"
+      [
+        "@react-native-firebase/messaging",
+        {
+          "android": {
+            "notificationIcon": "./assets/icons/adaptive-icon.png",
+            "notificationColor": "#2463cf"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -90,7 +95,6 @@
       }
     },
     "owner": "destroyerv",
-
     "updates": {
       "url": "https://u.expo.dev/f4f1bef5-c85d-4aec-bdb2-608ca5827507"
     }

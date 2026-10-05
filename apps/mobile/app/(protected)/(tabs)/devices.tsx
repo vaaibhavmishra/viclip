@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { DeviceData } from "@viclip/types";
 import * as Device from "expo-device";
-import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -75,8 +74,6 @@ export default function Devices() {
   }, []);
 
   const handleRemoveDevice = useCallback((device: ExtendedDeviceData) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
     Alert.alert(
       "Remove Device",
       `Are you sure you want to remove "${device.deviceName || "Unknown Device"}"? It will need to sign in again to sync.`,
@@ -93,9 +90,6 @@ export default function Devices() {
 
             try {
               await removeDevice(device.firebaseKey);
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              );
               Toast.show({
                 type: "success",
                 text1: "Device Removed",
@@ -103,7 +97,6 @@ export default function Devices() {
               });
             } catch {
               // Real-time listener will auto-revert, but show error toast
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Toast.show({
                 type: "error",
                 text1: "Failed to Remove",

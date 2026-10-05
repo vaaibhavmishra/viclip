@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -67,7 +66,6 @@ export default function Login() {
       if (/[^A-Za-z0-9]/.test(password)) typesCount++;
 
       if (typesCount < 4) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(
           "Password must contain an uppercase letter, a lowercase letter, a number, and a special character",
         );
@@ -75,7 +73,6 @@ export default function Login() {
       }
 
       if (password !== confirmPassword) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError("Passwords do not match");
         return;
       }
@@ -87,10 +84,8 @@ export default function Login() {
     try {
       if (isLogin) {
         await loginUser(email, password);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         await signupUser(email, username, password);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Toast.show({
           type: "success",
           text1: "Account Created",
@@ -99,7 +94,6 @@ export default function Login() {
       }
       router.replace("/");
     } catch (err: unknown) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -120,14 +114,12 @@ export default function Login() {
     setError(null);
     try {
       await resetPassword(email);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: "success",
         text1: "Check Your Email",
         text2: "We have sent a password reset link to your email address.",
       });
     } catch (err: unknown) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -335,9 +327,6 @@ export default function Login() {
                     {!isLogin && (
                       <TouchableOpacity
                         onPress={() => {
-                          Haptics.impactAsync(
-                            Haptics.ImpactFeedbackStyle.Light,
-                          );
                           setShowPasswordRequirements(
                             !showPasswordRequirements,
                           );
@@ -398,7 +387,6 @@ export default function Login() {
                   />
                   <TouchableOpacity
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setShowPassword(!showPassword);
                     }}
                     style={styles.eyeIconBtn}
@@ -505,7 +493,6 @@ export default function Login() {
                     />
                     <TouchableOpacity
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setShowConfirmPassword(!showConfirmPassword);
                       }}
                       style={styles.eyeIconBtn}
@@ -583,7 +570,6 @@ export default function Login() {
                 <TouchableOpacity
                   style={{ marginLeft: 8 }}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setIsLogin(!isLogin);
                     setError(null);
                     setPassword("");

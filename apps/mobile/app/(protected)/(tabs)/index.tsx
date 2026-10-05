@@ -3,7 +3,6 @@ import { CLIPBOARD_CONFIG } from "@viclip/constants";
 import type { ClipData } from "@viclip/types";
 import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
-import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
 import { useShareIntentContext } from "expo-share-intent";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -140,7 +139,6 @@ export default function Index() {
   }, []);
 
   const handleSend = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const clipboard = await Clipboard.getStringAsync();
 
     if (clipboard && clipboard !== lastClip) {
@@ -176,14 +174,12 @@ export default function Index() {
       setLastClip(clipboard);
       await fetchClips();
       setRefreshing(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: "success",
         text1: "Clip Sent",
         text2: "Available on all your devices.",
       });
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Toast.show({
         type: "info",
         text1: "Nothing New to Send",
@@ -193,11 +189,9 @@ export default function Index() {
   };
 
   const handleReceive = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await fetchClips();
     setRefreshing(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Toast.show({
       type: "success",
       text1: "Synced Successfully",
@@ -207,8 +201,6 @@ export default function Index() {
 
   const handleTogglePin = useCallback(
     async (clipId: string, currentPinned: boolean) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
       // Optimistic UI update
       setClipboardContent((prev) => {
         const newClips = prev.map((c) =>
@@ -240,8 +232,6 @@ export default function Index() {
 
   const handleDelete = useCallback(
     async (clipId: string) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
       // Optimistic UI update
       setClipboardContent((prev) => prev.filter((c) => c.id !== clipId));
 
@@ -266,7 +256,6 @@ export default function Index() {
   );
 
   const handleClearHistory = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setRefreshing(true);
 
     // Optimistic UI update
@@ -294,7 +283,6 @@ export default function Index() {
   };
 
   const handleOpenEdit = useCallback((clip: ClipData) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingClip(clip);
     setEditContent(clip.content);
   }, []);
@@ -324,7 +312,6 @@ export default function Index() {
     }
 
     setIsSavingEdit(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Optimistic UI update
     const clipId = editingClip.id;
@@ -336,7 +323,6 @@ export default function Index() {
     try {
       await editClip(clipId, editContent);
       await fetchClips();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: "success",
         text1: "Clip Updated",
@@ -401,7 +387,6 @@ export default function Index() {
           </View>
           <TouchableWithoutFeedback
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setSelectedClip(item.id);
               Clipboard.setStringAsync(item.content);
               setLastClip(item.content);

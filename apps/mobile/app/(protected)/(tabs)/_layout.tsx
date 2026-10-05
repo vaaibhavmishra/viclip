@@ -1,6 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import type React from "react";
 import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
@@ -155,11 +154,6 @@ export default function TabsLayout() {
             <TabIcon focused={focused} icon="clipboard" label="Clips" />
           ),
         }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
       />
       <Tabs.Screen
         name="devices"
@@ -169,11 +163,6 @@ export default function TabsLayout() {
             <TabIcon focused={focused} icon="desktop" label="Devices" />
           ),
         }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
       />
       <Tabs.Screen
         name="settings"
@@ -182,11 +171,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} icon="settings" label="Settings" />
           ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
         }}
       />
     </Tabs>

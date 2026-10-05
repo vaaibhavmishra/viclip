@@ -21,7 +21,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AppState, type AppStateStatus } from "react-native";
+import {
+  AppState,
+  type AppStateStatus,
+  PermissionsAndroid,
+  Platform,
+} from "react-native";
 import Toast from "react-native-toast-message";
 import { updateDeviceFCMToken } from "./firebase";
 
@@ -60,7 +65,9 @@ export interface BackgroundSyncState {
   /** Toggle sync notifications on/off in-app */
   toggleSync: (enabled: boolean) => Promise<void>;
   /** Request OS notification permission */
-  requestNotificationPermission: () => Promise<boolean>;
+  requestNotificationPermission: (
+    options?: { showToast?: boolean } | boolean,
+  ) => Promise<boolean>;
   /** Re-check notification status and refresh token */
   refreshStatus: () => Promise<boolean>;
 }
@@ -138,36 +145,64 @@ export function BackgroundSyncProvider({
   // 3. Check OS notification permission
   const checkPermission = useCallback(async (): Promise<boolean> => {
     try {
-      const messagingInstance = getMessaging();
-      const authStatus = await hasPermission(messagingInstance);
-      const enabled =
-        authStatus === AuthorizationStatus.AUTHORIZED ||
-        authStatus === AuthorizationStatus.PROVISIONAL;
-      setNotificationsEnabled(enabled);
-      if (enabled) {
-        await registerToken();
+      let enabled = false;
+      if (Platform.OS === "android") {
+        if (Number(Platform.Version) >= 33) {
+          const postNotif =
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS ||
+            "android.permission.POST_NOTIFICATIONS";
+          enabled = await PermissionsAndroid.check(postNotif);
+        } else {
+          enabled = true;
+        }
+      } else {
+        const messagingInstance = getMessaging();
+        const authStatus = await hasPermission(messagingInstance);
+        enabled =
+          authStatus === AuthorizationStatus.AUTHORIZED ||
+          authStatus === AuthorizationStatus.PROVISIONAL;
       }
+
+      setNotificationsEnabled(enabled);
       return enabled;
     } catch (err) {
       console.warn("[FCM] Failed to check permission:", err);
       setNotificationsEnabled(false);
       return false;
     }
-  }, [registerToken]);
+  }, []);
 
   // 4. Request OS notification permission
-  const requestNotificationPermission =
-    useCallback(async (): Promise<boolean> => {
+  const requestNotificationPermission = useCallback(
+    async (options?: { showToast?: boolean } | boolean): Promise<boolean> => {
+      const showToast =
+        typeof options === "boolean" ? options : (options?.showToast ?? true);
       try {
-        const messagingInstance = getMessaging();
-        const authStatus = await requestPermission(messagingInstance);
-        const enabled =
-          authStatus === AuthorizationStatus.AUTHORIZED ||
-          authStatus === AuthorizationStatus.PROVISIONAL;
+        let enabled = false;
+        if (Platform.OS === "android") {
+          if (Number(Platform.Version) >= 33) {
+            const postNotif =
+              PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS ||
+              "android.permission.POST_NOTIFICATIONS";
+            const granted = await PermissionsAndroid.request(postNotif);
+            enabled = granted === PermissionsAndroid.RESULTS.GRANTED;
+          } else {
+            enabled = true;
+          }
+        } else {
+          const messagingInstance = getMessaging();
+          const authStatus = await requestPermission(messagingInstance);
+          enabled =
+            authStatus === AuthorizationStatus.AUTHORIZED ||
+            authStatus === AuthorizationStatus.PROVISIONAL;
+        }
+
         setNotificationsEnabled(enabled);
 
-        if (enabled) {
-          await registerToken();
+        // Always register device token with RTDB
+        await registerToken();
+
+        if (enabled && showToast) {
           Toast.show({
             type: "success",
             text1: "Notifications Enabled",
@@ -180,20 +215,47 @@ export function BackgroundSyncProvider({
         console.warn("[FCM] Error requesting notification permission:", err);
         return false;
       }
-    }, [registerToken]);
+    },
+    [registerToken],
+  );
 
-  // 5. Initial check & check on app returning to active state
+  // 5. Initial check, token registration & app lifecycle listener
   useEffect(() => {
-    checkPermission();
+    const initNotifications = async () => {
+      // 1. Unconditionally register token with Firebase RTDB
+      await registerToken();
+
+      // 2. Check current OS notification permission
+      const isGranted = await checkPermission();
+
+      // 3. Prompt user if notification permission is not yet granted
+      if (!isGranted) {
+        await requestNotificationPermission(false);
+      }
+    };
+
+    initNotifications();
+
+    // Re-register token if user logs in
+    const auth = getAuth();
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        registerToken();
+      }
+    });
 
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
       if (next === "active") {
         checkPermission();
+        registerToken();
       }
     });
 
-    return () => sub.remove();
-  }, [checkPermission]);
+    return () => {
+      unsubscribeAuth();
+      sub.remove();
+    };
+  }, [checkPermission, registerToken, requestNotificationPermission]);
 
   // 6. Listen for incoming foreground messages
   useEffect(() => {

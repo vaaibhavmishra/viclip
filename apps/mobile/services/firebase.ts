@@ -59,7 +59,9 @@ export async function addDevice(
     getApp(),
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
   );
-  const deviceName = Device.deviceName;
+  const deviceName =
+    Device.deviceName ||
+    (Device.osName === "Android" ? "Android Device" : "iOS Device");
   const platform =
     Device.osName === "Android" || Device.osName === "iOS"
       ? Device.osName
@@ -115,8 +117,9 @@ export async function updateDeviceFCMToken(
     getApp(),
     "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/",
   );
-  const deviceName = Device.deviceName;
-  if (!deviceName) return;
+  const deviceName =
+    Device.deviceName ||
+    (Device.osName === "Android" ? "Android Device" : "iOS Device");
 
   const deviceRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`);
   const deviceQuery = query(
@@ -136,6 +139,12 @@ export async function updateDeviceFCMToken(
       fcmToken,
       lastActive: new Date().toISOString(),
     });
+    console.info(`[FCM] Updated token for device: ${deviceName}`);
+  } else {
+    await addDevice(userId, fcmToken);
+    console.info(
+      `[FCM] Device was missing, created device with token: ${deviceName}`,
+    );
   }
 }
 
