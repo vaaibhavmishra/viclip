@@ -5,14 +5,17 @@ This package provides serverless backend functions for ViClip to send push notif
 ## Prerequisites
 
 1. Install the Firebase CLI:
+
    ```bash
    npm install -g firebase-tools
    ```
 2. Log in to Firebase:
+
    ```bash
    firebase login
    ```
 3. Set your active Firebase project:
+
    ```bash
    firebase use viclip-4c869-test
    ```

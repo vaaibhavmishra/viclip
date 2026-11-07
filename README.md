@@ -60,15 +60,15 @@ ViClip-Monorepo/
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Web** | Next.js 16, React 19, Tailwind CSS 4, Framer Motion |
-| **Desktop** | Electron 41, electron-vite, React 19, Tailwind CSS 4, Zustand |
-| **Mobile** | Expo 55, React Native 0.83, NativeWind 4, Reanimated |
-| **Backend / Infra** | Firebase (Auth, Realtime Database, Storage) |
-| **Monorepo** | Turborepo, pnpm 10, Biome (lint + format) |
-| **Language** | TypeScript 6 (strict mode) |
-| **Quality Gates** | Husky pre-commit hooks, Commitlint (Conventional Commits) |
+| Layer               | Technology                                                    |
+| ------------------- | ------------------------------------------------------------- |
+| **Web**             | Next.js 16, React 19, Tailwind CSS 4, Framer Motion           |
+| **Desktop**         | Electron 41, electron-vite, React 19, Tailwind CSS 4, Zustand |
+| **Mobile**          | Expo 55, React Native 0.83, NativeWind 4, Reanimated          |
+| **Backend / Infra** | Firebase (Auth, Realtime Database, Storage)                   |
+| **Monorepo**        | Turborepo, pnpm 10, Biome (lint + format)                     |
+| **Language**        | TypeScript 6 (strict mode)                                    |
+| **Quality Gates**   | Husky pre-commit hooks, Commitlint (Conventional Commits)     |
 
 ---
 
@@ -76,10 +76,10 @@ ViClip-Monorepo/
 
 ### Prerequisites
 
-| Tool | Version |
-|---|---|
-| **Node.js** | ≥ 22 |
-| **pnpm** | ≥ 10 |
+| Tool        | Version |
+| ----------- | ------- |
+| **Node.js** | ≥ 22    |
+| **pnpm**    | ≥ 10    |
 
 ### Installation
 
@@ -117,7 +117,6 @@ ViClip-Monorepo/
    ```
 
    > **Note:** The mobile app also requires `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) in `apps/mobile/` for Firebase to work.
-
 ### Running in Development
 
 ```bash
@@ -152,13 +151,13 @@ pnpm build:mobile:ios             # Expo → iOS
 
 ## 🧰 Available Scripts
 
-| Script | Description |
-|---|---|
-| `pnpm dev` | Start all dev servers in parallel |
-| `pnpm build` | Production build for all apps |
-| `pnpm typecheck` | Run TypeScript type-checking across the monorepo |
-| `pnpm check` | Lint & format all files with Biome (auto-fix) |
-| `pnpm clean` | Remove all build artifacts, caches, and `node_modules` |
+| Script           | Description                                            |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm dev`       | Start all dev servers in parallel                      |
+| `pnpm build`     | Production build for all apps                          |
+| `pnpm typecheck` | Run TypeScript type-checking across the monorepo       |
+| `pnpm check`     | Lint & format all files with Biome (auto-fix)          |
+| `pnpm clean`     | Remove all build artifacts, caches, and `node_modules` |
 
 ---
 
@@ -168,14 +167,17 @@ Contributions are welcome! Here's how to get started:
 
 1. **Fork** the repository
 2. **Create** a feature branch:
+
    ```bash
    git checkout -b feature/amazing-feature
    ```
 3. **Commit** your changes using [Conventional Commits](https://www.conventionalcommits.org/):
+
    ```bash
    git commit -m "feat: add amazing feature"
    ```
 4. **Push** to your branch:
+
    ```bash
    git push origin feature/amazing-feature
    ```
@@ -195,14 +197,13 @@ Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build
 
 The following checks run automatically on every commit:
 
-| Hook | What it does |
-|---|---|
+| Hook           | What it does                                               |
+| -------------- | ---------------------------------------------------------- |
 | **pre-commit** | Runs Biome lint/format → TypeScript typecheck → Full build |
-| **commit-msg** | Validates commit message against Conventional Commits |
+| **commit-msg** | Validates commit message against Conventional Commits      |
 
 ---
 
 ## ⚖️ License
 
 Distributed under the **GPL-3.0 License**. See [`LICENSE`](LICENSE) for more information.
-
