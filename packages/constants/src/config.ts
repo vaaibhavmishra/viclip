@@ -13,7 +13,7 @@ export const APP_CONFIG = {
 export const CLIPBOARD_CONFIG = {
   syncIntervalMs: 1000,
   updateCooldownMs: 500,
-  maxContentLength: 100000,
+  maxContentLength: 1000000,
   maxClipCount: 300,
 } as const;
 

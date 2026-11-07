@@ -74,6 +74,9 @@ pnpm-debug.log*
 # =========================
 google-services.json
 GoogleService-Info.plist
+firebase-debug.log*
+.firebase-emulator-data/
+.firebase/
 
 notes.md
 

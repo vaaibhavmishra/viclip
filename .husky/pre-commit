@@ -16,6 +16,14 @@ turbo typecheck ||
     false;
 )
 
+# Run unit tests
+echo 'Running unit tests...'
+turbo test ||
+(
+    echo 'Tests failed. Please resolve test failures before committing.'
+    false;
+)
+
 # Build Check
 echo 'Building project to ensure stability...'
 turbo build ||

@@ -1,8 +1,16 @@
 # =========================
-# Dependencies
+# Dependencies & Version Control
 # =========================
 node_modules/
 .pnpm-store/
+.git/
+
+# =========================
+# Workspaces (Not needed for Mobile EAS Build)
+# =========================
+/apps/web/
+/apps/desktop/
+/functions/
 
 # =========================
 # Build Artifacts & Caches
@@ -46,6 +54,8 @@ yarn-debug.*
 yarn-error.*
 pnpm-debug.log*
 .metro-health-check*
+*.log
+firebase-debug.log*
 
 # =========================
 # Native Platform (Android/iOS)
@@ -68,3 +78,16 @@ pnpm-debug.log*
 *.p12
 *.key
 *.mobileprovision
+
+# =========================
+# Tooling, AI Agents & Metadata
+# =========================
+.agents/
+.claude/
+.husky/
+.firebase/
+.firebase-emulator-data/
+notes.md
+AGENTS.md
+**/AGENTS.md
+skills-lock.json
