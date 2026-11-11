@@ -1,0 +1,129 @@
+---
+import DownloadIcon from "~/icons/DownloadIcon.astro";
+import Logo from "./Logo.astro";
+import ThemeSwitch from "./ThemeSwitch.astro";
+---
+
+<!-- MacBook Top Notch Header -->
+<header
+  class="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
+  role="banner"
+>
+  <nav
+    id="macbook-notch"
+    class="pointer-events-auto relative flex items-center justify-between bg-paper/80 backdrop-blur-xl border-b border-x border-dark/15 text-dark shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.35)] hover:shadow-[0_14px_40px_rgb(0,0,0,0.14)] hover:border-dark/25 group/notch"
+    aria-label="Main Navigation"
+  >
+    <!-- Brand / Logo -->
+    <a
+      href="/"
+      class="group flex items-center gap-2 pl-0.5 pr-1.5 py-0.5 rounded-full transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
+      aria-label="ViClip Home"
+    >
+      <Logo class="size-6 sm:size-7 transition-transform duration-300 group-hover:rotate-[-6deg]" />
+      <span class="font-bold text-xs sm:text-sm tracking-tight text-dark group-hover:text-coral transition-colors duration-200">
+        ViClip
+      </span>
+    </a>
+
+    <!-- Subtle Hairline Divider -->
+    <div class="h-4 w-px bg-dark/15 transition-opacity duration-300 group-hover/notch:opacity-40" aria-hidden="true"></div>
+
+    <!-- Actions: Theme Switcher & Download -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5">
+      <div id="theme-switcher-wrapper" class="flex items-center">
+        <ThemeSwitch
+          label="Toggle theme"
+          className="text-dark hover:text-coral transition-all duration-300 p-1.5 rounded-full hover:bg-dark/5 active:scale-90 cursor-pointer"
+        />
+      </div>
+
+      <a
+        href="/download"
+        class="group inline-flex items-center gap-1.5 rounded-full bg-dark text-paper px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs font-semibold tracking-wide shadow-sm transition-all duration-200 hover:scale-[1.04] hover:bg-coral hover:text-paper hover:shadow-md active:scale-[0.97]"
+        aria-label="Download"
+      >
+        <span>Download</span>
+        <DownloadIcon class="size-3.5 transition-transform duration-200 group-hover:translate-y-0.5" />
+      </a>
+    </div>
+  </nav>
+</header>
+
+<script>
+  // Add subtle elevation on scroll
+  const notch = document.getElementById('macbook-notch')
+  if (notch) {
+    const handleScroll = () => {
+      if (window.scrollY > 24) {
+        notch.setAttribute('data-scrolled', 'true')
+      } else {
+        notch.removeAttribute('data-scrolled')
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+  }
+</script>
+
+<style>
+  @keyframes notchSlideDown {
+    0% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  #macbook-notch {
+    animation: notchSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    padding: 0.5rem 1.25rem;
+    gap: 0.875rem;
+    transition:
+      padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      gap 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.3s ease,
+      box-shadow 0.4s ease;
+  }
+
+  @media (min-width: 640px) {
+    #macbook-notch {
+      padding: 0.625rem 1.5rem;
+      gap: 1.25rem;
+    }
+  }
+
+  /* Smooth width expansion on hover */
+  #macbook-notch:hover {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    #macbook-notch:hover {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      gap: 1.5rem;
+    }
+  }
+
+  #macbook-notch[data-scrolled='true'] {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 14px 36px -8px rgba(0, 0, 0, 0.16);
+  }
+</style>
+
+<style is:global>
+  @reference '../styles/global.css';
+
+  #macbook-notch #theme-switcher * {
+    @apply text-dark;
+  }
+</style>

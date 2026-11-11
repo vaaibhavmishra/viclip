@@ -1,0 +1,114 @@
+---
+import { icon, library } from "@fortawesome/fontawesome-svg-core";
+import { faGithub, faPaypal } from "@fortawesome/free-brands-svg-icons";
+import { faCoffee, faCreditCard } from "@fortawesome/free-solid-svg-icons";
+import Button from "~/components/Button.astro";
+import Description from "~/components/Description.astro";
+import ArrowRightIcon from "~/icons/ArrowRightIcon.astro";
+import Layout from "~/layouts/Layout.astro";
+
+library.add(faGithub, faPaypal, faCreditCard, faCoffee);
+const githubIcon = icon({ prefix: "fab", iconName: "github" });
+const razorpayIcon = icon({ prefix: "fas", iconName: "credit-card" });
+const paypalIcon = icon({ prefix: "fab", iconName: "paypal" });
+const coffeeIcon = icon({ prefix: "fas", iconName: "coffee" });
+
+const donate = {
+  title: "Support ViClip's Development",
+  description:
+    "ViClip is an open-source project built to make clipboard syncing seamless, instant, and private. Your contributions directly fund domain, cloud hosting, and cross-platform infrastructure.",
+  github: {
+    title: "GitHub Sponsors",
+    description:
+      "Support our open-source development directly on GitHub Sponsors, ideal for developers.",
+    button: "Sponsor on GitHub",
+    href: "https://github.com/sponsors/vaaibhavmishra",
+    icon: githubIcon.html,
+  },
+  razorpay: {
+    title: "Razorpay",
+    description:
+      "Best for Indian supporters. Supports UPI, credit/debit cards, net banking, and wallets.",
+    button: "Donate with Razorpay",
+    href: "https://razorpay.me/@viclip",
+    icon: razorpayIcon.html,
+  },
+  paypal: {
+    title: "PayPal",
+    description:
+      "Best for international supporters. Supports credit/debit cards and PayPal balance.",
+    button: "Donate with PayPal",
+    href: "https://www.paypal.com/ncp/payment/4LH4SBKH8ME7G",
+    icon: paypalIcon.html,
+  },
+  buyMeACoffee: {
+    title: "Buy Me a Coffee",
+    description:
+      "A quick, friendly way to buy a coffee and fuel ViClip's ongoing development.",
+    button: "Buy Me a Coffee",
+    href: "https://buymeacoffee.com/vaibhavmishra",
+    icon: coffeeIcon.html,
+  },
+};
+
+const donationMethods = [
+  donate.github,
+  donate.razorpay,
+  donate.paypal,
+  donate.buyMeACoffee,
+];
+---
+
+<Layout
+  title="Support Us - ViClip"
+  description="Support the development of ViClip. Help keep fast, private, zero-knowledge clipboard syncing free and open source."
+>
+  <main class="container flex flex-col items-center gap-12 pt-28 pb-44">
+    <div class="flex flex-col gap-4 text-center">
+      <Description class="text-4xl sm:text-6xl font-bold tracking-tight text-dark">
+        {donate.title}
+      </Description>
+      <Description class="max-w-2xl text-base sm:text-lg text-dark/70 mx-auto">
+        {donate.description}
+      </Description>
+    </div>
+
+    <div class="grid w-full max-w-5xl grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+      {
+        donationMethods.map((method) => (
+          <div class="group relative flex flex-col items-center justify-between gap-6 rounded-3xl border border-dark/15 bg-paper/60 backdrop-blur-sm p-8 sm:p-10 text-center transition-all duration-300 hover:scale-[1.01] hover:border-coral hover:shadow-lg dark:hover:shadow-black/30">
+            <div class="flex flex-col items-center gap-4">
+              <div class="mac-squircle relative flex size-14 items-center justify-center rounded-[22.37%] border border-dark/15 bg-dark/[0.03] dark:bg-paper/[0.08] text-dark text-2xl transition-all duration-300 group-hover:scale-110 group-hover:border-coral group-hover:text-coral shadow-xs">
+                <Fragment set:html={method.icon} />
+              </div>
+              <div class="text-2xl sm:text-3xl font-bold tracking-tight text-dark">
+                {method.title}
+              </div>
+              <Description class="text-sm sm:text-base text-dark/70 max-w-sm">
+                {method.description}
+              </Description>
+            </div>
+            <Button
+              isPrimary
+              href={method.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-full sm:w-fit"
+            >
+              <span>{method.button}</span>
+              <ArrowRightIcon class="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Button>
+          </div>
+        ))
+      }
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .mac-squircle {
+    border-radius: 22.37%;
+    -webkit-corner-smoothing: 0.6;
+    corner-smoothing: 60%;
+  }
+</style>

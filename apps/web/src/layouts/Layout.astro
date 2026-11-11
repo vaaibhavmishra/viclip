@@ -1,0 +1,108 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
+  isHome?: boolean;
+  redirect?: string;
+}
+
+const { title, description, ogImage, ogImageAlt, isHome, redirect } = Astro.props;
+const defaultDescription =
+  "ViClip - Universal, real-time, end-to-end encrypted clipboard synchronization across Windows, macOS, Linux, iOS, and Android.";
+const usesDefaultImage = !ogImage;
+const socialImage = new URL(
+  ogImage || "/og-image.png",
+  Astro.site ?? "https://viclip.shipby.me",
+).href;
+const socialImageAlt =
+  ogImageAlt ??
+  (usesDefaultImage
+    ? "ViClip: One clipboard for all your devices. Real-time sync with end-to-end encryption."
+    : `${title} preview`);
+
+import "@fontsource/bricolage-grotesque/400.css";
+import "@fontsource/bricolage-grotesque/500.css";
+import "@fontsource/bricolage-grotesque/600.css";
+import "@fontsource/bricolage-grotesque/800.css";
+import "../styles/global.css";
+import Footer from "~/components/Footer.astro";
+import NavBar from "~/components/NavBar.astro";
+---
+
+<script is:inline data-cfasync="false">
+  const theme = (() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme') ?? 'light'
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark'
+    }
+    return 'light'
+  })()
+
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light')
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }
+</script>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    {redirect ? <meta http-equiv="refresh" content={`0;url=${redirect}`} /> : null}
+    <meta name="description" content={description ?? defaultDescription} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-0.xml" />
+
+    {isHome && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'ViClip',
+          url: 'https://viclip.shipby.me/',
+        })}
+      ></script>
+    )}
+
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    {usesDefaultImage && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
+      </>
+    )}
+    <meta property="og:description" content={description ?? defaultDescription} />
+    <meta property="og:color" content="#2563eb" />
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description ?? defaultDescription} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+  </head>
+  <body class="bg-paper text-dark min-h-[max(100dvh,_64rem)] overflow-x-hidden font-['bricolage-grotesque'] text-balance">
+    <NavBar />
+    <slot />
+    <Footer />
+  </body>
+</html>

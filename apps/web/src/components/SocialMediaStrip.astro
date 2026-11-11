@@ -1,0 +1,44 @@
+---
+const { class: className, ...props } = Astro.props;
+
+import { icon, library } from "@fortawesome/fontawesome-svg-core";
+import { faGithub, faTelegram } from "@fortawesome/free-brands-svg-icons";
+import { cn } from "~/utils/merge";
+
+library.add(faGithub, faTelegram);
+const Github = icon({ prefix: "fab", iconName: "github" });
+const Telegram = icon({ prefix: "fab", iconName: "telegram" });
+---
+
+<ul class={cn('flex items-center gap-3', className)} {...props}>
+  <li>
+    <a
+      href="https://github.com/viclip"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="group mac-squircle relative flex size-10 items-center justify-center rounded-[22.37%] border border-dark/15 bg-dark/[0.03] dark:bg-paper/[0.08] backdrop-blur-sm text-dark text-lg shadow-xs shadow-dark/5 dark:shadow-black/20 transition-all duration-300 ease-out hover:scale-110 hover:-rotate-6 hover:border-coral hover:text-coral hover:shadow-md active:scale-95"
+      aria-label="Visit ViClip on GitHub"
+    >
+      <Fragment set:html={Github.html} />
+    </a>
+  </li>
+  <li>
+    <a
+      href="https://t.me/viclip_group"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="group mac-squircle relative flex size-10 items-center justify-center rounded-[22.37%] border border-dark/15 bg-dark/[0.03] dark:bg-paper/[0.08] backdrop-blur-sm text-dark text-lg shadow-xs shadow-dark/5 dark:shadow-black/20 transition-all duration-300 ease-out hover:scale-110 hover:rotate-6 hover:border-coral hover:text-coral hover:shadow-md active:scale-95"
+      aria-label="Join ViClip on Telegram"
+    >
+      <Fragment set:html={Telegram.html} />
+    </a>
+  </li>
+</ul>
+
+<style>
+  .mac-squircle {
+    border-radius: 22.37%;
+    -webkit-corner-smoothing: 0.6;
+    corner-smoothing: 60%;
+  }
+</style>

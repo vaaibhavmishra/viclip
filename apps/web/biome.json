@@ -1,10 +1,7 @@
 {
   "extends": "//",
-  "linter": {
-    "domains": {
-      "next": "recommended",
-      "react": "recommended"
-    }
+  "files": {
+    "includes": ["**", "!**/*.astro", "!**/.astro"]
   },
   "css": {
     "parser": {

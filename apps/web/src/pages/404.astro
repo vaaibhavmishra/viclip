@@ -1,0 +1,21 @@
+---
+import Button from "~/components/Button.astro";
+import Description from "~/components/Description.astro";
+import Title from "~/components/Title.astro";
+import Layout from "~/layouts/Layout.astro";
+---
+
+<Layout title="Page Not Found - ViClip">
+  <main class="container flex min-h-[70vh] flex-col items-center justify-center gap-6 py-24 text-center">
+    <Title class="text-coral text-7xl font-bold md:text-9xl xl:text-9xl"> 404 </Title>
+    <div class="flex flex-col items-center gap-6">
+      <Description class="text-xl md:text-2xl">Page Not Found</Description>
+      <p class="max-w-xl text-lg text-gray-500 dark:text-gray-400">
+        The page you are looking for does not exist or has been moved.
+      </p>
+      <Button href="/" isPrimary class="w-fit">
+        Back to Home
+      </Button>
+    </div>
+  </main>
+</Layout>

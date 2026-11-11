@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /.env/
+
+Sitemap: https://viclip.shipby.me/sitemap-0.xml

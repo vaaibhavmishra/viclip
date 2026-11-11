@@ -1,0 +1,56 @@
+---
+---
+
+<footer
+  id="footer"
+  class="relative w-full overflow-hidden bg-paper text-dark pt-10 sm:pt-20 pb-0 flex items-end justify-center select-none pointer-events-none"
+  role="contentinfo"
+  aria-label="Site footer"
+>
+  <!-- Ambient subtle accent glow behind the wordmark -->
+  <div
+    class="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 h-44 w-[75vw] max-w-5xl rounded-full bg-coral/10 blur-[90px] dark:bg-coral/15 dark:blur-[120px]"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Giant Half-Visible Faded Brand Typography in Accent Color -->
+  <div class="relative z-10 w-full overflow-hidden flex justify-center leading-none">
+    <span
+      class="giant-wordmark font-black tracking-tighter text-center whitespace-nowrap block"
+      aria-hidden="true"
+    >
+      ViClip
+    </span>
+  </div>
+</footer>
+
+<style>
+  .giant-wordmark {
+    font-size: clamp(6rem, 25vw, 34rem);
+    line-height: 0.72;
+    letter-spacing: -0.04em;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--zen-accent, #2563eb) 30%, transparent) 0%,
+      color-mix(in srgb, var(--zen-accent, #2563eb) 12%, transparent) 45%,
+      transparent 82%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transform: translateY(42%);
+  }
+
+  /* Support fallback for browsers without color-mix */
+  @supports not (color: color-mix(in srgb, red 50%, blue)) {
+    .giant-wordmark {
+      background: linear-gradient(
+        180deg,
+        rgba(37, 99, 235, 0.3) 0%,
+        rgba(37, 99, 235, 0.12) 45%,
+        transparent 82%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+</style>

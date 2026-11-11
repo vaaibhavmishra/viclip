@@ -1,0 +1,15 @@
+---
+import ArrowLeftIcon from "~/icons/ArrowLeftIcon.astro";
+
+const { href, label = "Back", ...props } = Astro.props;
+
+if (!href) {
+  console.error("BackButton: href is required");
+}
+---
+
+<a href={href} class="mb-8 flex w-fit items-center gap-2" {...props} data-testid="back-button">
+  <ArrowLeftIcon class="size-4" />
+  {label}
+</a>
+

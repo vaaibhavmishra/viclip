@@ -1,0 +1,31 @@
+---
+import Features from "~/components/Features.astro";
+import Hero from "~/components/Hero.astro";
+import Layout from "~/layouts/Layout.astro";
+---
+
+<Layout
+  title="ViClip"
+  description="Universal, real-time, end-to-end encrypted clipboard synchronization across Windows, macOS, Linux, iOS, and Android."
+  isHome
+>
+  <main class="container">
+    <Hero />
+    <Features />
+  </main>
+</Layout>
+<style>
+  @keyframes headerSlideIn {
+    0% {
+      transform: translateY(100%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  #header-browser-image {
+    animation: headerSlideIn 0.5s ease-in-out;
+  }
+</style>
+<script></script>

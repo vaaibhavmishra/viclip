@@ -1,0 +1,135 @@
+---
+import Title from "~/components/Title.astro";
+import ArrowRightIcon from "~/icons/ArrowRightIcon.astro";
+import SocialMediaStrip from "./SocialMediaStrip.astro";
+import Video from "./Video.astro";
+
+const heroTitle = [
+  { text: "One ", highlight: false },
+  { text: "clipboard ", highlight: false },
+  { text: "for", highlight: false },
+  { text: "\n", highlight: false },
+  { text: "all ", highlight: true },
+  { text: "your ", highlight: false },
+  { text: "devices.", highlight: false },
+];
+
+const heroDescription = [
+  "Share text, links, and content seamlessly between your devices with ViClip.",
+  "The fastest and most secure way to keep your clipboard in sync.",
+];
+---
+
+<header
+  id="header"
+  class="flex w-full flex-col items-center gap-6 pt-28 pb-16 text-center sm:pt-32 md:pt-36 lg:gap-12 lg:pt-44 lg:pb-32"
+>
+  <div class="flex h-full flex-col items-center justify-center gap-6 md:gap-8">
+    <div class="flex flex-col items-center justify-center gap-4 md:gap-8">
+      <div>
+        <Title class="relative px-12 text-center text-5xl md:text-7xl lg:px-0 lg:text-9xl">
+          {heroTitle.map(title =>
+            title.text !== '\n' ? (
+              <b
+                class:list={['font-normal', title.highlight && 'text-coral italic']}
+                style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)"
+              >
+                {title.text}
+              </b>
+            ) : (
+              <br class="hidden md:block" />
+            )
+          )}
+        </Title>
+        <p
+          class="px-12 text-center lg:px-0"
+          style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)"
+        >
+          <span class="sm:block">{heroDescription[0]}</span>{' '}
+          <span class="sm:block">{heroDescription[1]}</span>
+        </p>
+      </div>
+      <div class="flex w-2/3 flex-col items-center justify-center gap-3 sm:gap-6 md:w-fit md:flex-row">
+        <div style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)">
+          <a
+            href="/download"
+            class="group mac-button relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-dark px-7 py-3.5 text-sm sm:text-base font-semibold text-paper shadow-sm transition-all duration-300 ease-out hover:scale-105 hover:bg-coral hover:text-white active:scale-95"
+            aria-label="Download ViClip Now"
+          >
+            <span>Download Now</span>
+            <ArrowRightIcon class="size-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+          </a>
+        </div>
+        <div style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)">
+          <a
+            href="/donate"
+            class="group mac-button relative inline-flex items-center justify-center gap-2 rounded-xl border border-dark/15 bg-paper/80 px-7 py-3.5 text-sm sm:text-base font-semibold text-dark backdrop-blur-sm transition-all duration-300 ease-out hover:scale-105 hover:border-dark/30 hover:bg-dark/[0.04] active:scale-95"
+            aria-label="Support Us"
+          >
+            <span>Support Us</span>
+            <span class="inline-block transition-transform duration-300 ease-out group-hover:scale-125 group-hover:rotate-12 group-hover:-translate-y-0.5">
+              ❤️
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <SocialMediaStrip style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)" />
+  </div>
+  <Video
+    name="hero-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    preload="none"
+    class="mac-window rounded-3xl"
+    style="transform: translateY(20px); opacity: 0.001; filter: blur(4px); transform-origin: top;"
+  />
+</header>
+
+<script>
+  import { animate, onScroll, stagger } from 'animejs'
+
+  function initAnimations() {
+    const debug = false
+
+    const elements = document.querySelectorAll(
+      '#header h1 b, #header p, #header div:has(a), #header video, #header ul'
+    )
+
+    animate(elements, {
+      // @ts-expect-error - element is HTMLElement
+      opacity: element => {
+        if (element.tagName === 'UL') {
+          return { from: 0.001, to: 0.8 }
+        }
+        return { from: 0.001, to: 1 }
+      },
+      translateY: { from: 20, to: 0 },
+      filter: { from: 'blur(4px)', to: 'blur(0px)' },
+      duration: 300,
+      delay: stagger(150),
+      ease: 'cubicBezier(0.25, 0.1, 0.25, 1)',
+      autoplay: onScroll({
+        target: '#header',
+        debug,
+      }),
+    })
+  }
+  initAnimations()
+</script>
+
+<style>
+  .mac-button {
+    border-radius: 12px;
+    -webkit-corner-smoothing: 0.6;
+    corner-smoothing: 60%;
+  }
+
+  .mac-window {
+    border-radius: 24px;
+    -webkit-corner-smoothing: 0.6;
+    corner-smoothing: 60%;
+  }
+</style>

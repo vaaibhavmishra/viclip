@@ -1,0 +1,160 @@
+---
+import Title from "~/components/Title.astro";
+import Layout from "~/layouts/Layout.astro";
+---
+
+<Layout
+  title="Privacy Policy - ViClip"
+  description="ViClip's privacy policy. Learn how we protect your data in our universal clipboard sync app. Transparent data handling across Windows, macOS, Linux, iOS, and Android."
+>
+  <main class="container mx-auto max-w-4xl px-6 pt-28 pb-32">
+    <div class="mb-12">
+      <Title class="text-4xl sm:text-6xl font-bold tracking-tight mb-4">Privacy Policy</Title>
+      <p class="text-dark/60 text-sm">Last Updated: April 6, 2025</p>
+    </div>
+
+    <article class="max-w-none space-y-10 text-dark/90 leading-relaxed text-base sm:text-lg">
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">1. Introduction</h2>
+        <p>
+          This Privacy Policy explains how ViClip ("we", "us", or "our") collects, uses, discloses,
+          and safeguards your information when you use our ViClip applications across Web, Desktop,
+          and Mobile, along with related services (collectively, the "Service").
+        </p>
+        <p>
+          We respect your privacy and are committed to protecting your personal information. We
+          encourage you to read this Privacy Policy carefully to understand our practices regarding
+          your information and how we treat it.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">2. Information We Collect</h2>
+        <p>We collect the following types of information to provide and maintain the Service:</p>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">2.1 Personal Information</h3>
+        <p>When you create an account, we collect authentication information, which may include:</p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>Name</li>
+          <li>Email address</li>
+          <li>Account credentials (managed securely via Firebase Authentication)</li>
+        </ul>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">2.2 Clipboard Data & Zero-Knowledge Encryption</h3>
+        <p>
+          The primary function of our Service is to synchronize clipboard content across your
+          devices. ViClip employs <strong>Client-Side Zero-Knowledge Encryption (AES-256-GCM)</strong>.
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            Clipboard content is encrypted and decrypted locally on your device before transmission.
+          </li>
+          <li>
+            Our backend servers only receive encrypted ciphertext payloads. We never store or
+            have access to your plaintext clipboard content or encryption master keys.
+          </li>
+          <li>
+            Device metadata (platform, device name, and last active timestamp) is stored to manage
+            connected clients.
+          </li>
+        </ul>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">2.3 Usage Information</h3>
+        <p>
+          We may automatically collect limited technical information about your device environment to
+          diagnose issues, including:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>Device type and operating system version (Windows, macOS, Linux, iOS, Android)</li>
+          <li>Application version and error diagnostics</li>
+          <li>Synchronization connectivity status</li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">3. How We Use Your Information</h2>
+        <p>We use the collected information solely to:</p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>Provide, maintain, and optimize cross-device clipboard synchronization</li>
+          <li>Authenticate your account and authorize connected client devices</li>
+          <li>Send security alerts, critical service updates, and account notices</li>
+          <li>Detect, prevent, and address technical issues or security vulnerabilities</li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">4. How We Share Your Information</h2>
+        <p>
+          We do <strong>not</strong> sell, rent, trade, or monetize your personal or clipboard data. We
+          may only share information under strict operational requirements:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            <strong>Infrastructure Providers:</strong> Trusted cloud infrastructure (Firebase /
+            Google Cloud) used strictly to host encrypted payloads and authentication services.
+          </li>
+          <li>
+            <strong>Compliance with Laws:</strong> Only when required by valid legal process or
+            applicable statutory obligations.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">5. Data Security</h2>
+        <p>
+          ViClip is designed with privacy-by-default architecture:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>AES-256-GCM authenticated encryption for all clip content</li>
+          <li>Key Encryption Keys (KEK) derived client-side via PBKDF2 with SHA-256</li>
+          <li>Encrypted payload format (<code class="bg-dark/10 px-1.5 py-0.5 rounded text-sm font-mono">iv:authTag:ciphertext</code>) verifying cryptographic integrity</li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">6. Your Rights and Choices</h2>
+        <p>You have full ownership and control over your data:</p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li><strong>Clear History:</strong> Delete individual clips or purge your entire clipboard history at any time.</li>
+          <li><strong>Disconnect Devices:</strong> Revoke access for any connected device from your account settings.</li>
+          <li><strong>Delete Account:</strong> Request permanent deletion of your account and all associated encrypted data.</li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">7. Data Retention</h2>
+        <p>
+          Your encrypted clipboard data is retained in accordance with your configured history limits
+          or until explicitly deleted. Account records are kept as long as your account remains active.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">8. Children's Privacy</h2>
+        <p>
+          Our Service is not directed to individuals under the age of 13. We do not knowingly
+          collect personal information from children under 13.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">9. Changes to This Privacy Policy</h2>
+        <p>
+          We may update this Privacy Policy from time to time. We will notify you of any material
+          changes by posting the updated policy on this page with an updated revision date.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">10. Contact Us</h2>
+        <p>
+          If you have any questions or feedback about this Privacy Policy, please reach out to us at
+          <a href="mailto:support@viclip.shipby.me" class="text-coral underline hover:opacity-80">
+            support@viclip.shipby.me
+          </a>.
+        </p>
+      </section>
+    </article>
+  </main>
+</Layout>

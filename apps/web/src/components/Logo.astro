@@ -1,0 +1,41 @@
+---
+import { Image } from "astro:assets";
+import iconBlack from "~/assets/icon-black-cropped.png";
+import iconWhite from "~/assets/icon-white-cropped.png";
+
+interface Props {
+  class?: string;
+  white?: boolean;
+}
+
+const { class: className, white = false } = Astro.props;
+---
+
+<div class:list={['relative inline-flex items-center justify-center size-8 shrink-0', className]}>
+  {white ? (
+    <Image
+      src={iconWhite}
+      alt="ViClip Logo"
+      width={32}
+      height={32}
+      class="block size-8 object-contain"
+    />
+  ) : (
+    <>
+      <Image
+        src={iconBlack}
+        alt="ViClip Logo"
+        width={32}
+        height={32}
+        class="block dark:hidden size-8 object-contain"
+      />
+      <Image
+        src={iconWhite}
+        alt="ViClip Logo"
+        width={32}
+        height={32}
+        class="hidden dark:block size-8 object-contain"
+      />
+    </>
+  )}
+</div>
