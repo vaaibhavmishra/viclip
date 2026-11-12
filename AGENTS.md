@@ -58,7 +58,7 @@ Firebase Realtime Database is partitioned by user ID (`users/{userId}`):
 - `devices/{deviceId}`: Active clients (`deviceName`, `platform`, `lastActive`).
 - `clips/{clipId}`: Encrypted clips. Schema requirements:
   - `content`: string (encrypted in `iv:authTag:ciphertext` format).
-  - `type`: one of `text`, `text-formatted`, `url`, `email`, `color`, `image`, `document`, `spreadsheet`, `presentation`, `unknown`.
+  - `type`: one of `text`, `text-formatted`, `url`, `email`, `color`, `document`, `spreadsheet`, `presentation`, `unknown`.
   - `timestamp`: number.
   - `sourceDevice`: string (device name or ID).
 - `encryption`: Holds `salt` and `wrappedKey`.

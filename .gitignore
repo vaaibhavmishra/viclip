@@ -17,6 +17,7 @@ build/
 /functions/lib/
 web-build/
 *.tsbuildinfo
+.astro/
 
 # =========================
 # Environment & Config Files

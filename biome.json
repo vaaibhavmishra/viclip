@@ -16,6 +16,7 @@
       "!!**/.next",
       "!!**/.expo",
       "!!**/.turbo",
+      "!!**/.astro",
       "!!**/android/app/build",
       "!!**/ios/build",
       "!**/pnpm-lock.yaml",
