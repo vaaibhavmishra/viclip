@@ -82,6 +82,9 @@ export const createCryptoService = <TBuffer extends BufferLike = BufferLike>(
     },
 
     clearActiveDEK: () => {
+      if (activeDEK && typeof activeDEK.fill === "function") {
+        activeDEK.fill(0);
+      }
       activeDEK = null;
       console.info("Active encryption key cleared from memory");
     },

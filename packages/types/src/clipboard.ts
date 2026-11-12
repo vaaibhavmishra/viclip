@@ -7,7 +7,6 @@ export type ClipContentType =
   | "url"
   | "email"
   | "color"
-  | "image"
   | "document"
   | "spreadsheet"
   | "presentation"
@@ -22,6 +21,7 @@ export interface ClipData {
   type: ClipContentType;
   timestamp: string;
   sourceDevice: string;
+  sourceDeviceId?: string;
   pinned?: boolean;
 }
 

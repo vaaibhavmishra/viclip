@@ -138,6 +138,7 @@ describe("createCryptoService", () => {
 
     // Test clearing key from memory
     cryptoService.clearActiveDEK();
+    expect(validDek).toEqual(Buffer.alloc(CRYPTO_CONFIG.keyLength));
     expect(cryptoService.isKeyLoaded()).toBe(false);
     expect(() => cryptoService.getActiveDEK()).toThrow(
       "Encryption key not initialized. User must login first.",
