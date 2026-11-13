@@ -17,7 +17,7 @@ This package provides serverless backend functions for ViClip to send push notif
 3. Set your active Firebase project:
 
    ```bash
-   firebase use viclip-4c869-test
+   firebase use <project-id>
    ```
 
 ## Deploying

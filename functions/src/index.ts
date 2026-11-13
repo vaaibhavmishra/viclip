@@ -1,111 +1,223 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import { getDatabaseWithUrl } from "firebase-admin/database";
-import { onValueCreated } from "firebase-functions/v2/database";
+import { type Message, type SendResponse, getMessaging } from "firebase-admin/messaging";
+import { onValueWritten } from "firebase-functions/v2/database";
 
-const TEST_RTDB_URL =
-  "https://viclip-4c869-test.asia-southeast1.firebasedatabase.app/";
+const RTDB_URL = process.env.MAIN_VITE_FIREBASE_DATABASE_URL;
 
-admin.initializeApp({
-  databaseURL: TEST_RTDB_URL,
-});
+if (!RTDB_URL) {
+  throw new Error("Missing required environment variable: RTDB_URL");
+}
+
+const rtdbInstance = RTDB_URL.match(/^https?:\/\/([^.]+)\./)?.[1];
+
+if (!getApps().length) {
+  initializeApp({
+    databaseURL: RTDB_URL,
+  });
+}
 
 /**
- * Triggers automatically whenever a new clip is created in Firebase Realtime Database.
+ * Sanitizes device names to prevent formatting breakages and control character injection.
+ */
+function sanitizeDeviceName(name?: unknown): string {
+  if (!name || typeof name !== "string") return "another device";
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control character stripping for device names
+  const cleaned = name.replace(/[\r\n\x00-\x1F\x7F-\x9F]/g, "").trim();
+  return cleaned.length > 40
+    ? cleaned.slice(0, 40)
+    : cleaned || "another device";
+}
+
+/**
+ * Triggers automatically whenever a clip is created or updated in Firebase Realtime Database.
  * Sends a high-priority FCM push notification to all other devices registered by the user.
  */
-export const sendClipPushNotification = onValueCreated(
+export const sendClipPushNotification = onValueWritten(
   {
     ref: "/users/{userId}/clips/{clipId}",
-    instance: "viclip-4c869-test",
+    ...(rtdbInstance ? { instance: rtdbInstance } : {}),
+    region: "asia-southeast1",
+    maxInstances: 10,
   },
   async (event) => {
-    const clip = event.data.val();
-    if (!clip) return;
+    try {
+      const beforeClip = event.data.before?.val();
+      const clip = event.data.after?.val();
+      if (!clip) return;
 
-    const { userId, clipId } = event.params;
-    const sourceDevice = clip.sourceDevice || "another device";
-
-    // 1. Fetch user's registered devices from the active database instance
-    const db = getDatabaseWithUrl(TEST_RTDB_URL);
-    const devicesSnap = await db.ref(`/users/${userId}/devices`).get();
-    if (!devicesSnap.exists()) {
-      return;
-    }
-
-    const devices = devicesSnap.val() as Record<
-      string,
-      { deviceName?: string; fcmToken?: string }
-    >;
-    const fcmTokens: string[] = [];
-
-    for (const dev of Object.values(devices)) {
-      if (dev.fcmToken && dev.deviceName !== sourceDevice) {
-        fcmTokens.push(dev.fcmToken);
+      // Skip pin/unpin toggles where timestamp and content are unchanged
+      if (
+        beforeClip &&
+        beforeClip.timestamp === clip.timestamp &&
+        beforeClip.content === clip.content
+      ) {
+        return;
       }
-    }
 
-    if (fcmTokens.length === 0) {
-      console.log(`No recipient FCM tokens for user ${userId}`);
-      return;
-    }
+      const { userId, clipId } = event.params;
+      const sourceDevice = sanitizeDeviceName(clip.sourceDevice);
+      const sourceDeviceId = (clip.sourceDeviceId as string | undefined) || "";
+      const effectiveClipId = String(clip.id || clipId);
 
-    console.log(
-      `Found ${fcmTokens.length} recipient device token(s) for user ${userId} (source: ${sourceDevice})`,
-    );
+      // 1. Fetch user's registered devices from RTDB
+      const db = getDatabaseWithUrl(RTDB_URL);
+      const devicesSnap = await db.ref(`/users/${userId}/devices`).get();
+      if (!devicesSnap.exists()) {
+        return;
+      }
 
-    // 2. Prepare notification payload
-    const title = `New Clip from ${sourceDevice}`;
-    const body =
-      clip.type === "image"
-        ? "Image clip received"
-        : "Tap to open and view clip";
+      const rawDevices = devicesSnap.val();
+      if (!rawDevices || typeof rawDevices !== "object") {
+        return;
+      }
 
-    // 3. Send high-priority multicast notification
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens: fcmTokens,
-      notification: {
-        title,
-        body,
-      },
-      data: {
-        clipId,
-        sourceDevice,
-        type: clip.type || "text",
-      },
-      android: {
-        priority: "high",
-        notification: {
-          sound: "default",
-          priority: "high",
-        },
-      },
-      apns: {
-        headers: {
-          "apns-priority": "10",
-        },
-        payload: {
-          aps: {
-            sound: "default",
-            badge: 1,
-            contentAvailable: true,
-          },
-        },
-      },
-    });
+      const devices = rawDevices as Record<
+        string,
+        { id?: string; deviceName?: string; fcmToken?: string }
+      >;
 
-    console.log(
-      `Push notification sent for clip ${clipId}: ${response.successCount} succeeded, ${response.failureCount} failed`,
-    );
+      // 2. Identify sender tokens to strictly prevent self-notifications (even with stale/duplicate records)
+      const senderTokens = new Set<string>();
+      for (const [key, dev] of Object.entries(devices)) {
+        if (!dev || typeof dev !== "object") continue;
+        const isSender = sourceDeviceId
+          ? dev.id === sourceDeviceId || key === sourceDeviceId
+          : dev.deviceName === sourceDevice;
 
-    if (response.failureCount > 0) {
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          console.error(
-            `FCM delivery error for token [${fcmTokens[idx]}]:`,
-            resp.error,
-          );
+        if (
+          isSender &&
+          typeof dev.fcmToken === "string" &&
+          dev.fcmToken.trim().length > 0
+        ) {
+          senderTokens.add(dev.fcmToken.trim());
         }
-      });
+      }
+
+      // 3. Map unique recipient tokens to device keys
+      const tokenToKeysMap = new Map<string, string[]>();
+      for (const [key, dev] of Object.entries(devices)) {
+        if (
+          !dev ||
+          typeof dev !== "object" ||
+          typeof dev.fcmToken !== "string"
+        ) {
+          continue;
+        }
+
+        const token = dev.fcmToken.trim();
+        if (!token || senderTokens.has(token)) {
+          continue;
+        }
+
+        const isSender = sourceDeviceId
+          ? dev.id === sourceDeviceId || key === sourceDeviceId
+          : dev.deviceName === sourceDevice;
+
+        if (!isSender) {
+          const keys = tokenToKeysMap.get(token) || [];
+          keys.push(key);
+          tokenToKeysMap.set(token, keys);
+        }
+      }
+
+      const uniqueTokens = Array.from(tokenToKeysMap.keys()).slice(0, 500);
+      if (uniqueTokens.length === 0) {
+        console.log(`No recipient FCM tokens for user ${userId}`);
+        return;
+      }
+
+      console.log(
+        `Found ${uniqueTokens.length} unique recipient token(s) for user ${userId} (source: ${sourceDevice})`,
+      );
+
+      // 4. Notification payload
+      const title = `New Clip from ${sourceDevice}`;
+      const body = "Tap to open and view clip";
+      const dataPayload: Record<string, string> = {
+        clipId: effectiveClipId,
+        sourceDevice,
+        sourceDeviceId,
+        type: String(clip.type || "text"),
+      };
+
+      // 5. Send multicast in batches of up to 500
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < uniqueTokens.length; i += BATCH_SIZE) {
+        const tokenBatch = uniqueTokens.slice(i, i + BATCH_SIZE);
+
+        const messages: Message[] = tokenBatch.map((token) => ({
+          token,
+          notification: {
+            title,
+            body,
+          },
+          data: dataPayload,
+          android: {
+            priority: "high",
+            notification: {
+              sound: "default",
+              priority: "high",
+            },
+          },
+          apns: {
+            headers: {
+              "apns-priority": "10",
+              "apns-push-type": "alert",
+            },
+            payload: {
+              aps: {
+                sound: "default",
+                badge: 1,
+                contentAvailable: true,
+              },
+            },
+          },
+        }));
+
+        const response = await getMessaging().sendEach(messages);
+
+        console.log(
+          `Push notification batch sent for clip ${clipId}: ${response.successCount} succeeded, ${response.failureCount} failed`,
+        );
+
+        // 6. Atomically clean up invalid/unregistered tokens
+        if (response.failureCount > 0) {
+          const cleanupUpdates: Record<string, null> = {};
+
+          response.responses.forEach((resp: SendResponse, idx: number) => {
+            if (!resp.success) {
+              const failedToken = tokenBatch[idx];
+              const errCode = resp.error?.code;
+              console.error(
+                `FCM delivery error for token [${failedToken}]:`,
+                resp.error,
+              );
+
+              if (
+                errCode === "messaging/registration-token-not-registered" ||
+                errCode === "messaging/invalid-registration-token"
+              ) {
+                const matchedKeys = tokenToKeysMap.get(failedToken) || [];
+                for (const key of matchedKeys) {
+                  cleanupUpdates[`${key}/fcmToken`] = null;
+                  cleanupUpdates[`${key}/fcmTokenSessionId`] = null;
+                }
+              }
+            }
+          });
+
+          if (Object.keys(cleanupUpdates).length > 0) {
+            await db.ref(`/users/${userId}/devices`).update(cleanupUpdates);
+            console.log(
+              `Cleaned up invalid FCM tokens for user ${userId}:`,
+              Object.keys(cleanupUpdates),
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in sendClipPushNotification function:", error);
     }
   },
 );
