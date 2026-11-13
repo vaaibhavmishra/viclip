@@ -1,0 +1,254 @@
+---
+import Title from "~/components/Title.astro";
+import Layout from "~/layouts/Layout.astro";
+---
+
+<Layout
+  title="Terms of Service - ViClip"
+  description="ViClip's terms of service. Understand the rules, rights, and responsibilities governing your use of our universal, real-time, end-to-end encrypted clipboard synchronization app."
+>
+  <main class="container mx-auto max-w-4xl px-6 pt-28 pb-32">
+    <div class="mb-12">
+      <Title class="text-4xl sm:text-6xl font-bold tracking-tight mb-4">Terms of Service</Title>
+      <p class="text-dark/60 text-sm">Last Updated: April 6, 2025</p>
+    </div>
+
+    <article class="max-w-none space-y-10 text-dark/90 leading-relaxed text-base sm:text-lg">
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">1. Agreement to Terms</h2>
+        <p>
+          These Terms of Service ("Terms") constitute a legally binding agreement between you ("you",
+          "user") and ViClip ("we", "us", or "our") concerning your access to and use of the ViClip
+          applications across Web, Desktop (macOS, Windows, Linux), Mobile (iOS, Android), and related
+          synchronization services (collectively, the "Service").
+        </p>
+        <p>
+          By creating an account, downloading, installing, or otherwise accessing or using the Service,
+          you acknowledge that you have read, understood, and agreed to be bound by these Terms and our
+          <a href="/privacy-policy" class="text-coral underline hover:opacity-80">Privacy Policy</a>.
+          If you do not agree with any part of these Terms, you must not access or use the Service.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">2. The Service & Zero-Knowledge Architecture</h2>
+        <p>
+          ViClip provides universal cross-device clipboard synchronization and clipboard history
+          management. The Service utilizes <strong>Client-Side Zero-Knowledge Encryption (AES-256-GCM)</strong>:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            Clipboard content is encrypted and decrypted locally on your authorized devices before transmission.
+          </li>
+          <li>
+            Our backend servers only receive encrypted ciphertext payloads conforming to the
+            <code class="bg-dark/10 px-1.5 py-0.5 rounded text-sm font-mono">iv:authTag:ciphertext</code>
+            format. We never store, possess, or have the technical means to access your plaintext clipboard data
+            or encryption keys.
+          </li>
+          <li>
+            Synchronization requires active network connectivity and relies on secure cloud infrastructure
+            to route encrypted payloads between your connected client applications.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">3. Accounts & Device Management</h2>
+        <h3 class="text-xl font-semibold text-dark mt-6">3.1 Account Registration</h3>
+        <p>
+          To synchronize your clipboard across devices, you must create an account using valid authentication
+          credentials. You agree to provide accurate and complete information during registration and to keep
+          this information current.
+        </p>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">3.2 Password & Encryption Key Responsibility</h3>
+        <p>
+          You are solely responsible for maintaining the confidentiality of your account credentials and
+          the master passphrase used to derive your cryptographic keys. Because ViClip is built on a
+          zero-knowledge security model:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            <strong>No Key Recovery:</strong> If you lose or forget your encryption password or recovery keys,
+            ViClip cannot restore or decrypt your synchronized clipboard contents.
+          </li>
+          <li>
+            <strong>Account Security:</strong> You are fully responsible for all activity that occurs under
+            your account. You must notify us immediately of any unauthorized use or potential security compromise.
+          </li>
+        </ul>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">3.3 Connected Client Devices</h3>
+        <p>
+          You have full authority to authorize or revoke client devices (desktop workstations, laptops,
+          smartphones, tablets) connected to your account. You can inspect connected device sessions and
+          revoke access at any time through your application settings.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">4. Acceptable Use Policy</h2>
+        <p>You agree not to misuse the Service or assist any other party in doing so. You agree not to:</p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            Use the Service to transmit, store, or distribute any material that is unlawful, harmful,
+            threatening, infringing, or defamatory.
+          </li>
+          <li>
+            Distribute viruses, malware, trojans, worms, or any code intended to damage, disrupt, or gain
+            unauthorized access to any system or data.
+          </li>
+          <li>
+            Interfere with, impair, overload, or compromise the stability, security, or operations of the
+            Service or backend cloud infrastructure.
+          </li>
+          <li>
+            Attempt to probe, scan, or test the vulnerability of the Service or defeat any authentication,
+            authorization, or cryptographic controls.
+          </li>
+          <li>
+            Engage in automated scraping, abuse, or unauthorized bulk extraction of data outside sanctioned
+            client interfaces.
+          </li>
+          <li>
+            Violate any applicable local, national, or international laws or regulations.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">5. User Content & Intellectual Property</h2>
+        <h3 class="text-xl font-semibold text-dark mt-6">5.1 Ownership of Your Content</h3>
+        <p>
+          You retain full ownership, title, and intellectual property rights in and to any text, code snippets,
+          links, images, or documents you copy, sync, or manage through ViClip ("User Content"). ViClip claims
+          no intellectual property rights or ownership interest in your User Content.
+        </p>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">5.2 Limited License to Deliver the Service</h3>
+        <p>
+          Solely to enable clipboard synchronization across your devices, you grant ViClip a limited,
+          non-exclusive license to transmit, temporarily cache, and store encrypted ciphertext payloads on our
+          cloud infrastructure as requested by your client applications. Because your content is encrypted
+          client-side, this license operates strictly on unreadable encrypted blobs.
+        </p>
+
+        <h3 class="text-xl font-semibold text-dark mt-6">5.3 ViClip Intellectual Property</h3>
+        <p>
+          All rights, title, and interest in and to the ViClip service, including software applications, user
+          interfaces, designs, visual assets, trademarks, and documentation, are and will remain the property of
+          ViClip or its licensors. Open-source components of our applications are licensed under their respective
+          open-source licenses (such as GPL-3.0).
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">6. History Retention & Data Backup</h2>
+        <p>
+          ViClip is designed for real-time clipboard productivity, not as an immutable backup repository:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            Clipboard items are retained according to your configured history limits or until explicitly deleted.
+          </li>
+          <li>
+            You can delete individual clips or purge your entire clipboard history at any time.
+          </li>
+          <li>
+            We strongly recommend keeping independent backups of any critical, irreplaceable, or sensitive data.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">7. Service Availability & Modifications</h2>
+        <p>
+          We aim to provide consistent, reliable, and low-latency synchronization across all supported operating
+          systems. However:
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>
+            The Service is provided on an "as is" and "as available" basis without guarantees of uninterrupted
+            uptime or zero latency.
+          </li>
+          <li>
+            We reserve the right to modify, enhance, suspend, or discontinue any feature or aspect of the Service
+            at any time to maintain security, performance, or regulatory compliance.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">8. Termination & Account Deletion</h2>
+        <p>
+          You may terminate your use of the Service at any time by deleting your account within the application
+          settings and uninstalling our clients. Upon account deletion, all active sessions are invalidated and
+          your encrypted cloud data is permanently removed.
+        </p>
+        <p>
+          We reserve the right to suspend or terminate your account or access to the Service at our discretion,
+          without prior notice, if you violate these Terms or engage in behavior harmful to the Service, infrastructure,
+          or other users.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">9. Disclaimer of Warranties</h2>
+        <p class="text-sm font-semibold tracking-wide uppercase text-dark/80">
+          To the maximum extent permitted by applicable law:
+        </p>
+        <p>
+          THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS,
+          IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+          FOR A PARTICULAR PURPOSE, TITLE, ACCURACY, AND NON-INFRINGEMENT. VICLIP DOES NOT WARRANT THAT THE SERVICE
+          WILL BE SECURE, UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">10. Limitation of Liability</h2>
+        <p class="text-sm font-semibold tracking-wide uppercase text-dark/80">
+          To the maximum extent permitted by applicable law:
+        </p>
+        <p>
+          IN NO EVENT SHALL VICLIP, ITS CREATORS, CONTRIBUTORS, DIRECTORS, EMPLOYEES, OR AFFILIATES BE LIABLE
+          FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING DAMAGES
+          FOR LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES ARISING OUT OF OR IN CONNECTION WITH
+          YOUR ACCESS TO OR USE OF (OR INABILITY TO ACCESS OR USE) THE SERVICE, EVEN IF ADVISED OF THE POSSIBILITY
+          OF SUCH DAMAGES.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">11. Changes to These Terms</h2>
+        <p>
+          We may revise or update these Terms periodically. When changes occur, we will post the revised Terms
+          on this page with an updated "Last Updated" date. Your continued access to or use of the Service after
+          any revisions constitute your acceptance of the updated Terms.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">12. Governing Law & Severability</h2>
+        <p>
+          These Terms are governed by and construed in accordance with applicable laws, without regard to conflict
+          of law principles. If any provision of these Terms is deemed invalid or unenforceable by a court of
+          competent jurisdiction, that provision will be limited or eliminated to the minimum extent necessary,
+          and the remaining provisions will remain in full force and effect.
+        </p>
+      </section>
+
+      <section class="space-y-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-dark">13. Contact Us</h2>
+        <p>
+          If you have any questions, concerns, or feedback regarding these Terms of Service, please reach out
+          to us at
+          <a href="mailto:support@viclip.shipby.me" class="text-coral underline hover:opacity-80">
+            support@viclip.shipby.me
+          </a>.
+        </p>
+      </section>
+    </article>
+  </main>
+</Layout>

@@ -3,7 +3,7 @@
 
 <footer
   id="footer"
-  class="relative w-full overflow-hidden bg-paper text-dark pt-10 sm:pt-20 pb-0 flex items-end justify-center select-none pointer-events-none"
+  class="relative w-full overflow-hidden bg-paper text-dark pt-10 sm:pt-20 pb-0 flex flex-col items-center justify-end select-none"
   role="contentinfo"
   aria-label="Site footer"
 >
@@ -13,8 +13,38 @@
     aria-hidden="true"
   ></div>
 
+  <!-- Footer Navigation Links -->
+  <nav
+    class="relative z-20 flex flex-wrap items-center justify-center gap-4 sm:gap-6 px-6 mb-6 text-xs sm:text-sm text-dark/60 font-medium"
+    aria-label="Footer Navigation"
+  >
+    <a href="/terms-of-service" class="hover:text-coral transition-colors duration-200">
+      Terms of Service
+    </a>
+    <span class="text-dark/25" aria-hidden="true">•</span>
+    <a href="/privacy-policy" class="hover:text-coral transition-colors duration-200">
+      Privacy Policy
+    </a>
+    <span class="text-dark/25" aria-hidden="true">•</span>
+    <a
+      href="https://github.com/viclip"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="hover:text-coral transition-colors duration-200"
+    >
+      GitHub
+    </a>
+    <span class="text-dark/25" aria-hidden="true">•</span>
+    <a
+      href="mailto:support@viclip.shipby.me"
+      class="hover:text-coral transition-colors duration-200"
+    >
+      Contact
+    </a>
+  </nav>
+
   <!-- Giant Half-Visible Faded Brand Typography in Accent Color -->
-  <div class="relative z-10 w-full overflow-hidden flex justify-center leading-none">
+  <div class="relative z-10 w-full overflow-hidden flex justify-center leading-none pointer-events-none">
     <span
       class="giant-wordmark font-black tracking-tighter text-center whitespace-nowrap block"
       aria-hidden="true"

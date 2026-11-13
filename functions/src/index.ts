@@ -1,6 +1,10 @@
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getDatabaseWithUrl } from "firebase-admin/database";
-import { type Message, type SendResponse, getMessaging } from "firebase-admin/messaging";
+import {
+  getMessaging,
+  type Message,
+  type SendResponse,
+} from "firebase-admin/messaging";
 import { onValueWritten } from "firebase-functions/v2/database";
 
 const RTDB_URL = process.env.MAIN_VITE_FIREBASE_DATABASE_URL;
