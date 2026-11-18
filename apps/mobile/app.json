@@ -33,11 +33,22 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1
+          },
+          "androidIntentFilters": ["text/*"]
+        }
+      ],
       ["expo-status-bar"],
       [
         "expo-secure-store",
         {
-          "configureAndroidBackup": true,
+          "configureAndroidBackup": false,
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
       ],
@@ -69,10 +80,10 @@
       ],
       "expo-font",
       [
-        "@react-native-firebase/messaging",
+        "./plugins/withFirebaseNotificationIcon.js",
         {
           "android": {
-            "notificationIcon": "./assets/icons/adaptive-icon.png",
+            "notificationIcon": "./assets/icons/notification-icon.png",
             "notificationColor": "#2463cf"
           }
         }

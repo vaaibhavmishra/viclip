@@ -37,7 +37,9 @@ export default ({ config }) => ({
       ...config.ios.infoPlist,
       CFBundleURLTypes: [
         {
-          CFBundleURLSchemes: [process.env.REVERSED_CLIENT_ID, "viclip"],
+          CFBundleURLSchemes: [process.env.REVERSED_CLIENT_ID, "viclip"].filter(
+            Boolean,
+          ),
         },
       ],
     },

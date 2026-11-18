@@ -133,7 +133,7 @@ export default function TabsLayout() {
           alignItems: "center",
           justifyContent: "center",
           flexDirection: "row",
-          paddingBottom: 20,
+          paddingBottom: 0,
         },
         tabBarBackground: () => (
           <View style={styles.tabBarBgWrapper}>
@@ -182,6 +182,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: 80,
+    paddingBottom: 25,
   },
   tabIconPill: {
     width: 64,
@@ -190,6 +191,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 16,
     backgroundColor: "transparent",
+    marginBottom: 2,
   },
   tabIconPillFocusedLight: {
     backgroundColor: "rgba(37, 99, 235, 0.15)",
@@ -199,7 +201,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    marginTop: 6,
     fontWeight: "600",
     letterSpacing: 0.3,
   },

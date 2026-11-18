@@ -1,6 +1,7 @@
 {
   "name": "@viclip/mobile",
   "license": "GPL-3.0-or-later",
+  "version": "2.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "dotenv -e ../../.env -- expo start",
@@ -9,7 +10,8 @@
     "build:android": "dotenv -e ../../.env -- expo run:android",
     "build:ios": "dotenv -e ../../.env -- expo run:ios",
     "clean": "rm -rf .expo .turbo dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@expo/dom-webview": "~58.0.2",
@@ -32,6 +34,8 @@
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.11",
     "expo-linking": "~58.0.16",
+    "expo-notifications": "~58.1.9",
+    "expo-observe": "~58.0.19",
     "expo-router": "~58.0.30",
     "expo-secure-store": "~58.0.2",
     "expo-share-intent": "^9.0.0",

@@ -1,7 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { getAuth } from "@react-native-firebase/auth";
 import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Image,
   Platform,
   ScrollView,
@@ -12,13 +14,17 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { colors } from "@/constants/theme";
 import { logoutUser } from "@/services/auth";
 import { useBackgroundSync } from "@/services/backgroundSync";
+import { useSessionScope } from "@/utils/sessionScope";
 
 // ─── Background Sync Status Card ──────────────────────────────────────────────
 
 function SyncStatusCard() {
+  const scope = useSessionScope();
+  const toggling = useRef(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -49,12 +55,27 @@ function SyncStatusCard() {
         ? "Connecting…"
         : "Paused";
 
-  const handleToggle = (value: boolean) => {
-    if (!notificationsEnabled) {
-      requestNotificationPermission();
-      return;
+  const handleToggle = async (value: boolean) => {
+    const session = scope.capture();
+    if (!session || toggling.current) return;
+    toggling.current = true;
+    try {
+      if (!notificationsEnabled) {
+        const permitted = await requestNotificationPermission();
+        if (!scope.isCurrent(session) || !permitted) return;
+      }
+      await toggleSync(value);
+    } catch {
+      if (scope.isCurrent(session)) {
+        Toast.show({
+          type: "error",
+          text1: "Could Not Save Preference",
+          text2: "Try again.",
+        });
+      }
+    } finally {
+      toggling.current = false;
     }
-    toggleSync(value);
   };
 
   return (
@@ -103,7 +124,7 @@ function SyncStatusCard() {
               {!notificationsEnabled
                 ? "Tap to enable push notifications"
                 : toggleValue
-                  ? "Receiving clips from all your devices"
+                  ? "Receiving alerts for clips from your devices"
                   : "Sync notifications are paused"}
             </Text>
           </View>
@@ -191,7 +212,7 @@ function SyncStatusCard() {
           />
           <TouchableOpacity
             onPress={() => {
-              requestNotificationPermission();
+              void handleToggle(true);
             }}
             activeOpacity={0.75}
             style={styles.ctaButton}
@@ -208,6 +229,14 @@ function SyncStatusCard() {
 // ─── Main Settings Screen ──────────────────────────────────────────────────────
 
 export default function Settings() {
+  const scope = useSessionScope();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -216,6 +245,44 @@ export default function Settings() {
   const userEmail = user?.email;
   const userPhoto = user?.photoURL;
   const userName = user?.displayName;
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const logoutInProgress = useRef(false);
+
+  const handleLogout = () => {
+    const session = scope.capture();
+    if (!session || logoutInProgress.current) return;
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out of ViClip on this device?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            if (!scope.isCurrent(session) || logoutInProgress.current) return;
+            logoutInProgress.current = true;
+            setIsLoggingOut(true);
+            try {
+              await logoutUser();
+              if (mounted.current && !getAuth().currentUser)
+                router.replace("/login");
+            } catch {
+              if (!mounted.current) return;
+              Alert.alert(
+                "Could Not Log Out",
+                "Your session could not be closed. Please try again.",
+              );
+            } finally {
+              logoutInProgress.current = false;
+              if (mounted.current) setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <ScrollView
@@ -248,8 +315,8 @@ export default function Settings() {
         >
           <Image
             source={
-              userPhoto
-                ? { uri: userPhoto }
+              userPhoto && userPhoto.trim().length > 0
+                ? { uri: userPhoto.trim() }
                 : require("../../../assets/images/default-avatar.png")
             }
             style={styles.avatarImage}
@@ -275,23 +342,24 @@ export default function Settings() {
         </Text>
       </View>
 
-      {/* Background Sync Section — Android only */}
-      {Platform.OS === "android" && <SyncStatusCard />}
+      {/* Background Sync Section */}
+      <SyncStatusCard />
 
       {/* Logout Button */}
       <TouchableOpacity
-        onPress={() => {
-          logoutUser();
-          router.replace("/login");
-        }}
+        onPress={handleLogout}
+        disabled={isLoggingOut}
         style={[
           styles.logoutBtn,
           isDark ? styles.logoutBtnDark : styles.logoutBtnLight,
+          isLoggingOut && { opacity: 0.6 },
         ]}
         activeOpacity={0.7}
       >
         <Ionicons name="log-out-outline" size={24} color={colors.danger} />
-        <Text style={styles.logoutBtnText}>Log Out</Text>
+        <Text style={styles.logoutBtnText}>
+          {isLoggingOut ? "Logging Out..." : "Log Out"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

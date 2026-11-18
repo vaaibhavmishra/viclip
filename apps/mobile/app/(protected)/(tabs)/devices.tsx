@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { DeviceData } from "@viclip/types";
-import * as Device from "expo-device";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +14,13 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { colors } from "@/constants/theme";
-import { getDevices, listenDevices, removeDevice } from "@/services/firebase";
+import {
+  getDeviceId,
+  getDevices,
+  listenDevices,
+  removeDevice,
+} from "@/services/firebase";
+import { useSessionScope } from "@/utils/sessionScope";
 import { formatLastActive } from "@/utils/util";
 
 interface ExtendedDeviceData extends DeviceData {
@@ -31,87 +36,154 @@ function devicesRecordToSortedArray(
       ...value,
       firebaseKey: key,
     }))
-    .sort(
-      (a, b) =>
-        new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime(),
-    );
+    .sort((a, b) => {
+      const timeA = new Date(a.lastActive).getTime() || 0;
+      const timeB = new Date(b.lastActive).getTime() || 0;
+      return timeB - timeA;
+    });
 }
 
 export default function Devices() {
+  const scope = useSessionScope();
+  const requestVersion = useRef(0);
+  const removing = useRef(new Set<string>());
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
   const [devicesList, setDevicesList] = useState<ExtendedDeviceData[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    const session = scope.capture();
+    if (!session) return;
+    void getDeviceId()
+      .then((id) => {
+        if (scope.isCurrent(session)) setCurrentDeviceId(id);
+      })
+      .catch(() => {
+        if (scope.isCurrent(session))
+          setError("Unable to identify this device. Try again.");
+      });
+  }, [scope]);
+
   // Real-time listener — device list updates instantly when any device
   // is added or removed from Firebase (including from the desktop app).
   useEffect(() => {
-    const unsubscribe = listenDevices((devices) => {
-      setDevicesList(devicesRecordToSortedArray(devices));
-      setIsLoading(false);
-      setError(null);
-    });
+    const session = scope.capture();
+    if (!session) return;
+    const unsubscribe = listenDevices(
+      (devices) => {
+        if (!scope.isCurrent(session)) return;
+        requestVersion.current += 1;
+        setDevicesList(devicesRecordToSortedArray(devices));
+        setIsLoading(false);
+        setError(null);
+      },
+      (err) => {
+        if (!scope.isCurrent(session)) return;
+        requestVersion.current += 1;
+        console.error("Device listener failed:", err);
+        setIsLoading(false);
+        setError("Failed to load devices. Please check your connection.");
+      },
+    );
 
     return () => unsubscribe();
-  }, []);
+  }, [scope]);
 
   // Pull-to-refresh as a manual fallback
   const onRefresh = useCallback(async () => {
+    const session = scope.capture();
+    if (!session) return;
+    const version = ++requestVersion.current;
     setRefreshing(true);
     try {
-      const devices = await getDevices();
+      const devices = await getDevices(session);
+      if (!scope.isCurrent(session) || version !== requestVersion.current)
+        return;
       setDevicesList(devicesRecordToSortedArray(devices));
       setError(null);
     } catch (err) {
+      if (!scope.isCurrent(session) || version !== requestVersion.current)
+        return;
       console.error("Error fetching devices:", err);
       setError("Failed to load devices. Please try again.");
     } finally {
-      setRefreshing(false);
+      if (scope.isCurrent(session)) setRefreshing(false);
     }
-  }, []);
+  }, [scope]);
 
-  const handleRemoveDevice = useCallback((device: ExtendedDeviceData) => {
-    Alert.alert(
-      "Remove Device",
-      `Are you sure you want to remove "${device.deviceName || "Unknown Device"}"? It will need to sign in again to sync.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            // Optimistic UI update
-            setDevicesList((prev) =>
-              prev.filter((d) => d.firebaseKey !== device.firebaseKey),
-            );
+  const handleRemoveDevice = useCallback(
+    (device: ExtendedDeviceData) => {
+      const session = scope.capture();
+      if (!session || !currentDeviceId) return;
+      const isCurrent = device.id === currentDeviceId;
 
-            try {
-              await removeDevice(device.firebaseKey);
-              Toast.show({
-                type: "success",
-                text1: "Device Removed",
-                text2: `${device.deviceName || "Device"} has been logged out.`,
-              });
-            } catch {
-              // Real-time listener will auto-revert, but show error toast
-              Toast.show({
-                type: "error",
-                text1: "Failed to Remove",
-                text2: "Please try again later.",
-              });
-            }
+      if (isCurrent) {
+        Toast.show({
+          type: "info",
+          text1: "Cannot Remove This Device",
+          text2: "To log out of this device, use Settings > Log Out.",
+        });
+        return;
+      }
+
+      Alert.alert(
+        "Remove Device",
+        `Are you sure you want to remove "${device.deviceName || "Unknown Device"}"? It will need to sign in again to sync.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: async () => {
+              if (
+                !scope.isCurrent(session) ||
+                removing.current.has(device.firebaseKey)
+              )
+                return;
+              removing.current.add(device.firebaseKey);
+              // Optimistic UI update
+              setDevicesList((prev) =>
+                prev.filter((d) => d.firebaseKey !== device.firebaseKey),
+              );
+
+              try {
+                await removeDevice(device.firebaseKey, session);
+                if (!scope.isCurrent(session)) return;
+                Toast.show({
+                  type: "success",
+                  text1: "Device Removed",
+                  text2: `${device.deviceName || "Device"} has been logged out.`,
+                });
+              } catch {
+                if (!scope.isCurrent(session)) return;
+                // Real-time listener will auto-revert, but show error toast
+                // A failed server write may not emit another event: explicitly reload.
+                await onRefresh();
+                if (!scope.isCurrent(session)) return;
+                Toast.show({
+                  type: "error",
+                  text1: "Failed to Remove",
+                  text2: "Please try again later.",
+                });
+              } finally {
+                removing.current.delete(device.firebaseKey);
+              }
+            },
           },
-        },
-      ],
-    );
-  }, []);
+        ],
+      );
+    },
+    [currentDeviceId, onRefresh, scope],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: ExtendedDeviceData }) => {
-      const isCurrentDevice = item.deviceName === Device.deviceName;
+      const isCurrentDevice = item.id === currentDeviceId;
 
       return (
         <View
@@ -144,7 +216,7 @@ export default function Devices() {
                   { color: isDark ? colors.text.dark : colors.text.light },
                 ]}
               >
-                {item.deviceName}
+                {item.deviceName || "Unknown Device"}
               </Text>
               {isCurrentDevice && (
                 <View
@@ -175,8 +247,10 @@ export default function Devices() {
               </Text>
             </View>
           </View>
-          {!isCurrentDevice && (
+          {currentDeviceId && !isCurrentDevice && (
             <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${item.deviceName || "device"}`}
               onPress={() => handleRemoveDevice(item)}
               style={[
                 styles.removeBtn,
@@ -194,7 +268,7 @@ export default function Devices() {
         </View>
       );
     },
-    [isDark, handleRemoveDevice],
+    [isDark, currentDeviceId, handleRemoveDevice],
   );
 
   if (isLoading && !refreshing) {
