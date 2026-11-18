@@ -78,17 +78,29 @@ describe("createCryptoService", () => {
   });
 
   it("should fail decryption when ciphertext or authTag is tampered with", () => {
-    const cryptoService = createCryptoService(nodeCryptoApi);
-    const key = cryptoService.generateDEK();
+    const cryptoService = createCryptoService({
+      ...nodeCryptoApi,
+      randomBytes: (size: number) => Buffer.alloc(size, 250),
+    });
+    const key = Buffer.alloc(CRYPTO_CONFIG.keyLength, 1);
     const encrypted = cryptoService.encrypt("Sensitive clipboard data", key);
     const parts = encrypted.split(":");
 
+    // This fixed vector ends in aa, which made the former literal replacement a no-op.
+    expect(parts[2].endsWith("aa")).toBe(true);
+
     // Tamper with the ciphertext
-    const tamperedCipher = `${parts[0]}:${parts[1]}:${parts[2].slice(0, -2)}aa`;
+    const tamperedCipher = `${parts[0]}:${parts[1]}:${parts[2].slice(0, -1)}b`;
 
     expect(() => {
       cryptoService.decrypt(tamperedCipher, key);
     }).toThrow();
+
+    const tag = parts[1];
+    const tamperedTag = `${tag[0] === "0" ? "1" : "0"}${tag.slice(1)}`;
+    expect(() =>
+      cryptoService.decrypt(`${parts[0]}:${tamperedTag}:${parts[2]}`, key),
+    ).toThrow();
   });
 
   it("should throw error for invalid encrypted data format", () => {
@@ -112,6 +124,44 @@ describe("createCryptoService", () => {
     const unwrapped = cryptoService.unwrapKey(wrapped, kek);
 
     expect(unwrapped.toString("hex")).toBe(dek.toString("hex"));
+  });
+
+  it("rejects noncanonical payloads instead of silently truncating invalid hex", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const key = service.generateDEK();
+    const payload = service.encrypt("Authenticated content", key);
+    const [iv, tag, ciphertext] = payload.split(":");
+    for (const malformed of [
+      `${iv}:${tag}:${ciphertext}zz`,
+      `${iv}zz:${tag}:${ciphertext}`,
+      `${iv}:${tag}zz:${ciphertext}`,
+      `${iv}:${tag.slice(0, 24)}:${ciphertext}`,
+      `${iv}:${tag}:${ciphertext}0`,
+    ]) {
+      expect(() => service.decrypt(malformed, key)).toThrow();
+    }
+  });
+
+  it("rejects an authenticated wrapped value that is not a 32-byte key", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const kek = service.generateDEK();
+    const malformedWrapped = service.encrypt("00", kek);
+    expect(() => service.unwrapKey(malformedWrapped, kek)).toThrow();
+  });
+
+  it("rejects invalid salts before key derivation", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    expect(() => service.deriveKEK("password", "00zz")).toThrow();
+  });
+
+  it("zeroes a replaced active key before retaining its replacement", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const first = service.generateDEK();
+    const next = service.generateDEK();
+    service.setActiveDEK(first);
+    service.setActiveDEK(next);
+    expect(first).toEqual(Buffer.alloc(32));
+    expect(service.getActiveDEK()).toBe(next);
   });
 
   it("should manage active in-memory DEK lifecycle", () => {
@@ -143,5 +193,48 @@ describe("createCryptoService", () => {
     expect(() => cryptoService.getActiveDEK()).toThrow(
       "Encryption key not initialized. User must login first.",
     );
+  });
+  it("rejects truncated tags and malformed hex before authenticated decryption", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const key = service.generateDEK();
+    const [iv, tag, cipher] = service.encrypt("secret", key).split(":");
+    for (const payload of [
+      `${iv}:${tag.slice(0, 8)}:${cipher}`,
+      `${iv}:${tag}:${cipher}zz`,
+      `${iv}:${tag}:${cipher}0`,
+      `${iv}00:${tag}:${cipher}`,
+    ]) {
+      expect(() => service.decrypt(payload, key)).toThrow();
+    }
+  });
+
+  it("rejects malformed salts and wrapped keys of the wrong length", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const key = service.generateDEK();
+    expect(() => service.deriveKEK("password", "zz")).toThrow();
+    expect(() => service.unwrapKey(service.encrypt("aa", key), key)).toThrow();
+  });
+
+  it("authenticates IV and full tag and permits authenticated empty plaintext", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const key = service.generateDEK();
+    const [iv, tag, cipher] = service.encrypt("secret", key).split(":");
+    const flip = (value: string): string =>
+      `${value[0] === "0" ? "1" : "0"}${value.slice(1)}`;
+    expect(() =>
+      service.decrypt(`${flip(iv)}:${tag}:${cipher}`, key),
+    ).toThrow();
+    expect(() =>
+      service.decrypt(`${iv}:${flip(tag)}:${cipher}`, key),
+    ).toThrow();
+    expect(service.decrypt(service.encrypt("", key), key)).toBe("");
+  });
+
+  it("zeroes the old key when replacing the active key", () => {
+    const service = createCryptoService(nodeCryptoApi);
+    const first = service.generateDEK();
+    service.setActiveDEK(first);
+    service.setActiveDEK(service.generateDEK());
+    expect(first).toEqual(Buffer.alloc(32));
   });
 });

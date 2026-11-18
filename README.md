@@ -147,6 +147,20 @@ pnpm build:mobile:android:local   # Expo → Android (local APK)
 pnpm build:mobile:ios             # Expo → iOS
 ```
 
+### macOS installation with Homebrew
+
+Once a desktop release is published, install ViClip with:
+
+```bash
+brew tap vaaibhavmishra/viclip https://github.com/vaaibhavmishra/viclip.git
+brew install --cask vaaibhavmishra/viclip/viclip
+```
+
+Quit ViClip before upgrading, then run `brew update` followed by
+`brew upgrade --cask vaaibhavmishra/viclip/viclip`.
+See [desktop release setup](apps/desktop/RELEASING.md) for GitHub Actions
+configuration, publishing, and update behavior.
+
 ---
 
 ## 🧰 Available Scripts

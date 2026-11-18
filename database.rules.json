@@ -10,7 +10,7 @@
         },
 
         "devices": {
-          ".indexOn": ["deviceName"],
+          ".indexOn": ["deviceName", "id"],
           "$deviceId": {
             ".validate": "newData.hasChildren(['deviceName', 'platform', 'lastActive'])"
           }
@@ -19,7 +19,7 @@
         "clips": {
           ".indexOn": ["id", "timestamp"],
           "$clipId": {
-            ".validate": "newData.hasChildren(['content', 'type', 'timestamp', 'sourceDevice']) && newData.child('type').val().matches(/^(text|text-formatted|url|email|color|image|document|spreadsheet|presentation|unknown)$/)"
+            ".validate": "newData.hasChildren(['content', 'type', 'timestamp', 'sourceDevice']) && newData.child('type').val().matches(/^(text|text-formatted|url|email|color|document|spreadsheet|presentation|unknown)$/)"
           }
         },
 

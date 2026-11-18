@@ -18,6 +18,8 @@ export interface DeviceData {
   platform: string;
   lastActive: string;
   fcmToken?: string;
+  /** Authentication session that last registered the installation's push token. */
+  fcmTokenSessionId?: string;
 }
 
 /**

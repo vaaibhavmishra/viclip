@@ -23,6 +23,8 @@ export interface ClipData {
   sourceDevice: string;
   sourceDeviceId?: string;
   pinned?: boolean;
+  /** Client-only decryption status; never uploaded as clipboard data. */
+  decryptionFailed?: boolean;
 }
 
 /**

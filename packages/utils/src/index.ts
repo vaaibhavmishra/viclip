@@ -1,2 +1,2 @@
 // Crypto utilities
-export { createCryptoService } from "./crypto";
+export { createCryptoService, isEncryptedPayload } from "./crypto";

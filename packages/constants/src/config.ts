@@ -3,7 +3,7 @@
  */
 export const APP_CONFIG = {
   name: "Viclip",
-  description: "Sync Your Clipboard Across All Your Devices",
+  description: "One clipboard for all your devices",
   version: "2.0.0",
 } as const;
 

@@ -3,10 +3,10 @@
  */
 export const LINKS = {
   website: "https://viclip.shipby.me",
-  terms: "https://viclip.shipby.me/terms",
-  privacy: "https://viclip.shipby.me/privacy",
-  support: "https://viclip.shipby.me/support-us",
-  downloads: "https://viclip.shipby.me/downloads",
+  terms: "https://viclip.shipby.me/terms-of-service",
+  privacy: "https://viclip.shipby.me/privacy-policy",
+  support: "https://viclip.shipby.me/donate",
+  downloads: "https://viclip.shipby.me/download",
 } as const;
 
 export type LinkKey = keyof typeof LINKS;

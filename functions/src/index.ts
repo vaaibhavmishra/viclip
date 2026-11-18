@@ -8,6 +8,7 @@ import {
 import { onValueWritten } from "firebase-functions/v2/database";
 
 const RTDB_URL = process.env.MAIN_VITE_FIREBASE_DATABASE_URL;
+const ANDROID_NOTIFICATION_CHANNEL_ID = "viclip_sync_notifications";
 
 if (!RTDB_URL) {
   throw new Error("Missing required environment variable: RTDB_URL");
@@ -160,6 +161,7 @@ export const sendClipPushNotification = onValueWritten(
           android: {
             priority: "high",
             notification: {
+              channelId: ANDROID_NOTIFICATION_CHANNEL_ID,
               sound: "default",
               priority: "high",
             },
