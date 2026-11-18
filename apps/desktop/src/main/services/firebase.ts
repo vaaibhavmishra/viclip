@@ -13,32 +13,62 @@ import {
   FIREBASE_ENV_KEYS,
 } from "@viclip/constants";
 import type { ClipContentType, ClipData, DeviceData } from "@viclip/types";
+import { isEncryptedPayload } from "@viclip/utils";
 import log from "electron-log/main";
-import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  initializeAuth,
-  type User,
-  type UserProfile,
-} from "firebase/auth";
+import { getApps, initializeApp } from "firebase/app";
+import { getAuth, initializeAuth, type User } from "firebase/auth";
 import {
   equalTo,
   get,
   getDatabase,
-  onChildRemoved,
   onValue,
   orderByChild,
   push,
   query,
   ref,
   remove,
+  runTransaction,
   set,
   update,
 } from "firebase/database";
 import { v4 as uuidv4 } from "uuid";
+import { getAuthGeneration } from "./auth";
+import { ElectronAuthPersistence } from "./secureStorage";
+import { settingsStorage } from "./settings";
+
+function currentSession(userId: string): () => void {
+  const generation = getAuthGeneration();
+  const assertCurrent = (): void => {
+    if (
+      getAuth().currentUser?.uid !== userId ||
+      generation !== getAuthGeneration()
+    ) {
+      throw new Error("Authentication session changed.");
+    }
+  };
+  assertCurrent();
+  return assertCurrent;
+}
+
+function assertDatabaseKey(value: string): void {
+  if (
+    !value ||
+    value.length > 256 ||
+    [...value].some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127 || ".#$[]/".includes(character);
+    })
+  )
+    throw new Error("Invalid database key.");
+}
 
 export function initFirebase(): void {
   log.debug("Initializing Firebase");
+
+  if (getApps().length > 0) {
+    log.debug("Firebase already initialized");
+    return;
+  }
 
   const missingVars = FIREBASE_ENV_KEYS.filter(
     (varName) => !import.meta.env[varName],
@@ -63,17 +93,23 @@ export function initFirebase(): void {
 
   // Initialize Firebase with the configuration
   const app = initializeApp(firebaseConfig);
-  // Test calling initializeAuth without options to debug crash
-  initializeAuth(app);
-  log.info("Firebase initialized successfully (testing initializeAuth)");
+  initializeAuth(app, {
+    // Firebase instantiates and caches the persistence class internally.
+    persistence: ElectronAuthPersistence,
+  });
+  log.info("Firebase initialized successfully with ElectronAuthPersistence");
 }
 
-export async function addUserProfile(user: User): Promise<void> {
+export async function addUserProfile(
+  user: User,
+  fallbackName?: string,
+): Promise<void> {
   if (!user) {
     log.warn("Cannot add profile: user is not authenticated");
     return;
   }
 
+  const assertCurrent = currentSession(user.uid);
   try {
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
@@ -84,26 +120,30 @@ export async function addUserProfile(user: User): Promise<void> {
     );
     // Check if the user profile already exists
     const existedUser = await get(userRef);
+    assertCurrent();
 
     if (existedUser.exists()) {
       log.debug("User profile already exists", { userId: user.uid });
       return;
     }
 
-    const userData: UserProfile = {
+    const userData = {
       email: user.email,
-      name: user.displayName,
+      name:
+        fallbackName || user.displayName || user.email?.split("@")[0] || "User",
       createdAt: new Date().toISOString(),
       role: "user",
       subscription: "free",
     };
 
     // Set the user's profile data in the database
+    assertCurrent();
     await set(userRef, userData);
 
     log.info("User profile created", { userId: user.uid });
   } catch (error) {
-    log.error(`Failed to add user profile for ${user.uid}`, error);
+    log.error("Firebase operation failed: addUserProfile");
+    throw error;
   }
 }
 
@@ -112,17 +152,25 @@ export async function addClip(
   content: string,
   type: ClipContentType,
 ): Promise<void> {
+  const assertCurrent = currentSession(userId);
+  if (
+    !isEncryptedPayload(content) ||
+    content.length > CLIPBOARD_CONFIG.maxContentLength * 8 + 58
+  )
+    throw new Error("Invalid encrypted clip payload.");
   try {
     // Get a reference to the Firebase Realtime Database
     const db = getDatabase();
     // Get the current device name
     const sourceDevice = os.hostname();
+    const sourceDeviceId = settingsStorage.getOrCreateDeviceId();
 
     log.debug("Adding clip to Firebase", {
       userId,
       contentLength: content.length,
       type,
       sourceDevice,
+      sourceDeviceId,
     });
 
     // Create a properly typed clip object
@@ -132,21 +180,25 @@ export async function addClip(
       type,
       timestamp: new Date().toISOString(),
       sourceDevice,
+      sourceDeviceId,
     };
 
     // Write data to the user's clipboard path
     const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
     const newClipRef = push(clipRef);
 
+    assertCurrent();
     await set(newClipRef, clipData);
   } catch (error) {
-    log.error("Failed to add clip to Firebase", error);
+    log.error("Firebase operation failed: addClip");
+    throw error;
   }
 }
 
 export function listenClips(
   userId: string,
   onDataChange?: (clips: Record<string, ClipData>) => void,
+  onError?: () => void,
 ): () => void {
   try {
     // Get a reference to the Firebase Realtime Database
@@ -176,19 +228,22 @@ export function listenClips(
           if (onDataChange) {
             onDataChange(clips);
           }
-        } catch (error) {
-          log.error("Error processing Firebase clip data", error);
+        } catch {
+          log.error("Error processing Firebase clip data");
+          onError?.();
         }
       },
-      (error) => {
-        log.error("Firebase onValue error", error);
+      () => {
+        log.error("Firebase clip listener canceled");
+        onError?.();
       },
     );
 
     // Return the unsubscribe function to allow caller to stop listening
     return unsubscribe;
-  } catch (error) {
-    log.error("Failed to set up Firebase clip listener", error);
+  } catch {
+    log.error("Failed to set up Firebase clip listener");
+    onError?.();
     return () => {
       log.debug("Using empty unsubscribe function (fallback)");
     };
@@ -206,12 +261,14 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
     const userId = user.uid;
     log.debug("Fetching clips from Firebase", { userId });
     // Get a reference to the Firebase Realtime Database
+    const assertCurrent = currentSession(user.uid);
     const db = getDatabase();
     // Create a reference to the specific data path
     const cloudData = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
 
     // Fetch the data from Firebase
     const snapshot = await get(cloudData);
+    assertCurrent();
 
     if (snapshot.exists()) {
       const clips = snapshot.val();
@@ -225,8 +282,8 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
       return null;
     }
   } catch (error) {
-    log.error("Failed to get clip data", error);
-    return null;
+    log.error("Firebase operation failed: getClips");
+    throw error;
   }
 }
 
@@ -236,55 +293,42 @@ export async function getClips(): Promise<Record<string, ClipData> | null> {
  *
  * @param userId - The user ID to check clips for
  */
+
 export async function enforceClipLimit(userId: string): Promise<void> {
+  const assertCurrent = currentSession(userId);
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
-    // Order by timestamp to reliably get the oldest clips first
-    const clipsQuery = query(clipsRef, orderByChild("timestamp"));
-    const snapshot = await get(clipsQuery);
-
-    if (!snapshot.exists()) {
-      log.debug("No clips found to enforce limit", { userId });
-      return;
-    }
-
-    const clips: Record<string, ClipData> = snapshot.val();
-    const clipKeys = Object.keys(clips);
-
-    if (clipKeys.length >= CLIPBOARD_CONFIG.maxClipCount) {
-      // Find the oldest unpinned clip
-      let oldestUnpinnedKey: string | null = null;
-      for (const key of clipKeys) {
-        if (!clips[key].pinned) {
-          oldestUnpinnedKey = key;
-          break; // Found the oldest unpinned because clipKeys is ordered by timestamp mostly, but we should sort it to be sure
+    await runTransaction(
+      clipsRef,
+      (current: Record<string, ClipData> | null) => {
+        assertCurrent();
+        if (!current) return undefined;
+        const entries = Object.entries(current);
+        const excessCount = entries.length - CLIPBOARD_CONFIG.maxClipCount;
+        if (excessCount <= 0) return undefined;
+        // Order by timestamp to reliably get the oldest clips first
+        // Get all unpinned clips sorted by timestamp ascending (oldest first)
+        const toRemove = entries
+          .filter(([, clip]) => !clip.pinned)
+          .sort(
+            ([, a], [, b]) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          )
+          .slice(0, excessCount);
+        if (toRemove.length === 0) {
+          log.warn("All clips are pinned, cannot enforce clip limit.");
+          return undefined;
         }
-      }
-
-      if (oldestUnpinnedKey) {
-        log.debug(`Removing oldest unpinned clip to maintain limit`, {
-          userId,
-          clipId: oldestUnpinnedKey,
-          currentCount: clipKeys.length,
-          limit: CLIPBOARD_CONFIG.maxClipCount,
-        });
-
-        await remove(
-          ref(
-            db,
-            `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${oldestUnpinnedKey}`,
-          ),
-        );
-      } else {
-        log.warn("All clips are pinned, cannot enforce clip limit.", {
-          userId,
-          currentCount: clipKeys.length,
-        });
-      }
-    }
+        const next = { ...current };
+        for (const [key] of toRemove) delete next[key];
+        return next;
+      },
+      { applyLocally: false },
+    );
   } catch (error) {
-    log.error("Failed to enforce clip limit", error);
+    log.error("Firebase operation failed: enforceClipLimit");
+    throw error;
   }
 }
 
@@ -299,12 +343,14 @@ export async function removeAllClips(): Promise<void> {
     const userId = user.uid;
     log.debug("Removing unpinned clips from Firebase", { userId });
     // Get a reference to the Firebase Realtime Database
+    const assertCurrent = currentSession(user.uid);
     const db = getDatabase();
     // Create a reference to the specific clip path
     const clipRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/`);
 
     // Fetch all clips first
     const snapshot = await get(clipRef);
+    assertCurrent();
     if (!snapshot.exists()) {
       log.debug("No clips to remove");
       return;
@@ -325,7 +371,18 @@ export async function removeAllClips(): Promise<void> {
 
     if (removedCount > 0) {
       // Perform atomic update to remove unpinned clips
-      await update(clipRef, updates);
+      assertCurrent();
+      await runTransaction(
+        clipRef,
+        (current: Record<string, ClipData> | null) => {
+          assertCurrent();
+          if (!current) return current;
+          return Object.fromEntries(
+            Object.entries(current).filter(([, clip]) => clip.pinned),
+          );
+        },
+        { applyLocally: false },
+      );
       log.debug(`Removed ${removedCount} unpinned clips from Firebase`, {
         userId,
       });
@@ -333,7 +390,8 @@ export async function removeAllClips(): Promise<void> {
       log.debug("No unpinned clips found to remove", { userId });
     }
   } catch (error) {
-    log.error("Failed to remove clips from Firebase", error);
+    log.error("Firebase operation failed: removeAllClips");
+    throw error;
   }
 }
 
@@ -341,6 +399,8 @@ export async function removeClip(
   userId: string,
   clipId: string,
 ): Promise<void> {
+  const assertCurrent = currentSession(userId);
+  assertDatabaseKey(clipId);
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
@@ -348,15 +408,35 @@ export async function removeClip(
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
+    assertCurrent();
 
+    let key: string | null = null;
     if (snapshot.exists()) {
-      const key = Object.keys(snapshot.val())[0];
+      key = Object.keys(snapshot.val())[0];
+    } else {
+      // Fallback: check if clipId is already the direct node key
+      const directRef = ref(
+        db,
+        `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${clipId}`,
+      );
+      const directSnapshot = await get(directRef);
+      assertCurrent();
+      if (directSnapshot.exists()) {
+        key = clipId;
+      }
+    }
+
+    if (key) {
+      assertCurrent();
       await remove(
         ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
       );
+    } else {
+      log.warn(`Clip not found for removal`, { userId, clipId });
+      throw new Error("Clip no longer exists.");
     }
   } catch (error) {
-    log.error("Failed to remove clip", error);
+    log.error("Firebase operation failed: removeClip");
     throw error;
   }
 }
@@ -366,6 +446,10 @@ export async function updateClip(
   clipId: string,
   updates: Partial<ClipData>,
 ): Promise<void> {
+  const assertCurrent = currentSession(userId);
+  assertDatabaseKey(clipId);
+  if (updates.content !== undefined && !isEncryptedPayload(updates.content))
+    throw new Error("Invalid encrypted clip payload.");
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
@@ -373,19 +457,43 @@ export async function updateClip(
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
+    assertCurrent();
 
+    let key: string | null = null;
     if (snapshot.exists()) {
-      const key = Object.keys(snapshot.val())[0];
-      await update(
-        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
-        updates,
+      key = Object.keys(snapshot.val())[0];
+    } else {
+      // Fallback: check if clipId is already the direct node key
+      const directRef = ref(
+        db,
+        `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${clipId}`,
       );
-      log.debug(`Clip updated`, { userId, clipId, updates });
+      const directSnapshot = await get(directRef);
+      assertCurrent();
+      if (directSnapshot.exists()) {
+        key = clipId;
+      }
+    }
+
+    if (key) {
+      assertCurrent();
+      const result = await runTransaction(
+        ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
+        (current: ClipData | null) => {
+          assertCurrent();
+          if (!current) return undefined;
+          return { ...current, ...updates };
+        },
+        { applyLocally: false },
+      );
+      if (!result.committed) throw new Error("Clip no longer exists.");
+      log.debug(`Clip updated`, { userId, clipId });
     } else {
       log.warn(`Clip not found for update`, { userId, clipId });
+      throw new Error("Clip no longer exists.");
     }
   } catch (error) {
-    log.error("Failed to update clip", error);
+    log.error("Firebase operation failed: updateClip");
     throw error;
   }
 }
@@ -395,6 +503,8 @@ export async function pinClip(
   clipId: string,
   pinned: boolean,
 ): Promise<void> {
+  const assertCurrent = currentSession(userId);
+  assertDatabaseKey(clipId);
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
@@ -402,9 +512,26 @@ export async function pinClip(
     // Find the clip by id field
     const clipQuery = query(clipsRef, orderByChild("id"), equalTo(clipId));
     const snapshot = await get(clipQuery);
+    assertCurrent();
 
+    let key: string | null = null;
     if (snapshot.exists()) {
-      const key = Object.keys(snapshot.val())[0];
+      key = Object.keys(snapshot.val())[0];
+    } else {
+      // Fallback: check if clipId is already the direct node key
+      const directRef = ref(
+        db,
+        `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${clipId}`,
+      );
+      const directSnapshot = await get(directRef);
+      assertCurrent();
+      if (directSnapshot.exists()) {
+        key = clipId;
+      }
+    }
+
+    if (key) {
+      assertCurrent();
       await update(
         ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}/${key}`),
         { pinned },
@@ -412,60 +539,57 @@ export async function pinClip(
       log.debug(`Clip pinned status updated`, { userId, clipId, pinned });
     } else {
       log.warn(`Clip not found for pinning`, { userId, clipId });
+      throw new Error("Clip no longer exists.");
     }
   } catch (error) {
-    log.error("Failed to update clip pin status", error);
+    log.error("Firebase operation failed: pinClip");
     throw error;
   }
 }
 
 export async function addDevice(userId: string): Promise<void> {
+  const assertCurrent = currentSession(userId);
   try {
     const db = getDatabase();
+    const deviceId = settingsStorage.getOrCreateDeviceId();
     const deviceName = os.hostname();
-    const platform = os.platform();
-
-    const deviceRef = ref(
-      db,
-      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`,
-    );
-    const deviceQuery = query(
-      deviceRef,
-      orderByChild("deviceName"),
-      equalTo(deviceName),
-    );
-    const device = await get(deviceQuery);
-
-    if (device.exists()) {
-      const deviceKey = Object.keys(device.val())[0];
-      // Create reference to the specific device
-      const specificDeviceRef = ref(
-        db,
-        `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
-      );
-      // Update the last active timestamp if the device already exists
-      await update(specificDeviceRef, {
-        deviceName,
-        platform,
-        lastActive: new Date().toISOString(),
-      });
-      log.debug("Device updated", { userId, deviceName, deviceKey });
-      return;
+    const nativePlatform = os.platform();
+    const platform =
+      nativePlatform === "darwin"
+        ? "macOS"
+        : nativePlatform === "win32"
+          ? "Windows"
+          : nativePlatform === "linux"
+            ? "Linux"
+            : null;
+    if (!platform) {
+      throw new Error(`Unsupported desktop platform: ${nativePlatform}`);
     }
 
-    // Device doesn't exist, create new entry
-    const newDeviceRef = push(deviceRef);
-    await set(newDeviceRef, {
-      id: uuidv4(),
+    const specificDeviceRef = ref(
+      db,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceId}`,
+    );
+
+    assertCurrent();
+    await set(specificDeviceRef, {
+      id: deviceId,
       deviceName,
       platform,
       lastActive: new Date().toISOString(),
     });
-    log.info("New device registered", { userId, deviceName, platform });
+
+    log.info("Device registered/updated successfully", {
+      userId,
+      deviceId,
+      deviceName,
+      platform,
+    });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log.error("Error managing device registration:", errorMessage);
-    throw new Error(errorMessage);
+    log.error("Firebase operation failed: addDevice");
+    throw error instanceof Error
+      ? error
+      : new Error("Device registration failed.");
   }
 }
 
@@ -473,15 +597,19 @@ export async function removeDevice(
   userId: string,
   deviceKey: string,
 ): Promise<void> {
+  const assertCurrent = currentSession(userId);
+  assertDatabaseKey(deviceKey);
   try {
     const db = getDatabase();
     const deviceRef = ref(
       db,
       `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${deviceKey}`,
     );
+    assertCurrent();
     await remove(deviceRef);
   } catch (error) {
-    log.error("Failed to remove device", error);
+    log.error("Firebase operation failed: removeDevice");
+    throw error;
   }
 }
 
@@ -491,29 +619,45 @@ export function listenDeviceStatus(
 ): () => void {
   try {
     const db = getDatabase();
-    const deviceName = os.hostname();
+    const currentDeviceId = settingsStorage.getOrCreateDeviceId();
     const devicesRef = ref(
       db,
-      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/`,
+      `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}/${currentDeviceId}`,
+    );
+    const assertCurrent = currentSession(userId);
+    log.debug("Setting up device status listener", { userId, currentDeviceId });
+    const unsubscribe = onValue(
+      devicesRef,
+      (snapshot) => {
+        try {
+          assertCurrent();
+        } catch {
+          return;
+        }
+        if (!snapshot.exists()) {
+          // Device record removed
+          log.warn("Device record removed from Firebase, triggering logout", {
+            userId,
+            currentDeviceId,
+          });
+          onDeviceRemoved();
+        }
+      },
+      () => {
+        try {
+          assertCurrent();
+        } catch {
+          return;
+        }
+        log.warn("Device status listener failed");
+        onDeviceRemoved();
+      },
     );
 
-    log.debug("Setting up device status listener", { userId, deviceName });
-
-    const unsubscribe = onChildRemoved(devicesRef, (snapshot) => {
-      const deviceData = snapshot.val();
-      if (deviceData && deviceData.deviceName === deviceName) {
-        // Device record removed
-        log.warn("Device record removed from Firebase, triggering logout", {
-          userId,
-          deviceName,
-        });
-        onDeviceRemoved();
-      }
-    });
-
     return unsubscribe;
-  } catch (error) {
-    log.error("Failed to set up device status listener", error);
+  } catch {
+    log.error("Failed to set up device status listener");
+    onDeviceRemoved();
     return () => {};
   }
 }
@@ -526,24 +670,57 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
       log.warn("No user is currently authenticated");
       return null;
     }
+    const assertCurrent = currentSession(user.uid);
     const db = getDatabase();
     const deviceRef = ref(
       db,
       `${DB_PATHS.users}/${user.uid}/${DB_PATHS.devices}/`,
     );
     const devices = await get(deviceRef);
+    assertCurrent();
 
     if (devices.exists()) {
-      log.debug("Devices found", devices.val());
-      return devices.val();
+      log.debug("Devices fetched");
+      return validateDevices(devices.val());
     } else {
       log.debug("No device found");
       return null;
     }
   } catch (error) {
-    log.error("Failed to get device data", error);
-    return null;
+    log.error("Firebase operation failed: getDevices");
+    throw error;
   }
+}
+
+function validateDevices(value: unknown): Record<string, DeviceData> {
+  const validated: Record<string, DeviceData> = {};
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return validated;
+  for (const [key, record] of Object.entries(value)) {
+    if (!record || typeof record !== "object" || Array.isArray(record))
+      continue;
+    const device = record as DeviceData;
+    if (
+      key === "__proto__" ||
+      key.length > 256 ||
+      typeof device.id !== "string" ||
+      !device.id ||
+      device.id.length > 256 ||
+      typeof device.deviceName !== "string" ||
+      device.deviceName.length > 256 ||
+      typeof device.platform !== "string" ||
+      device.platform.length > 64 ||
+      typeof device.lastActive !== "string" ||
+      device.lastActive.length > 64 ||
+      !Number.isFinite(Date.parse(device.lastActive)) ||
+      (device.fcmToken !== undefined && typeof device.fcmToken !== "string") ||
+      (device.fcmTokenSessionId !== undefined &&
+        typeof device.fcmTokenSessionId !== "string")
+    )
+      continue;
+    validated[key] = { ...device };
+  }
+  return validated;
 }
 
 /**
@@ -552,14 +729,17 @@ export async function getDevices(): Promise<Record<string, DeviceData> | null> {
  * @param salt Hex string of the salt
  * @param wrappedKey Hex string of the encrypted DEK
  */
+
 export async function saveEncryptionMetadata(
   uid: string,
   salt: string,
   wrappedKey: string,
 ): Promise<void> {
+  const assertCurrent = currentSession(uid);
   try {
     const db = getDatabase();
     const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
+    assertCurrent();
     await set(refPath, {
       salt,
       wrappedKey,
@@ -567,7 +747,8 @@ export async function saveEncryptionMetadata(
     });
     log.info("Encryption metadata saved to Firebase");
   } catch (error) {
-    log.error("Failed to save encryption metadata", error);
+    log.error("Firebase operation failed: saveEncryptionMetadata");
+    throw error;
   }
 }
 
@@ -575,21 +756,34 @@ export async function saveEncryptionMetadata(
  * Get encryption metadata for the user
  * @param uid User ID
  */
+
 export async function getEncryptionMetadata(
   uid: string,
 ): Promise<{ salt: string; wrappedKey: string } | null> {
+  const assertCurrent = currentSession(uid);
   try {
     const db = getDatabase();
     const refPath = ref(db, `${DB_PATHS.users}/${uid}/encryption`);
     const snapshot = await get(refPath);
+    assertCurrent();
 
     if (snapshot.exists()) {
-      return snapshot.val();
+      const metadata = snapshot.val();
+      if (
+        !metadata ||
+        typeof metadata !== "object" ||
+        typeof metadata.salt !== "string" ||
+        !/^[a-f\d]{32}$/i.test(metadata.salt) ||
+        !isEncryptedPayload(metadata.wrappedKey)
+      ) {
+        throw new Error("Invalid encryption metadata.");
+      }
+      return { salt: metadata.salt, wrappedKey: metadata.wrappedKey };
     }
     return null;
   } catch (error) {
-    log.error("Failed to get encryption metadata", error);
-    return null;
+    log.error("Firebase operation failed: getEncryptionMetadata");
+    throw error;
   }
 }
 
@@ -597,14 +791,17 @@ export async function getEncryptionMetadata(
  * Wipe all clips for a user.
  * Used during password resets when encryption keys become invalid.
  */
+
 export async function wipeUserClips(userId: string): Promise<void> {
+  const assertCurrent = currentSession(userId);
   try {
     const db = getDatabase();
     const clipsRef = ref(db, `${DB_PATHS.users}/${userId}/${DB_PATHS.clips}`);
+    assertCurrent();
     await remove(clipsRef);
     log.info("Successfully wiped all clips for user", { userId });
   } catch (error) {
-    log.error("Failed to wipe user clips", error);
+    log.error("Firebase operation failed: wipeUserClips");
     throw error;
   }
 }
@@ -613,17 +810,20 @@ export async function wipeUserClips(userId: string): Promise<void> {
  * Wipe all devices for a user.
  * Used during password resets.
  */
+
 export async function wipeUserDevices(userId: string): Promise<void> {
+  const assertCurrent = currentSession(userId);
   try {
     const db = getDatabase();
     const devicesRef = ref(
       db,
       `${DB_PATHS.users}/${userId}/${DB_PATHS.devices}`,
     );
+    assertCurrent();
     await remove(devicesRef);
     log.info("Successfully wiped all devices for user", { userId });
   } catch (error) {
-    log.error("Failed to wipe user devices", error);
+    log.error("Firebase operation failed: wipeUserDevices");
     throw error;
   }
 }
@@ -632,14 +832,17 @@ export async function wipeUserDevices(userId: string): Promise<void> {
  * Wipe encryption metadata for a user.
  * Used during password resets to force the generation of new keys.
  */
+
 export async function wipeEncryptionMetadata(userId: string): Promise<void> {
+  const assertCurrent = currentSession(userId);
   try {
     const db = getDatabase();
     const encryptionRef = ref(db, `${DB_PATHS.users}/${userId}/encryption`);
+    assertCurrent();
     await remove(encryptionRef);
     log.info("Successfully wiped encryption metadata for user", { userId });
   } catch (error) {
-    log.error("Failed to wipe encryption metadata", error);
+    log.error("Firebase operation failed: wipeEncryptionMetadata");
     throw error;
   }
 }

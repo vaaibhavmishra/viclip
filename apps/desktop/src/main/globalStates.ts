@@ -1,12 +1,12 @@
 import type { ClipData } from "@viclip/types";
 import type { BrowserWindow, Tray } from "electron";
+import { settingsStorage } from "./services/settings";
 
 // Global instances
 let mainWindowInstance: BrowserWindow | null = null;
 let authWindowInstance: BrowserWindow | null = null;
 let settingsWindowInstance: BrowserWindow | null = null;
 let trayInstance: Tray | null = null;
-let notificationsEnabled = true;
 let cachedClips: Record<string, ClipData> = {};
 
 // Getters and setters for mainWindow
@@ -47,10 +47,10 @@ export function setTray(tray: Tray | null): void {
 
 // Getters and setters for notificationsEnabled
 export function getNotificationsEnabled(): boolean {
-  return notificationsEnabled;
+  return settingsStorage.getNotificationsEnabled();
 }
 export function setNotificationsEnabled(enabled: boolean): void {
-  notificationsEnabled = enabled;
+  settingsStorage.setNotificationsEnabled(enabled);
 }
 
 // Getters and setters for cachedClips

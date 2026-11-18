@@ -18,21 +18,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedId,
   onSelect,
 }) => {
-  // Group clips
-  const pinnedClips = clips.filter((c) => c.pinned);
-  const unpinnedClips = clips.filter((c) => !c.pinned);
+  // Group clips safely
+  const clipList = Array.isArray(clips) ? clips.filter(Boolean) : [];
+  const pinnedClips = clipList.filter((c) => c.pinned);
+  const unpinnedClips = clipList.filter((c) => !c.pinned);
 
   const groupedClips = unpinnedClips.reduce(
     (acc, clip) => {
-      const date = new Date(clip.timestamp);
+      const date = clip.timestamp ? new Date(clip.timestamp) : new Date();
+      const isValid = !Number.isNaN(date.getTime());
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      let key = date.toLocaleDateString();
-      if (date.toDateString() === today.toDateString()) {
+      let key = isValid ? date.toLocaleDateString() : "Earlier";
+      if (isValid && date.toDateString() === today.toDateString()) {
         key = "Today";
-      } else if (date.toDateString() === yesterday.toDateString()) {
+      } else if (isValid && date.toDateString() === yesterday.toDateString()) {
         key = "Yesterday";
       }
 
@@ -80,12 +82,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {clip.type === "color" ? (
                     <div
                       className="w-4 h-4 mt-0.5 shrink-0 rounded-full border border-border/50 shadow-sm"
-                      style={{ backgroundColor: clip.content.trim() }}
+                      style={{ backgroundColor: (clip.content || "").trim() }}
                     />
                   ) : (
                     <FileText className="w-4 h-4 mt-0.5 shrink-0 opacity-70" />
                   )}
-                  <span className="line-clamp-1 break-all">{clip.content}</span>
+                  <span className="line-clamp-1 break-all">
+                    {(clip.content || "").slice(0, 300)}
+                  </span>
                 </button>
               ))}
             </div>
@@ -115,12 +119,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {clip.type === "color" ? (
                     <div
                       className="w-4 h-4 mt-0.5 shrink-0 rounded-full border border-border/50 shadow-sm"
-                      style={{ backgroundColor: clip.content.trim() }}
+                      style={{ backgroundColor: (clip.content || "").trim() }}
                     />
                   ) : (
                     <FileText className="w-4 h-4 mt-0.5 shrink-0 opacity-70" />
                   )}
-                  <span className="line-clamp-1 break-all">{clip.content}</span>
+                  <span className="line-clamp-1 break-all">
+                    {(clip.content || "").slice(0, 300)}
+                  </span>
                 </button>
               ))}
             </div>

@@ -11,7 +11,7 @@ import {
   UserIcon,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const validatePasswordStrength = (password: string): string | null => {
   if (password.length < 12) {
@@ -47,21 +47,34 @@ export const SignUp: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const busy = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (busy.current) return;
     setError("");
 
-    if (!email.trim()) {
+    const cleanEmail = email.trim();
+    const cleanUsername = username.trim();
+
+    if (!cleanEmail) {
       setError("Email is required");
       return;
     }
 
-    if (!username.trim()) {
+    if (!cleanUsername) {
       setError("Username is required");
       return;
     }
 
-    if (username.trim().length < 3) {
+    if (cleanUsername.length < 3) {
       setError("Username must be at least 3 characters long");
       return;
     }
@@ -82,14 +95,15 @@ export const SignUp: React.FC = () => {
       return;
     }
 
+    busy.current = true;
     setIsLoading(true);
     try {
       // Call your signup API here
-      await window.api.signUpUser(email, username, password);
+      await window.api.signUpUser(cleanEmail, cleanUsername, password);
       // Handle successful signup
       // Main process will handle window switch
     } catch (err: unknown) {
-      console.error("Signup error:", err);
+      if (!mounted.current) return;
       const error = err as { message?: string };
       if (error?.message?.includes("already-in-use")) {
         setError("This email is already associated with an account.");
@@ -99,7 +113,8 @@ export const SignUp: React.FC = () => {
         );
       }
     } finally {
-      setIsLoading(false);
+      busy.current = false;
+      if (mounted.current) setIsLoading(false);
     }
   };
 
@@ -161,7 +176,7 @@ export const SignUp: React.FC = () => {
                     <p className="font-medium">Password requirements:</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       <li>At least 12 characters long</li>
-                      <li>Must contain 3 of the following:</li>
+                      <li>Must contain all of the following:</li>
                       <ul className="list-none ml-3 space-y-0.5">
                         <li>• Uppercase letter (A-Z)</li>
                         <li>• Lowercase letter (a-z)</li>

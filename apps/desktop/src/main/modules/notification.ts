@@ -15,14 +15,17 @@ import { getNotificationsEnabled } from "../globalStates";
  * @param body The notification message body
  */
 export function showNotification(title: string, body: string): void {
-  // Check if notifications are enabled
-  if (!getNotificationsEnabled()) {
+  // Check if notifications are enabled and supported by OS
+  if (!getNotificationsEnabled() || !Notification.isSupported()) {
     return;
   }
-  // Create a new notification instance
-  const notification = new Notification({
-    title,
-    body,
-  });
-  notification.show();
+  try {
+    const notification = new Notification({
+      title,
+      body,
+    });
+    notification.show();
+  } catch {
+    // Non-fatal: OS notification daemon might be absent or busy
+  }
 }

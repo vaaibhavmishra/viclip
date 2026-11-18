@@ -1,46 +1,30 @@
 import { safeStorage } from "electron";
-import { Conf } from "electron-conf/main";
 import log from "electron-log/main";
+import { configStore as store } from "./configStore";
 
-const store = new Conf();
+let storageGeneration = 0;
+
+export async function isSecureStorageAvailable(): Promise<boolean> {
+  if (!(await safeStorage.isAsyncEncryptionAvailable())) return false;
+  // Linux's basic_text backend encrypts with a publicly known password.
+  if (process.platform === "linux") {
+    const backend = safeStorage.getSelectedStorageBackend();
+    return backend !== "basic_text" && backend !== "unknown";
+  }
+  return true;
+}
 
 /**
  * Encrypt sensitive string data before storing
  * @param data String data to encrypt
  * @returns Encrypted data as base64 string
  */
-export function encryptData(data: string): string {
-  try {
-    if (!safeStorage.isEncryptionAvailable()) {
-      log.warn("Encryption is not available, data will be stored unencrypted");
-      return data;
-    }
-    const encryptedData = safeStorage.encryptString(data);
-    return encryptedData.toString("base64");
-  } catch (error) {
-    log.error("Failed to encrypt data", error);
-    return data;
+export async function encryptData(data: string): Promise<string> {
+  if (!(await isSecureStorageAvailable())) {
+    throw new Error("OS-level encryption is unavailable");
   }
-}
-
-/**
- * Encrypt image buffer data before storing
- * @param buffer Buffer of image data (PNG/JPEG)
- * @returns Encrypted data as base64 string
- */
-export function encryptImageBuffer(buffer: Buffer): string {
-  try {
-    if (!safeStorage.isEncryptionAvailable()) {
-      log.warn("Encryption is not available, image will be stored unencrypted");
-      return buffer.toString("base64");
-    }
-    // safeStorage.encryptString expects a string. Convert buffer to base64 first.
-    const encryptedData = safeStorage.encryptString(buffer.toString("base64"));
-    return encryptedData.toString("base64");
-  } catch (error) {
-    log.error("Failed to encrypt image buffer", error);
-    return buffer.toString("base64");
-  }
+  const encryptedData = await safeStorage.encryptStringAsync(data);
+  return encryptedData.toString("base64");
 }
 
 /**
@@ -48,114 +32,195 @@ export function encryptImageBuffer(buffer: Buffer): string {
  * @param encryptedData Base64 string encrypted data
  * @returns Decrypted data
  */
-function decryptData(encryptedData: string): string {
+async function decryptData(encryptedData: string): Promise<string> {
   try {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!(await isSecureStorageAvailable())) {
       log.warn(
-        "Encryption is not available, data will be returned unencrypted",
+        "Cannot decrypt stored data because OS-level encryption is unavailable",
       );
-      return encryptedData;
+      return "";
     }
 
-    const decryptedData = safeStorage.decryptString(
+    const decryptedData = await safeStorage.decryptStringAsync(
       Buffer.from(encryptedData, "base64"),
     );
-    return decryptedData.toString();
-  } catch (error) {
-    log.error("Failed to decrypt data", error);
+    return decryptedData.result;
+  } catch {
+    log.error("Failed to decrypt data");
     return "";
   }
 }
 
+export class ElectronAuthPersistence {
+  static readonly type = "LOCAL" as const;
+  readonly type = "LOCAL" as const;
+
+  private _safeKey(key: string): string {
+    return `auth_persist_${Buffer.from(key, "utf8").toString("hex")}`;
+  }
+
+  async _isAvailable(): Promise<boolean> {
+    try {
+      return await isSecureStorageAvailable();
+    } catch {
+      log.error("Failed to check auth encryption availability");
+      return false;
+    }
+  }
+
+  async _set(key: string, value: unknown): Promise<void> {
+    if (value === undefined) {
+      await this._remove(key);
+      return;
+    }
+    const generation = storageGeneration;
+    try {
+      const safeKey = this._safeKey(key);
+      const serialized = JSON.stringify(value);
+      const encrypted = await encryptData(serialized);
+      if (generation !== storageGeneration) return;
+      store.set(safeKey, encrypted);
+    } catch (error) {
+      log.error("Failed to persist auth data");
+      throw error;
+    }
+  }
+
+  async _get(key: string): Promise<unknown> {
+    const generation = storageGeneration;
+    try {
+      const safeKey = this._safeKey(key);
+      const encrypted = store.get(safeKey) as string;
+      if (!encrypted) return null;
+      const decrypted = await decryptData(encrypted);
+      if (!decrypted || generation !== storageGeneration) return null;
+      return JSON.parse(decrypted);
+    } catch {
+      log.error("Failed to retrieve persisted auth data");
+      return null;
+    }
+  }
+
+  async _remove(key: string): Promise<void> {
+    try {
+      const safeKey = this._safeKey(key);
+      store.delete(safeKey);
+    } catch (error) {
+      log.error("Failed to remove persisted auth data");
+      throw error;
+    }
+  }
+
+  _addListener(_key: string, _listener: (value: unknown) => void): void {}
+  _removeListener(_key: string, _listener: (value: unknown) => void): void {}
+}
+
 export const authStorage = {
   /**
-   * Clear all stored auth data
+   * Clear all stored auth data and keys
    */
   clearAuth(): void {
-    store.delete("masterKey");
-    // store.delete('uid')
-    log.debug("Auth data cleared");
+    // Prevent pending async storage operations from restoring cleared secrets.
+    storageGeneration++;
+    const keys = new Set(["masterKey", "credentials"]); // Purge any legacy saved credentials
+    let failed = false;
+    try {
+      const data = (store.store || {}) as Record<string, unknown>;
+      for (const key of Object.keys(data)) {
+        if (key.startsWith("auth_persist_")) {
+          keys.add(key);
+        }
+      }
+    } catch {
+      failed = true;
+      log.error("Failed to clear persisted auth keys");
+    }
+    for (const key of keys) {
+      try {
+        store.delete(key);
+      } catch {
+        failed = true;
+      }
+    }
+    if (failed)
+      throw new Error("Failed to clear secure authentication storage");
+    log.debug("Auth data and keys cleared");
   },
 
   /**
-   * Save the Master Data Encryption Key (DEK)
+   * Save the Master Data Encryption Key (DEK).
+   * Only persists to disk if OS-level encryption (safeStorage) is available.
+   * Never writes plaintext keys to disk.
    * @param key The 32-byte DEK buffer
+   * @param isCurrentSession Whether the authentication attempt is still active
    */
-  saveMasterKey(key: Buffer): void {
-    // We encrypt the buffer using safeStorage and store as base64
-    store.set("masterKey", encryptImageBuffer(key));
-    log.debug("Master key saved securely");
+  async saveMasterKey(
+    key: Buffer,
+    isCurrentSession: () => boolean,
+    userId: string,
+  ): Promise<void> {
+    const generation = storageGeneration;
+    if (!isCurrentSession()) throw new Error("Authentication session changed");
+    if (!userId || !key || key.length !== 32) {
+      log.warn("Attempted to save empty master key");
+      throw new Error("Invalid master encryption key");
+    }
+    try {
+      if (!(await isSecureStorageAvailable())) {
+        log.warn(
+          "OS-level safeStorage encryption is unavailable. Master key will not be persisted to disk to protect Zero-Knowledge security.",
+        );
+        throw new Error("OS-level encryption is unavailable");
+      }
+      const encryptedData = await safeStorage.encryptStringAsync(
+        JSON.stringify({ userId, key: key.toString("base64") }),
+      );
+      if (generation !== storageGeneration || !isCurrentSession()) {
+        throw new Error("Authentication session changed");
+      }
+      store.set("masterKey", encryptedData.toString("base64"));
+      log.debug("Master key saved securely with safeStorage");
+    } catch (error) {
+      log.error("Failed to encrypt master key with safeStorage");
+      throw error;
+    }
   },
 
   /**
    * Retrieve the Master Data Encryption Key (DEK)
    * @returns The DEK buffer or null if not found
    */
-  getMasterKey(): Buffer | null {
-    const encryptedKey = store.get("masterKey") as string;
-    if (!encryptedKey) return null;
-
-    const decryptedHex = decryptData(encryptedKey);
-    if (!decryptedHex) return null;
-
-    // Note: decryptData returns string.
-    // If we used encryptImageBuffer (which uses encryptString on buffer), safeStorage.decryptString returns string.
-    // Wait, safeStorage.encryptString(Buffer) -> returns Buffer.
-    // My helper encryptImageBuffer line 42: safeStorage.encryptString(buffer); -> This API actually expects string usually?
-    // Electron docs: safeStorage.encryptString(text) -> Buffer.
-    // My helper line 42 uses encryptString(buffer). This might be a TS issue if typed strictly, but JS allows it.
-    // However, decryptString returns string.
-    // The `encryptImageBuffer` takes a Buffer and returns base64 string.
-    // `decryptData` takes base64 string and returns string.
-    // If we passed a Buffer to encryptString, it likely stringified it.
-    // Let's look closer at `encryptImageBuffer` in the file view.
-
-    // Re-reading `encryptImageBuffer` implementation in previous turn:
-    // 33: export function encryptImageBuffer(buffer: Buffer): string {
-    // 42: const encryptedData = safeStorage.encryptString(buffer);
-    //
-    // `safeStorage.encryptString` argument is `plaintext string`. passing Buffer works but it calls .toString() on it?
-    // No, usually it accepts string.
-    // If I want to store a Buffer (the Key), I should probably convert it to hex/base64 STRING first, then encrypt.
-
-    return Buffer.from(decryptedHex, "base64"); // assuming I store it as base64 string before encryption
-  },
-
-  /**
-   * Save user credentials securely
-   * @param email User email
-   * @param pass User password
-   */
-  saveCredentials(email: string, pass: string): void {
-    const data = JSON.stringify({ email, pass });
-    store.set("credentials", encryptData(data));
-    log.debug("Credentials saved securely");
-  },
-
-  /**
-   * Retrieve stored user credentials
-   * @returns Object with email and password or null if not found
-   */
-  getCredentials(): { email: string; pass: string } | null {
-    const encrypted = store.get("credentials") as string;
-    if (!encrypted) return null;
-
-    const decrypted = decryptData(encrypted);
-    if (!decrypted) return null;
-
+  async getMasterKey(userId: string): Promise<Buffer | null> {
+    const generation = storageGeneration;
     try {
-      return JSON.parse(decrypted);
-    } catch (e) {
-      log.error("Failed to parse credentials", e);
+      if (!(await isSecureStorageAvailable())) {
+        return null;
+      }
+      const encryptedKey = store.get("masterKey") as string;
+      if (!encryptedKey) return null;
+
+      const { result: decryptedBase64 } = await safeStorage.decryptStringAsync(
+        Buffer.from(encryptedKey, "base64"),
+      );
+      if (!decryptedBase64 || generation !== storageGeneration) return null;
+
+      // Legacy unbound keys cannot safely be associated with a restored account.
+      const record: unknown = JSON.parse(decryptedBase64);
+      if (
+        !record ||
+        typeof record !== "object" ||
+        !("userId" in record) ||
+        !("key" in record) ||
+        record.userId !== userId ||
+        typeof record.key !== "string" ||
+        !/^[A-Za-z0-9+/]{43}=$/.test(record.key)
+      )
+        return null;
+      const key = Buffer.from(record.key, "base64");
+      return key.length === 32 ? key : null;
+    } catch {
+      log.error("Failed to decrypt master key from storage");
       return null;
     }
-  },
-
-  /**
-   * Clear stored credentials
-   */
-  clearCredentials(): void {
-    store.delete("credentials");
-    log.debug("Credentials cleared");
   },
 };

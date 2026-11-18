@@ -19,14 +19,27 @@ const App: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (
-      !isLoading &&
-      user &&
-      (location.pathname === "/" || location.pathname === "/auth")
-    ) {
-      navigate("/main");
+    useGlobalStore.getState().initialize();
+    return () => useGlobalStore.getState().dispose();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (
+        user &&
+        (location.pathname === "/" || location.pathname === "/auth")
+      ) {
+        navigate("/main");
+      } else if (
+        !user &&
+        (location.pathname === "/main" || location.pathname === "/settings")
+      ) {
+        navigate("/auth");
+      }
     }
   }, [navigate, location.pathname, user, isLoading]);
+
+  if (isLoading) return <div role="status">Loading ViClip...</div>;
 
   return (
     <div className={`${platform === "linux" && "dark:bg-gray-900"} h-screen`}>
@@ -41,7 +54,7 @@ const App: React.FC = () => {
           path="/main"
           element={
             <div className="h-full flex flex-col">
-              <MainContent />
+              <MainContent key={user?.uid} />
             </div>
           }
         />
@@ -55,7 +68,7 @@ const App: React.FC = () => {
                 className="absolute top-0 left-0 w-full h-8 z-50"
                 style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
               />
-              <SettingsPanel />
+              <SettingsPanel key={user?.uid} />
             </div>
           }
         />

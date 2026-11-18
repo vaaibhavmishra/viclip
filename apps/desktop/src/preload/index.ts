@@ -6,9 +6,11 @@
  * main process (backend) in Electron applications.
  */
 
-import { electronAPI } from "@electron-toolkit/preload";
 import type { ClipData, DeviceData } from "@viclip/types";
 import { contextBridge, ipcRenderer } from "electron";
+import type { PreloadAPI } from "./index.d";
+
+export type { PreloadAPI } from "./index.d";
 
 /**
  * Custom APIs exposed to the renderer process
@@ -31,17 +33,35 @@ const api = {
    *
    * @param shouldEnable Boolean indicating whether to enable or disable notifications
    */
-  toggleNotifications: (shouldEnable: boolean): void => {
-    ipcRenderer.send("toggle-notifications", shouldEnable);
-  },
+  toggleNotifications: (shouldEnable: boolean): Promise<boolean> =>
+    ipcRenderer.invoke("toggle-notifications", shouldEnable),
+
+  /**
+   * Get whether notifications are enabled
+   */
+  getNotificationsEnabled: (): Promise<boolean> =>
+    ipcRenderer.invoke("get-notifications-enabled"),
 
   openSettings: (): void => {
     ipcRenderer.send("open-settings");
   },
 
+  hideWindow: (): void => {
+    ipcRenderer.send("hide-window");
+  },
+
   // Listen for clips updates from the main process
-  onClipsUpdate: (callback: (value: ClipData) => void): void => {
-    ipcRenderer.on("clips-updated", (_event, value) => callback(value));
+  onClipsUpdate: (
+    callback: (value: Record<string, ClipData>) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      value: Record<string, ClipData>,
+    ) => callback(value);
+    ipcRenderer.on("clips-updated", listener);
+    return () => {
+      ipcRenderer.removeListener("clips-updated", listener);
+    };
   },
 
   getClips: (): Promise<Record<string, ClipData> | null> =>
@@ -50,6 +70,9 @@ const api = {
   //Get Devices
   getDevices: (): Promise<Record<string, DeviceData> | null> =>
     ipcRenderer.invoke("get-devices"),
+
+  // Get current device unique ID
+  getDeviceId: (): Promise<string> => ipcRenderer.invoke("get-device-id"),
 
   // Remove device
   removeDevice: (deviceKey: string): Promise<void> =>
@@ -63,16 +86,21 @@ const api = {
    */
   onAuthStateChanged: (
     callback: (displayName: string | null) => void,
-  ): void => {
-    ipcRenderer.on("auth-state-changed", (_event, displayName) =>
-      callback(displayName),
-    );
+  ): (() => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      displayName: string | null,
+    ) => callback(displayName);
+    ipcRenderer.on("auth-state-changed", listener);
+    return () => {
+      ipcRenderer.removeListener("auth-state-changed", listener);
+    };
   },
 
   /**
    * Sign out the current user
    */
-  signOutUser: (): void => ipcRenderer.send("sign-out-user"),
+  signOutUser: (): Promise<void> => ipcRenderer.invoke("sign-out-user"),
   /**
    * Log in a user with email and password
    * @param email User's email address
@@ -86,12 +114,6 @@ const api = {
    */
   resetPassword: (email: string): Promise<void> =>
     ipcRenderer.invoke("reset-password", email),
-
-  /**
-   * Sign up a new user with email, username, and password
-
-  /**
-   * Sign up a new user with email, username, and password
 
   /**
    * Sign up a new user with email, username, and password
@@ -122,6 +144,7 @@ const api = {
   getCurrentUser: (): Promise<{
     email: string | null;
     displayName: string | null;
+    photoURL: string | null;
     uid: string;
   } | null> => ipcRenderer.invoke("get-current-user"),
 
@@ -129,6 +152,15 @@ const api = {
    * Get current clipboard sync state
    */
   getSyncState: (): Promise<boolean> => ipcRenderer.invoke("get-sync-state"),
+
+  onSyncStateChanged: (callback: (active: boolean) => void): (() => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      active: boolean,
+    ): void => callback(active);
+    ipcRenderer.on("sync-state-changed", listener);
+    return () => ipcRenderer.removeListener("sync-state-changed", listener);
+  },
 
   removeClip: (id: string): Promise<void> =>
     ipcRenderer.invoke("remove-clip", id),
@@ -148,7 +180,11 @@ const api = {
   getShortcut: (): Promise<string> => ipcRenderer.invoke("get-shortcut"),
   setShortcut: (shortcut: string): Promise<boolean> =>
     ipcRenderer.invoke("set-shortcut", shortcut),
-};
+
+  // Updates & Version
+  checkForUpdates: (): Promise<void> => ipcRenderer.invoke("check-for-updates"),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke("get-app-version"),
+} satisfies PreloadAPI;
 
 /**
  * Context Bridge Implementation
@@ -157,10 +193,17 @@ const api = {
  * This approach maintains security through context isolation, preventing direct
  * access to Node.js APIs from the renderer process.
  */
+const safeElectron = {
+  process: {
+    platform: process.platform,
+    versions: process.versions,
+  },
+};
+
 if (process.contextIsolated) {
   try {
-    // Expose the custom APIs and electronAPI securely to the renderer
-    contextBridge.exposeInMainWorld("electron", electronAPI);
+    // Expose the custom APIs securely to the renderer without unrestricted ipcRenderer
+    contextBridge.exposeInMainWorld("electron", safeElectron);
     contextBridge.exposeInMainWorld("api", api);
   } catch (error) {
     console.error(error);
@@ -169,10 +212,5 @@ if (process.contextIsolated) {
   // Fallback for when context isolation is disabled
   // This is less secure and should be avoided in production
 
-  // biome-ignore lint/suspicious/noTsIgnore: <suppress>
-  // @ts-ignore - window augmentation defined in renderer .d.ts
-  window.electron = electronAPI;
-  // biome-ignore lint/suspicious/noTsIgnore: <suppress>
-  // @ts-ignore - window augmentation defined in renderer .d.ts
-  window.api = api;
+  throw new Error("ViClip requires context isolation.");
 }

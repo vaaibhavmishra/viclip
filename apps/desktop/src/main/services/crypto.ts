@@ -27,6 +27,45 @@ export const encrypt = service.encrypt;
 export const decrypt = service.decrypt;
 export const wrapKey = service.wrapKey.bind(service);
 export const unwrapKey = service.unwrapKey.bind(service);
-export const setActiveDEK = service.setActiveDEK;
-export const getActiveDEK = service.getActiveDEK;
-export const isKeyLoaded = service.isKeyLoaded;
+let activeUserId: string | null = null;
+const keyWaiters = new Set<() => void>();
+
+export const setActiveDEK = (key: Uint8Array, userId: string): void => {
+  if (!userId) throw new Error("Encryption key must belong to an account");
+  service.setActiveDEK(key as unknown as Buffer<ArrayBuffer>);
+  activeUserId = userId;
+  for (const notify of [...keyWaiters]) notify();
+};
+
+export const isKeyLoaded = (userId: string): boolean =>
+  activeUserId === userId && service.isKeyLoaded();
+
+export const waitForKeyLoaded = (
+  timeoutMs: number,
+  userId: string,
+): Promise<boolean> => {
+  if (isKeyLoaded(userId)) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    const finish = (): void => {
+      clearTimeout(timer);
+      keyWaiters.delete(onChanged);
+      resolve(isKeyLoaded(userId));
+    };
+    const onChanged = (): void => {
+      if (isKeyLoaded(userId) || activeUserId === null) finish();
+    };
+    const timer = setTimeout(finish, timeoutMs);
+    keyWaiters.add(onChanged);
+  });
+};
+
+export const getActiveDEK = (userId: string): Buffer => {
+  if (!isKeyLoaded(userId))
+    throw new Error("Encryption key unavailable for this account");
+  return service.getActiveDEK();
+};
+export const clearActiveDEK = (): void => {
+  service.clearActiveDEK();
+  activeUserId = null;
+  for (const notify of [...keyWaiters]) notify();
+};

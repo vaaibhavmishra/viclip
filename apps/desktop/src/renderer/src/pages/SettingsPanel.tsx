@@ -1,4 +1,4 @@
-import { useGlobalStore } from "@renderer/components/global-context";
+import { type User, useGlobalStore } from "@renderer/components/global-context";
 import type { DeviceData } from "@viclip/types";
 import {
   Bell,
@@ -36,12 +36,20 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({
 interface ToggleButtonProps {
   enabled: boolean;
   onChange: () => void;
+  disabled?: boolean;
 }
 
-const ToggleButton: React.FC<ToggleButtonProps> = ({ enabled, onChange }) => (
+const ToggleButton: React.FC<ToggleButtonProps> = ({
+  enabled,
+  onChange,
+  disabled,
+}) => (
   <button
     type="button"
     onClick={onChange}
+    disabled={disabled}
+    role="switch"
+    aria-checked={enabled}
     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
       enabled ? "bg-blue-500 dark:bg-blue-600" : "bg-gray-200 dark:bg-gray-600"
     }`}
@@ -55,15 +63,14 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({ enabled, onChange }) => (
 );
 
 interface UserProfileProps {
-  user: {
-    email: string | null;
-    displayName: string | null;
-    uid: string;
-  } | null;
+  user: User | null;
   onSignOut: () => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, onSignOut }) => {
+  const [failedPhotoURL, setFailedPhotoURL] = useState<string | null>(null);
+  const photoURL = user?.photoURL?.trim();
+
   if (!user) return null;
 
   const getInitials = (name: string | null) => {
@@ -79,8 +86,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onSignOut }) => {
   return (
     <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
       <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-lg">
-          {getInitials(user.displayName)}
+        <div className="w-12 h-12 shrink-0 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-lg">
+          {photoURL && photoURL !== failedPhotoURL ? (
+            <img
+              src={photoURL}
+              alt={user.displayName || "User"}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={() => setFailedPhotoURL(photoURL)}
+            />
+          ) : (
+            getInitials(user.displayName)
+          )}
         </div>
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
@@ -118,8 +135,8 @@ const DeviceItem: React.FC<DeviceItemProps> = ({
   isCurrentDevice,
   onRemove,
 }) => {
-  const getDeviceIcon = (platform: string) => {
-    const p = platform.toLowerCase();
+  const getDeviceIcon = (platform?: string) => {
+    const p = (platform || "").toLowerCase();
     if (p.includes("mobile") || p.includes("android") || p.includes("ios"))
       return Smartphone;
     if (p.includes("tablet") || p.includes("ipad")) return Tablet;
@@ -146,7 +163,10 @@ const DeviceItem: React.FC<DeviceItemProps> = ({
             )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Last active: {new Date(device.lastActive).toLocaleDateString()}
+            Last active:{" "}
+            {device.lastActive
+              ? new Date(device.lastActive).toLocaleDateString()
+              : "Unknown"}
           </p>
         </div>
       </div>
@@ -157,7 +177,7 @@ const DeviceItem: React.FC<DeviceItemProps> = ({
         {!isCurrentDevice && (
           <button
             type="button"
-            onClick={() => onRemove(device.firebaseKey as string)}
+            onClick={() => onRemove(device.firebaseKey || device.id)}
             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
             title="Logout device"
           >
@@ -172,11 +192,13 @@ const DeviceItem: React.FC<DeviceItemProps> = ({
 interface ShortcutRecorderProps {
   currentShortcut: string;
   onSave: (shortcut: string) => void;
+  disabled?: boolean;
 }
 
 const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
   currentShortcut,
   onSave,
+  disabled,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [keys, setKeys] = useState<string[]>([]);
@@ -249,6 +271,7 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
       <button
         type="button"
         ref={ref}
+        disabled={disabled}
         onClick={() => {
           setIsRecording(true);
           setKeys([]);
@@ -273,118 +296,196 @@ export const SettingsPanel: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [devices, setDevices] = useState<ExtendedDeviceData[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>("");
   const [shortcut, setShortcut] = useState("CommandOrControl+Shift+V");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [reload, setReload] = useState(0);
+  const busy = useRef(false);
+  const mounted = useRef(false);
+  const generation = useRef(0);
+  const syncRevision = useRef(0);
+  const latestReload = useRef(reload);
+  latestReload.current = reload;
+
   useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const expectedUserId = user?.uid;
+    const requestedReload = reload;
+    const revision = ++generation.current;
     let isMounted = true;
+    let receivedSyncState = false;
+    const unsubscribeSync = window.api.onSyncStateChanged((active) => {
+      if (isMounted && generation.current === revision) {
+        receivedSyncState = true;
+        syncRevision.current++;
+        setSyncEnabled(active);
+      }
+    });
 
     const loadSettings = async () => {
       if (!isMounted) return;
       try {
         setLoading(true);
-        const isSync = await window.api.getSyncState();
-        const deviceList = await window.api.getDevices();
-        const storedShortcut = await window.api.getShortcut();
-
-        if (!isMounted) return;
-
-        setSyncEnabled(isSync);
+        setError("");
+        const [isSync, isNotif, deviceList, devId, storedShortcut, version] =
+          await Promise.all([
+            window.api.getSyncState(),
+            window.api.getNotificationsEnabled(),
+            window.api.getDevices(),
+            window.api.getDeviceId(),
+            window.api.getShortcut(),
+            window.api.getAppVersion(),
+          ]);
+        if (
+          !isMounted ||
+          generation.current !== revision ||
+          requestedReload !== latestReload.current ||
+          useGlobalStore.getState().user?.uid !== expectedUserId
+        )
+          return;
+        if (!receivedSyncState) setSyncEnabled(isSync);
+        setNotificationsEnabled(isNotif);
+        setCurrentDeviceId(devId);
         setShortcut(storedShortcut);
-
-        if (deviceList) {
-          // Convert Record to Array and sort by lastActive
-          const deviceArray = Object.entries(deviceList)
-            .map(([key, value]) => ({
-              ...(value as DeviceData),
-              firebaseKey: key,
-            }))
+        setAppVersion(version);
+        // Convert Record to Array and sort by lastActive
+        setDevices(
+          Object.entries(deviceList || {})
+            .map(([key, value]) => ({ ...value, firebaseKey: key }))
             .sort(
               (a, b) =>
                 new Date(b.lastActive).getTime() -
                 new Date(a.lastActive).getTime(),
-            );
-          setDevices(deviceArray);
-        } else {
-          setDevices([]);
-        }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
+            ),
+        );
+      } catch {
+        if (isMounted)
+          setError("Unable to load settings. Check your connection and retry.");
       } finally {
         if (isMounted) setLoading(false);
       }
     };
-
-    loadSettings();
-
+    void loadSettings();
     return () => {
       isMounted = false;
+      generation.current++;
+      unsubscribeSync();
     };
-  }, []);
+  }, [reload, user?.uid]);
 
-  const onSignOut = () => {
-    window.api.signOutUser();
-    navigate("/auth");
+  const performAction = async (action: () => Promise<void>): Promise<void> => {
+    if (busy.current) return;
+    const revision = generation.current;
+    busy.current = true;
+    setPending(true);
+    setError("");
+    try {
+      await action();
+    } catch {
+      if (generation.current === revision)
+        setError(
+          "Unable to save this change. Check your connection and retry.",
+        );
+    } finally {
+      busy.current = false;
+      if (mounted.current) setPending(false);
+    }
   };
-
-  const onNotificationsChange = () => {
-    setNotificationsEnabled((prev) => !prev);
-    window.api.toggleNotifications(!notificationsEnabled);
-  };
-
-  const onSyncChange = async () => {
-    const newState = !syncEnabled;
-    setSyncEnabled(newState);
-    await window.api.toggleClipboardSync(newState);
-  };
-
-  const onShortcutChange = async (newShortcut: string) => {
-    setShortcut(newShortcut);
-    await window.api.setShortcut(newShortcut);
-  };
-
+  const onSignOut = () =>
+    performAction(async () => {
+      const revision = generation.current;
+      await window.api.signOutUser();
+      if (generation.current === revision) navigate("/auth");
+    });
+  const onNotificationsChange = () =>
+    performAction(async () => {
+      const revision = generation.current;
+      const actual = await window.api.toggleNotifications(
+        !notificationsEnabled,
+      );
+      if (generation.current === revision) setNotificationsEnabled(actual);
+    });
+  const onSyncChange = () =>
+    performAction(async () => {
+      const revision = generation.current;
+      const currentSyncRevision = syncRevision.current;
+      const actual = await window.api.toggleClipboardSync(!syncEnabled);
+      if (
+        generation.current === revision &&
+        syncRevision.current === currentSyncRevision
+      )
+        setSyncEnabled(actual);
+    });
+  const onShortcutChange = (newShortcut: string) =>
+    performAction(async () => {
+      const revision = generation.current;
+      const registered = await window.api.setShortcut(newShortcut);
+      if (!registered) throw new Error("Shortcut unavailable.");
+      if (generation.current === revision) setShortcut(newShortcut);
+    });
   const handleRemoveDevice = async (deviceKey: string) => {
-    if (confirm("Are you sure you want to logout this device?")) {
-      try {
-        await window.api.removeDevice(deviceKey);
-        // We need to reload devices to reflect changes
-        const deviceList = await window.api.getDevices();
-        if (deviceList) {
-          const deviceArray = Object.entries(deviceList)
-            .map(([key, value]) => ({
-              ...(value as DeviceData),
-              firebaseKey: key,
-            }))
+    if (
+      busy.current ||
+      !confirm("Are you sure you want to logout this device?")
+    )
+      return;
+    await performAction(async () => {
+      const revision = generation.current;
+      await window.api.removeDevice(deviceKey);
+      // We need to reload devices to reflect changes
+      const deviceList = await window.api.getDevices();
+      if (generation.current === revision)
+        setDevices(
+          Object.entries(deviceList || {})
+            .map(([key, value]) => ({ ...value, firebaseKey: key }))
             .sort(
               (a, b) =>
                 new Date(b.lastActive).getTime() -
                 new Date(a.lastActive).getTime(),
-            );
-          setDevices(deviceArray);
-        } else {
-          setDevices([]);
-        }
-      } catch (error) {
-        console.error("Failed to remove device:", error);
-      }
-    }
+            ),
+        );
+    });
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+  const handleCheckUpdates = () =>
+    performAction(async () => {
+      setCheckingUpdate(true);
+      try {
+        await window.api.checkForUpdates();
+      } finally {
+        if (mounted.current) setCheckingUpdate(false);
+      }
+    });
 
   return (
     <div className="px-2 py-8 h-full overflow-y-auto">
-      <div className="space-y-2">
+      {error && (
+        <div role="alert" className="p-3 text-sm text-red-500">
+          {error}{" "}
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => setReload((value) => value + 1)}
+          >
+            Reload settings
+          </button>
+        </div>
+      )}
+      <fieldset disabled={pending} className="space-y-2">
         {/* User Profile */}
         <SettingsSection title="Account">
           {user ? (
-            <UserProfile user={user} onSignOut={onSignOut} />
+            <UserProfile key={user?.uid} user={user} onSignOut={onSignOut} />
           ) : (
             <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50 text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -393,7 +494,18 @@ export const SettingsPanel: React.FC = () => {
             </div>
           )}
         </SettingsSection>
-
+      </fieldset>
+      {loading && (
+        <div role="status" className="flex items-center justify-center py-8">
+          <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+          <span className="sr-only">Loading settings...</span>
+        </div>
+      )}
+      <fieldset
+        disabled={loading || pending || Boolean(error)}
+        hidden={loading}
+        className="space-y-2"
+      >
         {/* Sync Settings */}
         <SettingsSection title="Sync">
           <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
@@ -410,7 +522,11 @@ export const SettingsPanel: React.FC = () => {
                 </span>
               </div>
             </div>
-            <ToggleButton enabled={syncEnabled} onChange={onSyncChange} />
+            <ToggleButton
+              enabled={syncEnabled}
+              onChange={onSyncChange}
+              disabled={pending}
+            />
           </div>
         </SettingsSection>
 
@@ -419,6 +535,7 @@ export const SettingsPanel: React.FC = () => {
           <ShortcutRecorder
             currentShortcut={shortcut}
             onSave={onShortcutChange}
+            disabled={pending}
           />
         </SettingsSection>
 
@@ -428,9 +545,12 @@ export const SettingsPanel: React.FC = () => {
             {devices.length > 0 ? (
               devices.map((device) => (
                 <DeviceItem
-                  key={device.id}
+                  key={device.firebaseKey || device.id}
                   device={device}
-                  isCurrentDevice={false} // Would need hostname to verify
+                  isCurrentDevice={
+                    device.firebaseKey === currentDeviceId ||
+                    device.id === currentDeviceId
+                  }
                   onRemove={handleRemoveDevice}
                 />
               ))
@@ -456,6 +576,7 @@ export const SettingsPanel: React.FC = () => {
             <ToggleButton
               enabled={notificationsEnabled}
               onChange={onNotificationsChange}
+              disabled={pending}
             />
           </div>
         </SettingsSection>
@@ -476,7 +597,31 @@ export const SettingsPanel: React.FC = () => {
             </div>
           </a>
         </SettingsSection>
-      </div>
+
+        {/* About & Updates */}
+        <SettingsSection title="About & Updates">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
+            <div className="flex items-center space-x-3">
+              <div className="flex flex-col">
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  ViClip {appVersion ? `v${appVersion}` : ""}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Update via DMG or Homebrew
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCheckUpdates}
+              disabled={checkingUpdate}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {checkingUpdate ? "Checking..." : "Check for Updates"}
+            </button>
+          </div>
+        </SettingsSection>
+      </fieldset>
     </div>
   );
 };

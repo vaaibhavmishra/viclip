@@ -2,16 +2,14 @@ import path from "node:path";
 import { electronApp } from "@electron-toolkit/utils";
 import { app } from "electron";
 import log from "electron-log/main";
-import { configureDevTools } from "./modules/devTools";
-import { initIPC } from "./modules/ipc";
+import { configureDevTools, disposeDevTools } from "./modules/devTools";
+import { disposeIPC, initIPC } from "./modules/ipc";
 import { createTray } from "./modules/tray";
 import { showWindow } from "./modules/window";
-import { stopClipboardSync } from "./services/clipboard";
 import { initFirebase } from "./services/firebase";
-import { initApp } from "./services/initApp";
-import { stopNetworkMonitoring } from "./services/network";
-import { checkUpdateWithRetry } from "./services/update";
-import { configureDarkMode } from "./utils/darkMode";
+import { disposeApp, initApp } from "./services/initApp";
+import { startUpdateChecks, stopUpdateChecks } from "./services/update";
+import { configureDarkMode, disposeDarkMode } from "./utils/darkMode";
 import { configureLogger } from "./utils/logger";
 
 // Set up logging configuration with colors and separators
@@ -31,86 +29,95 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on("second-instance", (_event, commandLine, _workingDirectory) => {
-    log.info("Second instance detected. Focusing the main window.", {
-      commandLine,
-    });
-    showWindow();
+    log.info("Second instance detected. Focusing the main window.");
+    app
+      .whenReady()
+      .then(showWindow)
+      .catch(() => log.error("Failed to show application window"));
 
     const deepLinkUrl = commandLine.find((arg) => arg.startsWith("viclip://"));
     if (deepLinkUrl) {
-      log.info("Received deep link from second instance:", deepLinkUrl);
+      log.info("Received ViClip deep link from second instance");
     }
   });
-}
 
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("viclip", process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient("viclip", process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient("viclip");
   }
-} else {
-  app.setAsDefaultProtocolClient("viclip");
-}
 
-app.whenReady().then(() => {
-  log.info("Application started", { version: app.getVersion() });
+  app
+    .whenReady()
+    .then(() => {
+      log.info("Application started", { version: app.getVersion() });
 
-  // Set app user model id for Windows notifications
-  electronApp.setAppUserModelId("com.viclip.app");
+      // Set app user model id for Windows notifications
+      electronApp.setAppUserModelId("com.viclip.app");
 
-  // Set login item to start at login
-  app.setLoginItemSettings({
-    openAtLogin: true,
-    path: app.getPath("exe"),
-    args: [
-      "--processStart",
-      "app.exe",
-      "--processArgv",
-      "ViClip.exe",
-      "--hidden",
-    ],
+      // Set login item to start at login
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        path: app.getPath("exe"),
+        args: ["--hidden"],
+      });
+
+      // Initialize Firebase services first before UI and IPC rely on auth/db
+      initFirebase();
+
+      // Create system tray
+      createTray();
+
+      // Initialize all central IPC
+      initIPC();
+
+      // Initialize clipboard synchronization
+      initApp();
+
+      // Check for updates
+      startUpdateChecks();
+
+      // Configure development tools
+      configureDevTools();
+
+      // Configure dark mode
+      configureDarkMode();
+    })
+    .catch(() => {
+      log.error("Application startup failed");
+      app.quit();
+    });
+
+  // Keep running in system tray when all windows are closed across all platforms
+  app.on("window-all-closed", () => {
+    // Intentional no-op: ViClip is a background clipboard sync tool in the system tray
   });
 
-  // Create system tray
-  createTray();
+  // Clean up clipboard sync when quitting
+  app.on("will-quit", () => {
+    disposeApp();
+    disposeIPC();
+    disposeDevTools();
+    disposeDarkMode();
+    stopUpdateChecks();
+  });
 
-  // Initialize all central IPC
-  initIPC();
+  // Hide dock icon on macOS for a more tray-like experience
+  if (process.platform === "darwin" && app.dock) {
+    app.dock.hide();
+  }
 
-  // Initialize Firebase services
-  initFirebase();
-
-  // Initialize clipboard synchronization
-  initApp();
-
-  // Check for updates
-  checkUpdateWithRetry();
-
-  // Configure development tools
-  configureDevTools();
-
-  // Configure dark mode
-  configureDarkMode();
-});
-
-// Keep running in system tray when all windows are closed across all platforms
-app.on("window-all-closed", () => {
-  // Intentional no-op: ViClip is a background clipboard sync tool in the system tray
-});
-
-// Clean up clipboard sync when quitting
-app.on("will-quit", () => {
-  stopClipboardSync();
-  stopNetworkMonitoring();
-});
-
-// Hide dock icon on macOS for a more tray-like experience
-if (process.platform === "darwin" && app.dock) {
-  app.dock.hide();
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    if (!url.startsWith("viclip://")) return;
+    log.info("Received ViClip open-url event");
+    app
+      .whenReady()
+      .then(showWindow)
+      .catch(() => log.error("Failed to show application window"));
+  });
 }
-
-app.on("open-url", (_event, url) => {
-  log.info("Received open-url event:", url);
-  showWindow();
-});

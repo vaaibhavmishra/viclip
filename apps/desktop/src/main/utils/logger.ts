@@ -1,11 +1,17 @@
 import log from "electron-log/main";
 
+let configured = false;
+
 /**
  * Configure electron-log with colors and separators
  */
 export function configureLogger(): void {
+  if (configured) return;
+  configured = true;
   // Initialize the logger
-  log.initialize();
+  log.initialize({ preload: false });
+  // Keep main-process logs out of renderer contexts and the privileged bridge.
+  log.transports.ipc.level = false;
 
   // Add separator after each log by overriding the log functions
   const originalSilly = log.silly.bind(log);

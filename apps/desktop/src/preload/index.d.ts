@@ -1,18 +1,24 @@
-import type { ElectronAPI } from "@electron-toolkit/preload";
 import type { ClipData, DeviceData } from "@viclip/types";
 
 export interface PreloadAPI {
   toggleClipboardSync: (shouldEnable: boolean) => Promise<boolean>;
   getPlatform: () => Promise<string>;
-  toggleNotifications: (shouldEnable: boolean) => void;
+  toggleNotifications: (shouldEnable: boolean) => Promise<boolean>;
+  getNotificationsEnabled: () => Promise<boolean>;
   openSettings: () => void;
-  onClipsUpdate: (callback: (value: ClipData) => void) => void;
+  hideWindow: () => void;
+  onClipsUpdate: (
+    callback: (value: Record<string, ClipData>) => void,
+  ) => () => void;
   getClips: () => Promise<Record<string, ClipData> | null>;
   getDevices: () => Promise<Record<string, DeviceData> | null>;
+  getDeviceId: () => Promise<string>;
   removeDevice: (deviceKey: string) => Promise<void>;
   removeAllClips: () => Promise<void>;
-  onAuthStateChanged: (callback: (displayName: string | null) => void) => void;
-  signOutUser: () => void;
+  onAuthStateChanged: (
+    callback: (displayName: string | null) => void,
+  ) => () => void;
+  signOutUser: () => Promise<void>;
   loginUser: (email: string, password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   signUpUser: (
@@ -29,9 +35,11 @@ export interface PreloadAPI {
   getCurrentUser: () => Promise<{
     email: string | null;
     displayName: string | null;
+    photoURL: string | null;
     uid: string;
   } | null>;
   getSyncState: () => Promise<boolean>;
+  onSyncStateChanged: (callback: (active: boolean) => void) => () => void;
   removeClip: (id: string) => Promise<void>;
   pinClip: (id: string, pinned: boolean) => Promise<void>;
   updateClip: (id: string, content: string) => Promise<void>;
@@ -40,11 +48,18 @@ export interface PreloadAPI {
   pasteClip: (content: string, id?: string) => Promise<void>;
   getShortcut: () => Promise<string>;
   setShortcut: (shortcut: string) => Promise<boolean>;
+  checkForUpdates: () => Promise<void>;
+  getAppVersion: () => Promise<string>;
 }
 
 declare global {
   interface Window {
-    electron: ElectronAPI;
+    electron?: {
+      process: {
+        platform: string;
+        versions: Record<string, string | undefined>;
+      };
+    };
     api: PreloadAPI;
   }
 }
