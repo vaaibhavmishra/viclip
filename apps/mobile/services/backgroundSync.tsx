@@ -61,7 +61,6 @@ async function configureAndroidNotificationChannel(): Promise<void> {
       name: "Clipboard sync",
       description: "Alerts when a clip arrives from another ViClip device.",
       importance: AndroidImportance.HIGH,
-      sound: "default",
       enableVibrate: true,
       vibrationPattern: [0, 250, 150, 250],
       showBadge: true,

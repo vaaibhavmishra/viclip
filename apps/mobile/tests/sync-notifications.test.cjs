@@ -196,7 +196,7 @@ test("Android configures a high-importance channel for heads-up alerts", async (
     "Alerts when a clip arrives from another ViClip device.",
   );
   assert.equal(channel.configuration.importance, 6);
-  assert.equal(channel.configuration.sound, "default");
+  assert.equal(channel.configuration.sound, undefined);
   assert.equal(channel.configuration.enableVibrate, true);
   assert.deepEqual(
     [...channel.configuration.vibrationPattern],

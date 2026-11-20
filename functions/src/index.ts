@@ -42,7 +42,7 @@ export const sendClipPushNotification = onValueWritten(
   {
     ref: "/users/{userId}/clips/{clipId}",
     ...(rtdbInstance ? { instance: rtdbInstance } : {}),
-    region: "asia-southeast1",
+    region: "us-central1",
     maxInstances: 10,
   },
   async (event) => {
