@@ -129,3 +129,57 @@
     @apply font-sans bg-transparent;
   }
 }
+
+/* Windows needs its own surface when native vibrancy is unavailable. */
+html[data-platform="win32"] {
+  --window-surface: #f5f6f8;
+  --window-stroke: rgb(0 0 0 / 0.12);
+  --window-radius: 8px;
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-platform="win32"].dark {
+  --window-surface: #1b1d23;
+  --window-stroke: rgb(255 255 255 / 0.12);
+}
+
+html[data-window-appearance="windows-acrylic"] {
+  --window-surface: rgb(245 246 248 / 0.85);
+}
+
+html[data-window-appearance="windows-acrylic"].dark {
+  --window-surface: rgb(27 29 35 / 0.9);
+}
+
+/* Clip the document too: dialogs and menus may be portaled outside #root. */
+html[data-window-appearance="windows-transparent"] {
+  --window-radius: 12px;
+  border-radius: var(--window-radius);
+  clip-path: inset(0 round var(--window-radius));
+}
+
+html[data-platform="win32"] body,
+html[data-platform="win32"] #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-platform="win32"] #root {
+  border-radius: var(--window-radius);
+  background: var(--window-surface);
+}
+
+html[data-platform="win32"] .desktop-window {
+  overflow: hidden;
+  border-radius: var(--window-radius);
+  box-shadow: inset 0 0 0 1px var(--window-stroke);
+}
+
+.window-drag-region {
+  -webkit-app-region: drag;
+}
+
+.window-drag-region :is(button, input, select, textarea, a, [role="combobox"]) {
+  -webkit-app-region: no-drag;
+}

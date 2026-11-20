@@ -16,5 +16,7 @@ export type {
   CryptoAPI,
   DecipherLike,
 } from "./crypto";
+// Desktop window types
+export type { DesktopWindowAppearance } from "./desktop";
 // Device types
 export type { DeviceData, DeviceRegistration, Platform } from "./device";

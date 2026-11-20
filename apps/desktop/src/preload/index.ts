@@ -6,7 +6,11 @@
  * main process (backend) in Electron applications.
  */
 
-import type { ClipData, DeviceData } from "@viclip/types";
+import type {
+  ClipData,
+  DesktopWindowAppearance,
+  DeviceData,
+} from "@viclip/types";
 import { contextBridge, ipcRenderer } from "electron";
 import type { PreloadAPI } from "./index.d";
 
@@ -48,6 +52,14 @@ const api = {
 
   hideWindow: (): void => {
     ipcRenderer.send("hide-window");
+  },
+
+  minimizeWindow: (): void => {
+    ipcRenderer.send("minimize-window");
+  },
+
+  closeWindow: (): void => {
+    ipcRenderer.send("close-window");
   },
 
   // Listen for clips updates from the main process
@@ -193,7 +205,21 @@ const api = {
  * This approach maintains security through context isolation, preventing direct
  * access to Node.js APIs from the renderer process.
  */
+const appearanceArgument = process.argv.find((argument) =>
+  argument.startsWith("--viclip-window-appearance="),
+);
+const appearanceValue = appearanceArgument?.slice(
+  "--viclip-window-appearance=".length,
+);
+const windowAppearance: DesktopWindowAppearance | undefined =
+  process.platform === "win32" &&
+  (appearanceValue === "windows-acrylic" ||
+    appearanceValue === "windows-solid" ||
+    appearanceValue === "windows-transparent")
+    ? appearanceValue
+    : undefined;
 const safeElectron = {
+  ...(windowAppearance ? { windowAppearance } : {}),
   process: {
     platform: process.platform,
     versions: process.versions,

@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "react-router";
 import { useGlobalStore } from "./components/global-context";
+import { WindowTitleBar } from "./components/WindowTitleBar";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { MainContent } from "./pages/MainContent";
 import { SettingsPanel } from "./pages/SettingsPanel";
@@ -17,6 +18,13 @@ const App: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isWindows = (window.electron?.process.platform || platform) === "win32";
+  const windowTitle =
+    location.pathname === "/settings"
+      ? "ViClip — Settings"
+      : location.pathname === "/main"
+        ? null
+        : "ViClip — Login";
 
   useEffect(() => {
     useGlobalStore.getState().initialize();
@@ -39,43 +47,54 @@ const App: React.FC = () => {
     }
   }, [navigate, location.pathname, user, isLoading]);
 
-  if (isLoading) return <div role="status">Loading ViClip...</div>;
-
   return (
-    <div className={`${platform === "linux" && "dark:bg-gray-900"} h-screen`}>
-      <Routes>
-        {/* Auth Routes */}
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route index element={<AuthPage />} />
-        </Route>
+    <div
+      className={`desktop-window flex h-screen flex-col ${platform === "linux" ? "dark:bg-gray-900" : ""}`}
+    >
+      {isWindows && windowTitle && <WindowTitleBar title={windowTitle} />}
+      {isLoading ? (
+        <div role="status" className="min-h-0 flex-1 w-full">
+          Loading ViClip...
+        </div>
+      ) : (
+        <div className="relative min-h-0 flex-1">
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/auth" element={<AuthLayout />}>
+              <Route index element={<AuthPage />} />
+            </Route>
 
-        {/* Main Window Route */}
-        <Route
-          path="/main"
-          element={
-            <div className="h-full flex flex-col">
-              <MainContent key={user?.uid} />
-            </div>
-          }
-        />
+            {/* Main Window Route */}
+            <Route
+              path="/main"
+              element={
+                <div className="h-full flex flex-col">
+                  <MainContent key={user?.uid} />
+                </div>
+              }
+            />
 
-        {/* Settings Window Route */}
-        <Route
-          path="/settings"
-          element={
-            <div className="h-full flex flex-col">
-              <div
-                className="absolute top-0 left-0 w-full h-8 z-50"
-                style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-              />
-              <SettingsPanel key={user?.uid} />
-            </div>
-          }
-        />
+            {/* Settings Window Route */}
+            <Route
+              path="/settings"
+              element={
+                <div className="h-full flex flex-col">
+                  {!isWindows && (
+                    <div
+                      className="absolute top-0 left-0 w-full h-8 z-50"
+                      style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
+                    />
+                  )}
+                  <SettingsPanel key={user?.uid} />
+                </div>
+              }
+            />
 
-        {/* Default redirect */}
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
+            {/* Default redirect */}
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          </Routes>
+        </div>
+      )}
     </div>
   );
 };
@@ -98,10 +117,12 @@ const App: React.FC = () => {
  */
 const AuthLayout = () => (
   <div className="h-full flex flex-col items-center justify-center">
-    <div
-      className="absolute top-0 left-0 w-full h-8 z-50"
-      style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-    />
+    {window.electron?.process.platform !== "win32" && (
+      <div
+        className="absolute top-0 left-0 w-full h-8 z-50"
+        style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
+      />
+    )}
     <Outlet />
   </div>
 );

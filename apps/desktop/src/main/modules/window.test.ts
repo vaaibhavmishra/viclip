@@ -11,7 +11,19 @@ const mocks = vi.hoisted(() => ({
   external: vi.fn(),
   permissionRequest: vi.fn(),
   permissionCheck: vi.fn(),
+  release: vi.fn(() => "10.0.22621"),
+  nativeTheme: { shouldUseDarkColors: false },
 }));
+
+const originalPlatform = process.platform;
+
+function setPlatform(platform: NodeJS.Platform): void {
+  Object.defineProperty(process, "platform", { value: platform });
+}
+
+interface WindowOptions extends Record<string, unknown> {
+  webPreferences: Record<string, unknown>;
+}
 
 class Contents extends EventEmitter {
   setWindowOpenHandler = vi.fn();
@@ -34,24 +46,24 @@ class MockWindow extends EventEmitter {
     this.destroyed = true;
     this.emit("closed");
   };
-  constructor(public options: { webPreferences: Record<string, unknown> }) {
+  constructor(public options: WindowOptions) {
     super();
     mocks.windows.push(this);
   }
 }
 
-function createMockWindow(options: {
-  webPreferences: Record<string, unknown>;
-}): MockWindow {
+function createMockWindow(options: WindowOptions): MockWindow {
   return new MockWindow(options);
 }
 
 vi.mock("../../../build/icon.ico?asset", () => ({ default: "icon.ico" }));
 vi.mock("../../../resources/icon.png?asset", () => ({ default: "icon.png" }));
 vi.mock("@electron-toolkit/utils", () => ({ is: { dev: true } }));
+vi.mock("node:os", () => ({ release: mocks.release }));
 vi.mock("electron", () => ({
   app: { on: vi.fn(), whenReady: () => Promise.resolve(), hide: vi.fn() },
   BrowserWindow: vi.fn(createMockWindow),
+  nativeTheme: mocks.nativeTheme,
   screen: {
     getCursorScreenPoint: () => ({ x: 0, y: 0 }),
     getPrimaryDisplay: () => ({
@@ -103,8 +115,122 @@ beforeEach(() => {
   mocks.windows.length = 0;
   mocks.user = { uid: "account-a" };
   mocks.keyLoaded = true;
+  mocks.release.mockReset().mockReturnValue("10.0.22621");
+  mocks.nativeTheme.shouldUseDarkColors = false;
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  setPlatform(originalPlatform);
+});
+
+describe("desktop window appearance", () => {
+  it.each([
+    ["10.0.26100", "windows-acrylic", false, "acrylic", true],
+    ["10.0.22621", "windows-acrylic", false, "acrylic", true],
+    ["10.0.22620", "windows-solid", false, "none", true],
+    ["10.0.22000", "windows-solid", false, "none", true],
+    ["10.0.21999", "windows-transparent", true, "none", false],
+    ["10.0.19045", "windows-transparent", true, "none", false],
+    ["unavailable", "windows-transparent", true, "none", false],
+    ["10.0.Infinity", "windows-transparent", true, "none", false],
+  ])(
+    "uses %s capabilities for all three Windows windows",
+    (release, appearance, transparent, material, thickFrame) => {
+      setPlatform("win32");
+      mocks.release.mockReturnValue(release as string);
+      createAuthWindow();
+      createMainWindow();
+      createSettingsWindow();
+
+      for (const window of mocks.windows as MockWindow[]) {
+        expect(window.options).toMatchObject({
+          frame: false,
+          transparent,
+          backgroundMaterial: material,
+          roundedCorners: true,
+          thickFrame,
+          hasShadow: true,
+          resizable: false,
+          maximizable: false,
+          fullscreenable: false,
+          backgroundColor:
+            appearance === "windows-solid" ? "#ffffff" : "#00000000",
+        });
+        expect(window.options.webPreferences).toMatchObject({
+          additionalArguments: [`--viclip-window-appearance=${appearance}`],
+          sandbox: true,
+          contextIsolation: true,
+          nodeIntegration: false,
+        });
+        expect(window.options).not.toHaveProperty("vibrancy");
+        expect(window.options).not.toHaveProperty("titleBarStyle");
+      }
+    },
+  );
+
+  it.each([
+    [false, "#ffffff"],
+    [true, "#212121"],
+  ])(
+    "uses the native theme for the solid Windows 11 fallback",
+    (dark, color) => {
+      setPlatform("win32");
+      mocks.release.mockReturnValue("10.0.22000");
+      mocks.nativeTheme.shouldUseDarkColors = dark as boolean;
+      createMainWindow();
+      expect((mocks.main as MockWindow).options.backgroundColor).toBe(color);
+    },
+  );
+
+  it("preserves macOS vibrancy and secondary window traffic lights", () => {
+    setPlatform("darwin");
+    createAuthWindow();
+    createMainWindow();
+    createSettingsWindow();
+    for (const window of mocks.windows as MockWindow[]) {
+      expect(window.options).toMatchObject({
+        frame: false,
+        transparent: true,
+        vibrancy: "under-window",
+        visualEffectState: "active",
+      });
+      expect(window.options.webPreferences).not.toHaveProperty(
+        "additionalArguments",
+      );
+    }
+    expect((mocks.auth as MockWindow).options.titleBarStyle).toBe(
+      "hiddenInset",
+    );
+    expect((mocks.settings as MockWindow).options.titleBarStyle).toBe(
+      "hiddenInset",
+    );
+    expect((mocks.main as MockWindow).options).not.toHaveProperty(
+      "titleBarStyle",
+    );
+    expect(mocks.release).not.toHaveBeenCalled();
+  });
+
+  it("preserves Linux native secondary frames and the existing renderer fallback", () => {
+    setPlatform("linux");
+    createAuthWindow();
+    createMainWindow();
+    createSettingsWindow();
+    expect((mocks.auth as MockWindow).options.frame).toBe(true);
+    expect((mocks.settings as MockWindow).options.frame).toBe(true);
+    expect((mocks.main as MockWindow).options.frame).toBe(false);
+    for (const window of mocks.windows as MockWindow[]) {
+      expect(window.options).toMatchObject({
+        icon: "icon.png",
+        transparent: true,
+      });
+      expect(window.options).not.toHaveProperty("backgroundMaterial");
+      expect(window.options.webPreferences).not.toHaveProperty(
+        "additionalArguments",
+      );
+    }
+    expect(mocks.release).not.toHaveBeenCalled();
+  });
+});
 
 describe("desktop window trust boundaries", () => {
   it("keeps each window sandboxed and isolated without Node or webviews", () => {

@@ -150,7 +150,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex gap-1 items-center">
           <span className="mr-1">Actions</span>
           <KbdGroup>
-            <Kbd>⌘</Kbd>
+            <Kbd>
+              {window.electron?.process.platform === "win32" ? "Ctrl" : "⌘"}
+            </Kbd>
             <span>+</span>
             <Kbd>K</Kbd>
           </KbdGroup>

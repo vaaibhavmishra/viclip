@@ -25,11 +25,18 @@ const isolationDescriptor = Object.getOwnPropertyDescriptor(
   process,
   "contextIsolated",
 );
+const argvDescriptor = Object.getOwnPropertyDescriptor(process, "argv");
+const platformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
 
 beforeEach(() => {
   vi.resetModules();
   mocks.exposed.clear();
   mocks.invoke.mockResolvedValue(undefined);
+  mocks.send.mockClear();
+  Object.defineProperty(process, "argv", {
+    value: ["electron", "preload"],
+    configurable: true,
+  });
   Object.defineProperty(process, "contextIsolated", {
     value: true,
     configurable: true,
@@ -39,6 +46,9 @@ afterEach(() => {
   if (isolationDescriptor)
     Object.defineProperty(process, "contextIsolated", isolationDescriptor);
   else Reflect.deleteProperty(process, "contextIsolated");
+  if (argvDescriptor) Object.defineProperty(process, "argv", argvDescriptor);
+  if (platformDescriptor)
+    Object.defineProperty(process, "platform", platformDescriptor);
 });
 
 describe("preload bridge", () => {
@@ -85,6 +95,69 @@ describe("preload bridge", () => {
       dispose();
     });
     expect(mocks.removeListener.mock.calls).toEqual(mocks.on.mock.calls);
+  });
+
+  it.each(["windows-acrylic", "windows-solid", "windows-transparent"])(
+    "exposes only the selected Windows surface %s before startup",
+    async (appearance) => {
+      Object.defineProperty(process, "platform", {
+        value: "win32",
+        configurable: true,
+      });
+      Object.defineProperty(process, "argv", {
+        value: ["electron", `--viclip-window-appearance=${appearance}`],
+        configurable: true,
+      });
+      await import("./index");
+      const electron = mocks.exposed.get("electron");
+      expect(electron).toHaveProperty("windowAppearance", appearance);
+      expect(electron).not.toHaveProperty("argv");
+      expect(electron).not.toHaveProperty("process.argv");
+    },
+  );
+
+  it.each(["", "arbitrary", "windows-solid=unexpected"])(
+    "rejects unsupported appearance arguments %j",
+    async (appearance) => {
+      Object.defineProperty(process, "platform", {
+        value: "win32",
+        configurable: true,
+      });
+      Object.defineProperty(process, "argv", {
+        value: ["electron", `--viclip-window-appearance=${appearance}`],
+        configurable: true,
+      });
+      await import("./index");
+      expect(mocks.exposed.get("electron")).not.toHaveProperty(
+        "windowAppearance",
+      );
+    },
+  );
+
+  it("keeps Windows surface metadata off other platforms", async () => {
+    Object.defineProperty(process, "platform", {
+      value: "darwin",
+      configurable: true,
+    });
+    Object.defineProperty(process, "argv", {
+      value: ["electron", "--viclip-window-appearance=windows-solid"],
+      configurable: true,
+    });
+    await import("./index");
+    expect(mocks.exposed.get("electron")).not.toHaveProperty(
+      "windowAppearance",
+    );
+  });
+
+  it("exposes only named minimize and close commands", async () => {
+    await import("./index");
+    const api = mocks.exposed.get("api") as PreloadAPI;
+    api.minimizeWindow();
+    api.closeWindow();
+    expect(mocks.send.mock.calls).toEqual([
+      ["minimize-window"],
+      ["close-window"],
+    ]);
   });
 
   it("fails closed when context isolation is disabled", async () => {

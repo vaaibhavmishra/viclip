@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
   keyUser: "account-a",
   generation: 0,
   mainWindow: null as unknown,
+  authWindow: null as unknown,
+  settingsWindow: null as unknown,
+  fromWebContents: vi.fn(),
   removed: vi.fn(),
   updated: vi.fn(),
   loggedOut: vi.fn(),
@@ -45,7 +48,7 @@ vi.mock("@electron-toolkit/utils", () => ({
 vi.mock("electron", () => ({
   app: { hide: vi.fn(), getVersion: () => "2.0.0" },
   clipboard: { readText: mocks.readClipboard },
-  BrowserWindow: { fromWebContents: () => mocks.mainWindow },
+  BrowserWindow: { fromWebContents: mocks.fromWebContents },
   ipcMain: {
     handle: (
       channel: string,
@@ -75,8 +78,8 @@ vi.mock("firebase/auth", () => ({
 }));
 vi.mock("../globalStates", () => ({
   getMainWindow: () => mocks.mainWindow,
-  getAuthWindow: () => null,
-  getSettingsWindow: () => null,
+  getAuthWindow: () => mocks.authWindow,
+  getSettingsWindow: () => mocks.settingsWindow,
   getNotificationsEnabled: () => true,
   setNotificationsEnabled: vi.fn(),
 }));
@@ -150,6 +153,7 @@ function event() {
     webContents: sender,
     hide: vi.fn(),
     minimize: vi.fn(),
+    close: vi.fn(),
   };
   return { sender, senderFrame: frame };
 }
@@ -171,6 +175,15 @@ beforeEach(() => {
   };
   mocks.keyUser = "account-a";
   mocks.generation = 0;
+  mocks.mainWindow = null;
+  mocks.authWindow = null;
+  mocks.settingsWindow = null;
+  mocks.fromWebContents.mockImplementation((sender) =>
+    [mocks.mainWindow, mocks.authWindow, mocks.settingsWindow].find(
+      (window) =>
+        window && (window as { webContents: unknown }).webContents === sender,
+    ),
+  );
   mocks.writeClipboard.mockResolvedValue(undefined);
   mocks.readClipboard.mockResolvedValue("synthetic");
   mocks.updated.mockResolvedValue(undefined);
@@ -485,7 +498,7 @@ describe("privileged IPC authorization", () => {
     const count = mocks.handlers.size;
     initIPC();
     expect(mocks.handlers.size).toBe(count);
-    expect(mocks.listeners.size).toBe(3);
+    expect(mocks.listeners.size).toBe(5);
     disposeIPC();
     expect(mocks.handlers.size).toBe(0);
     expect(mocks.listeners.size).toBe(0);
@@ -498,5 +511,79 @@ describe("privileged IPC authorization", () => {
     const original = { ...sender, senderFrame: null };
     mocks.listeners.get("open-url")?.(original, "https://example.test/");
     expect(mocks.openURL).not.toHaveBeenCalled();
+  });
+
+  it("minimizes and closes only the window that sent the command", () => {
+    const mainSender = event();
+    const mainWindow = mocks.mainWindow as {
+      minimize: ReturnType<typeof vi.fn>;
+      close: ReturnType<typeof vi.fn>;
+    };
+    const frame = { url: "http://localhost:5173/#/settings" };
+    const sender = { isDestroyed: () => false, mainFrame: frame };
+    const settingsWindow = {
+      isDestroyed: () => false,
+      webContents: sender,
+      minimize: vi.fn(),
+      close: vi.fn(),
+    };
+    mocks.settingsWindow = settingsWindow;
+    mocks.listeners.get("minimize-window")?.({ sender, senderFrame: frame });
+    mocks.listeners.get("close-window")?.({ sender, senderFrame: frame });
+    expect(settingsWindow.minimize).toHaveBeenCalledOnce();
+    expect(settingsWindow.close).toHaveBeenCalledOnce();
+    expect(mainWindow.minimize).not.toHaveBeenCalled();
+    expect(mainWindow.close).not.toHaveBeenCalled();
+    mocks.listeners.get("close-window")?.(mainSender);
+    expect(mainWindow.close).toHaveBeenCalledOnce();
+  });
+
+  it("allows login window controls before an account is unlocked", () => {
+    const sender = event();
+    const authWindow = mocks.mainWindow as {
+      minimize: ReturnType<typeof vi.fn>;
+      close: ReturnType<typeof vi.fn>;
+    };
+    mocks.authWindow = mocks.mainWindow;
+    mocks.mainWindow = null;
+    mocks.user = null;
+    mocks.keyUser = "";
+    sender.senderFrame.url = "http://localhost:5173/#/auth";
+    mocks.listeners.get("minimize-window")?.(sender);
+    mocks.listeners.get("close-window")?.(sender);
+    expect(authWindow.minimize).toHaveBeenCalledOnce();
+    expect(authWindow.close).toHaveBeenCalledOnce();
+  });
+
+  it("rejects foreign window controls and commands with extra arguments", () => {
+    const sender = event();
+    const window = mocks.mainWindow as {
+      minimize: ReturnType<typeof vi.fn>;
+      close: ReturnType<typeof vi.fn>;
+    };
+    const foreign = { ...sender, sender: { ...sender.sender } };
+    for (const channel of ["minimize-window", "close-window"]) {
+      mocks.listeners.get(channel)?.(foreign);
+      mocks.listeners.get(channel)?.(sender, "unexpected-window-id");
+    }
+    expect(window.minimize).not.toHaveBeenCalled();
+    expect(window.close).not.toHaveBeenCalled();
+  });
+
+  it("ignores window controls if the caller disappears or is destroyed", () => {
+    const sender = event();
+    const destroyed = {
+      isDestroyed: () => true,
+      minimize: vi.fn(),
+      close: vi.fn(),
+    };
+    for (const channel of ["minimize-window", "close-window"]) {
+      mocks.fromWebContents.mockReturnValueOnce(null);
+      mocks.listeners.get(channel)?.(sender);
+      mocks.fromWebContents.mockReturnValueOnce(destroyed);
+      mocks.listeners.get(channel)?.(sender);
+    }
+    expect(destroyed.minimize).not.toHaveBeenCalled();
+    expect(destroyed.close).not.toHaveBeenCalled();
   });
 });

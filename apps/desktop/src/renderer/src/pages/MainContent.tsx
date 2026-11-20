@@ -24,7 +24,8 @@ import {
 } from "../components/ui/select";
 
 export const MainContent: React.FC = () => {
-  const { user } = useGlobalStore();
+  const { user, platform } = useGlobalStore();
+  const isWindows = (window.electron?.process.platform || platform) === "win32";
   const [clips, setClips] = useState<ClipData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ClipContentType | "all">(
@@ -240,7 +241,9 @@ export const MainContent: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Top Bar */}
-      <div className="h-14 border-b border-border flex items-center px-4 gap-4">
+      <div
+        className={`h-14 shrink-0 border-b border-border flex items-center px-4 gap-4 ${isWindows ? "window-drag-region" : ""}`}
+      >
         <div className="flex items-center w-[60%]">
           <Search className="size-6 text-foreground" />
           <Input

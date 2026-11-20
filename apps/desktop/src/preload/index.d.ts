@@ -1,4 +1,8 @@
-import type { ClipData, DeviceData } from "@viclip/types";
+import type {
+  ClipData,
+  DesktopWindowAppearance,
+  DeviceData,
+} from "@viclip/types";
 
 export interface PreloadAPI {
   toggleClipboardSync: (shouldEnable: boolean) => Promise<boolean>;
@@ -7,6 +11,8 @@ export interface PreloadAPI {
   getNotificationsEnabled: () => Promise<boolean>;
   openSettings: () => void;
   hideWindow: () => void;
+  minimizeWindow: () => void;
+  closeWindow: () => void;
   onClipsUpdate: (
     callback: (value: Record<string, ClipData>) => void,
   ) => () => void;
@@ -55,6 +61,7 @@ export interface PreloadAPI {
 declare global {
   interface Window {
     electron?: {
+      windowAppearance?: DesktopWindowAppearance;
       process: {
         platform: string;
         versions: Record<string, string | undefined>;

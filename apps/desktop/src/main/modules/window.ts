@@ -1,6 +1,14 @@
+import { release } from "node:os";
 import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
-import { app, BrowserWindow, screen, session } from "electron";
+import {
+  app,
+  BrowserWindow,
+  type BrowserWindowConstructorOptions,
+  nativeTheme,
+  screen,
+  session,
+} from "electron";
 import { getAuth } from "firebase/auth";
 import windowsIcon from "../../../build/icon.ico?asset";
 import AppIcon from "../../../resources/icon.png?asset";
@@ -17,27 +25,71 @@ import { openSafeExternal } from "../utils/utils";
 import { isTrustedRendererURL } from "./ipcSecurity";
 
 // Shared window config
-const commonConfig = {
-  icon: process.platform === "linux" ? AppIcon : windowsIcon,
-  show: false,
-  autoHideMenuBar: true,
-  vibrancy: "under-window" as const,
-  transparent: true,
-  visualEffectState: "active" as const,
-  backgroundMaterial: "acrylic" as const,
-  darkTheme: true,
-  resizable: false,
-  webPreferences: {
-    preload: join(__dirname, "../preload/index.js"),
-    sandbox: true,
-    contextIsolation: true,
-    nodeIntegration: false,
-    nodeIntegrationInWorker: false,
-    nodeIntegrationInSubFrames: false,
-    webviewTag: false,
-    spellcheck: false,
-  },
-};
+function getCommonConfig(): BrowserWindowConstructorOptions {
+  const isWindows = process.platform === "win32";
+  const windowsBuild = isWindows ? Number(release().split(".")[2]) : 0;
+  const supportsNativeCorners =
+    Number.isInteger(windowsBuild) && windowsBuild >= 22000;
+  const supportsAcrylic =
+    Number.isInteger(windowsBuild) && windowsBuild >= 22621;
+  const windowsAppearance = supportsAcrylic
+    ? "windows-acrylic"
+    : supportsNativeCorners
+      ? "windows-solid"
+      : "windows-transparent";
+
+  return {
+    icon: process.platform === "linux" ? AppIcon : windowsIcon,
+    show: false,
+    autoHideMenuBar: true,
+    transparent: true,
+    ...(process.platform === "darwin" && {
+      vibrancy: "under-window",
+      visualEffectState: "active",
+    }),
+    ...(isWindows && {
+      // Per-pixel transparency prevents DWM from rounding Windows 11 windows.
+      // Older Windows versions use the renderer's rounded, opaque surface instead.
+      transparent: !supportsNativeCorners,
+      backgroundColor:
+        supportsAcrylic || !supportsNativeCorners
+          ? "#00000000"
+          : nativeTheme.shouldUseDarkColors
+            ? "#212121"
+            : "#ffffff",
+      backgroundMaterial: supportsAcrylic ? "acrylic" : "none",
+      roundedCorners: true,
+      thickFrame: supportsNativeCorners,
+      hasShadow: true,
+      maximizable: false,
+      fullscreenable: false,
+    }),
+    darkTheme: true,
+    resizable: false,
+    webPreferences: {
+      preload: join(__dirname, "../preload/index.js"),
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      nodeIntegrationInSubFrames: false,
+      webviewTag: false,
+      spellcheck: false,
+      ...(isWindows && {
+        additionalArguments: [
+          `--viclip-window-appearance=${windowsAppearance}`,
+        ],
+      }),
+    },
+  };
+}
+
+function getSecondaryWindowConfig(): BrowserWindowConstructorOptions {
+  return {
+    frame: process.platform !== "darwin" && process.platform !== "win32",
+    ...(process.platform === "darwin" && { titleBarStyle: "hiddenInset" }),
+  };
+}
 
 let isQuitting = false;
 
@@ -115,12 +167,11 @@ export function createAuthWindow(): void {
   }
 
   const authWindow = new BrowserWindow({
-    ...commonConfig,
+    ...getCommonConfig(),
+    ...getSecondaryWindowConfig(),
     title: "ViClip - Login",
     width: 800,
     height: 600,
-    frame: process.platform !== "darwin",
-    titleBarStyle: "hiddenInset",
   });
 
   setAuthWindow(authWindow);
@@ -161,7 +212,7 @@ export function createMainWindow(
   const y = Math.round(workArea.y + (workArea.height - height) / 2 - 45);
 
   const mainWindow = new BrowserWindow({
-    ...commonConfig,
+    ...getCommonConfig(),
     title: "ViClip",
     width,
     height,
@@ -209,13 +260,12 @@ export function createSettingsWindow(): void {
   }
 
   const settingsWindow = new BrowserWindow({
-    ...commonConfig,
+    ...getCommonConfig(),
+    ...getSecondaryWindowConfig(),
     title: "ViClip - Settings",
     width: 500,
     height: 700,
     resizable: false,
-    frame: process.platform !== "darwin",
-    titleBarStyle: "hiddenInset",
   });
 
   setSettingsWindow(settingsWindow);

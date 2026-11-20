@@ -251,6 +251,16 @@ export function initIPC(): void {
     }
   });
 
+  on("minimize-window", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) win.minimize();
+  });
+
+  on("close-window", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) win.close();
+  });
+
   handle("toggle-clipboard-sync", (_, shouldEnable: boolean) => {
     const previousEnabled = settingsStorage.getClipboardSyncEnabled();
     settingsStorage.setClipboardSyncEnabled(shouldEnable);
