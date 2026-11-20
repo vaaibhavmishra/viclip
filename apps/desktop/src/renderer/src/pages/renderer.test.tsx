@@ -261,10 +261,10 @@ it("clears the previous account's clips while loading another account", async ()
   mockUser.uid = "other-user";
   await act(async () => root.render(<MainContent />));
   expect(api.getClips).toHaveBeenCalledTimes(2);
-  expect(host.querySelector('[data-testid="clips"]')?.textContent).toBe("");
-  expect(host.querySelector('[role="status"]')?.textContent).toContain(
-    "Loading clips",
-  );
+  expect(host.querySelector('[data-testid="clips"]')).toBeNull();
+  const status = host.querySelector('[role="status"]');
+  expect(status?.textContent).toContain("Loading clips");
+  expect(status?.querySelector("svg")).not.toBeNull();
 });
 it("ignores a clip snapshot completing for a previous account", async () => {
   let resolve!: (value: Record<string, ClipData>) => void;

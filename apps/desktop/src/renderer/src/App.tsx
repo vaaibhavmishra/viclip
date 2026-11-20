@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "react-router";
 import { useGlobalStore } from "./components/global-context";
+import { LoadingIndicator } from "./components/ui/loading-indicator";
 import { WindowTitleBar } from "./components/WindowTitleBar";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { MainContent } from "./pages/MainContent";
@@ -53,9 +54,10 @@ const App: React.FC = () => {
     >
       {isWindows && windowTitle && <WindowTitleBar title={windowTitle} />}
       {isLoading ? (
-        <div role="status" className="min-h-0 flex-1 w-full">
-          Loading ViClip...
-        </div>
+        <LoadingIndicator
+          label="Loading ViClip"
+          className="min-h-0 flex-1 w-full"
+        />
       ) : (
         <div className="relative min-h-0 flex-1">
           <Routes>

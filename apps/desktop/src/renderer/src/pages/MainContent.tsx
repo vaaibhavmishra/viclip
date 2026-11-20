@@ -15,6 +15,7 @@ import { CommandMenu } from "../components/CommandMenu";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { LoadingIndicator } from "../components/ui/loading-indicator";
 import {
   Select,
   SelectContent,
@@ -321,11 +322,6 @@ export const MainContent: React.FC = () => {
         </div>
       </div>
 
-      {loading && (
-        <div role="status" className="px-4 py-2 text-sm">
-          Loading clips...
-        </div>
-      )}
       {error && (
         <div role="alert" className="px-4 py-2 text-sm text-red-500">
           {error}{" "}
@@ -335,14 +331,18 @@ export const MainContent: React.FC = () => {
         </div>
       )}
       {/* Main Area */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          clips={filteredClips}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
-        <ClipDetail key={user?.uid} clip={selectedClip} />
-      </div>
+      {loading ? (
+        <LoadingIndicator label="Loading clips" className="flex-1" />
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar
+            clips={filteredClips}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+          <ClipDetail key={user?.uid} clip={selectedClip} />
+        </div>
+      )}
       <CommandMenu
         key={user?.uid}
         open={commandOpen}
