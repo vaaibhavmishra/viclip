@@ -6,8 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MainContent } from "./MainContent";
 import { SettingsPanel } from "./SettingsPanel";
 
-const { navigate, mockUser } = vi.hoisted(() => ({
+const { navigate, mockUser, mockPlatform } = vi.hoisted(() => ({
   navigate: vi.fn(),
+  mockPlatform: { platform: "darwin" },
   mockUser: {
     uid: "user",
     email: "user@example.invalid",
@@ -17,8 +18,8 @@ const { navigate, mockUser } = vi.hoisted(() => ({
 }));
 vi.mock("react-router", () => ({ useNavigate: () => navigate }));
 vi.mock("@renderer/components/global-context", () => ({
-  useGlobalStore: Object.assign(() => ({ user: mockUser }), {
-    getState: () => ({ user: mockUser }),
+  useGlobalStore: Object.assign(() => ({ user: mockUser, ...mockPlatform }), {
+    getState: () => ({ user: mockUser, ...mockPlatform }),
   }),
 }));
 vi.mock("../components/Sidebar", () => ({
@@ -69,6 +70,11 @@ beforeEach(() => {
   unsubscribe = vi.fn();
   navigate.mockClear();
   mockUser.uid = "user";
+  mockPlatform.platform = "darwin";
+  Object.defineProperty(window, "electron", {
+    configurable: true,
+    value: undefined,
+  });
   api = {
     getClips: vi.fn().mockResolvedValue({ clip }),
     onClipsUpdate: vi.fn((callback) => {
@@ -154,6 +160,40 @@ describe("clipboard view", () => {
 });
 
 describe("settings feedback", () => {
+  it.each([
+    ["darwin", "Cmd+Shift+V"],
+    ["win32", "Alt+Shift+V"],
+    ["linux", "Alt+Shift+V"],
+  ])(
+    "shows the %s default when settings cannot load",
+    async (platform, expected) => {
+      Object.defineProperty(window, "electron", {
+        configurable: true,
+        value: { process: { platform, versions: {} } },
+      });
+      api.getDevices.mockRejectedValueOnce(new Error("offline"));
+      await act(async () => root.render(<SettingsPanel />));
+      expect(buttonWith(expected)?.textContent).toBe(expected);
+      expect(host.querySelector('[role="alert"]')).not.toBeNull();
+    },
+  );
+  it("uses the global store platform when preload platform is unavailable", async () => {
+    mockPlatform.platform = "win32";
+    api.getDevices.mockRejectedValueOnce(new Error("offline"));
+    await act(async () => root.render(<SettingsPanel />));
+    expect(buttonWith("Alt+Shift+V")).not.toBeNull();
+  });
+  it.each([
+    ["darwin", "Cmd+Shift+K"],
+    ["win32", "Ctrl+Shift+K"],
+    ["linux", "Ctrl+Shift+K"],
+  ])("shows the saved custom shortcut on %s", async (platform, expected) => {
+    mockPlatform.platform = platform;
+    api.getShortcut.mockResolvedValueOnce("CommandOrControl+Shift+K");
+    await act(async () => root.render(<SettingsPanel />));
+    expect(buttonWith(expected)?.textContent).toBe(expected);
+    expect(api.setShortcut).not.toHaveBeenCalled();
+  });
   it("reflects synchronization cancellation pushed by main", async () => {
     await act(async () => root.render(<SettingsPanel />));
     await act(async () => syncListener(true));
@@ -203,14 +243,14 @@ describe("settings feedback", () => {
   it("retains the old shortcut after registration is rejected", async () => {
     api.setShortcut.mockResolvedValueOnce(false);
     await act(async () => root.render(<SettingsPanel />));
-    await click(buttonWith("Cmd/Ctrl+Shift+V"));
+    await click(buttonWith("Cmd+Shift+V"));
     await act(async () =>
       window.dispatchEvent(
         new KeyboardEvent("keydown", { key: "y", code: "KeyY", ctrlKey: true }),
       ),
     );
     expect(api.setShortcut).toHaveBeenCalledWith("CommandOrControl+Y");
-    expect(buttonWith("Cmd/Ctrl+Shift+V")).not.toBeNull();
+    expect(buttonWith("Cmd+Shift+V")).not.toBeNull();
     expect(host.querySelector('[role="alert"]')).not.toBeNull();
   });
   it("does not navigate as if logout succeeded when it rejects", async () => {

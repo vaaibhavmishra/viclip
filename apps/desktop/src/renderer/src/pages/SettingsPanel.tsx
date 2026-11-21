@@ -13,6 +13,7 @@ import {
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { getDefaultShortcut } from "../../../shared/shortcuts";
 
 // --- Sub-components ---
 
@@ -191,12 +192,14 @@ const DeviceItem: React.FC<DeviceItemProps> = ({
 
 interface ShortcutRecorderProps {
   currentShortcut: string;
+  platform: string;
   onSave: (shortcut: string) => void;
   disabled?: boolean;
 }
 
 const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
   currentShortcut,
+  platform,
   onSave,
   disabled,
 }) => {
@@ -253,7 +256,10 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
 
   const displayShortcut = isRecording
     ? keys.join(" + ") || "Type shortcut..."
-    : currentShortcut.replace("CommandOrControl", "Cmd/Ctrl");
+    : currentShortcut.replace(
+        "CommandOrControl",
+        platform === "darwin" ? "Cmd" : "Ctrl",
+      );
 
   return (
     <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-gray-700/50">
@@ -291,13 +297,16 @@ const ShortcutRecorder: React.FC<ShortcutRecorderProps> = ({
 // --- Main Component ---
 
 export const SettingsPanel: React.FC = () => {
-  const { user } = useGlobalStore();
+  const { user, platform } = useGlobalStore();
+  const currentPlatform = window.electron?.process.platform || platform;
   const navigate = useNavigate();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [devices, setDevices] = useState<ExtendedDeviceData[]>([]);
   const [currentDeviceId, setCurrentDeviceId] = useState<string>("");
-  const [shortcut, setShortcut] = useState("CommandOrControl+Shift+V");
+  const [shortcut, setShortcut] = useState(() =>
+    getDefaultShortcut(currentPlatform),
+  );
   const [appVersion, setAppVersion] = useState<string>("");
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -534,6 +543,7 @@ export const SettingsPanel: React.FC = () => {
         <SettingsSection title="Shortcuts">
           <ShortcutRecorder
             currentShortcut={shortcut}
+            platform={currentPlatform}
             onSave={onShortcutChange}
             disabled={pending}
           />

@@ -1,9 +1,10 @@
 import log from "electron-log/main";
 import { v4 as uuidv4 } from "uuid";
 
+import { getDefaultShortcut } from "../../shared/shortcuts";
 import { configStore as store } from "./configStore";
 
-const DEFAULT_SHORTCUT = "CommandOrControl+Shift+V";
+const DEFAULT_SHORTCUT = getDefaultShortcut(process.platform);
 
 export const settingsStorage = {
   getClipboardSyncEnabled(): boolean {
