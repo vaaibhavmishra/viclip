@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   data: new Map<string, unknown>(),
   available: vi.fn(),
+  keyringAvailable: vi.fn(),
   encrypt: vi.fn(),
   decrypt: vi.fn(),
   backend: vi.fn(),
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("electron", () => ({
   safeStorage: {
     isAsyncEncryptionAvailable: mocks.available,
+    isEncryptionAvailable: mocks.keyringAvailable,
     encryptStringAsync: mocks.encrypt,
     decryptStringAsync: mocks.decrypt,
     getSelectedStorageBackend: mocks.backend,
@@ -60,6 +62,7 @@ beforeEach(() => {
   mocks.data.clear();
   mocks.deleteFailure = null;
   mocks.available.mockResolvedValue(true);
+  mocks.keyringAvailable.mockReturnValue(true);
   mocks.backend.mockReturnValue("gnome_libsecret");
   mocks.encrypt.mockImplementation(async (value: string) => Buffer.from(value));
   mocks.decrypt.mockImplementation(async (value: Buffer) => ({
@@ -109,6 +112,46 @@ describe("secure authentication persistence", () => {
         authStorage.saveMasterKey(Buffer.alloc(32), () => true, "a"),
       ).rejects.toThrow();
       expect(mocks.data.size).toBe(0);
+    },
+  );
+
+  it("rejects an unavailable Linux keyring even if async fallback encryption is available", async () => {
+    platform("linux");
+    mocks.keyringAvailable.mockReturnValue(false);
+
+    await expect(isSecureStorageAvailable()).resolves.toBe(false);
+    await expect(encryptData("synthetic")).rejects.toThrow();
+    await expect(
+      authStorage.saveMasterKey(Buffer.alloc(32), () => true, "a"),
+    ).rejects.toThrow();
+    expect(mocks.data.size).toBe(0);
+    expect(mocks.encrypt).not.toHaveBeenCalled();
+  });
+
+  it("never persists Linux credentials encrypted by the known-key fallback", async () => {
+    platform("linux");
+    mocks.encrypt.mockResolvedValue(Buffer.from("v10synthetic-ciphertext"));
+
+    await expect(encryptData("synthetic")).rejects.toThrow();
+    await expect(
+      new ElectronAuthPersistence()._set("session", { token: "synthetic" }),
+    ).rejects.toThrow();
+    await expect(
+      authStorage.saveMasterKey(Buffer.alloc(32), () => true, "a"),
+    ).rejects.toThrow();
+    expect(mocks.data.size).toBe(0);
+  });
+
+  it.each(["darwin", "win32"])(
+    "does not treat native v10 encryption on %s as Linux fallback",
+    async (os) => {
+      platform(os);
+      const ciphertext = Buffer.from("v10synthetic-ciphertext");
+      mocks.encrypt.mockResolvedValue(ciphertext);
+
+      await expect(encryptData("synthetic")).resolves.toBe(
+        ciphertext.toString("base64"),
+      );
     },
   );
 

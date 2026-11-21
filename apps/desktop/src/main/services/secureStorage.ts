@@ -9,9 +9,25 @@ export async function isSecureStorageAvailable(): Promise<boolean> {
   // Linux's basic_text backend encrypts with a publicly known password.
   if (process.platform === "linux") {
     const backend = safeStorage.getSelectedStorageBackend();
-    return backend !== "basic_text" && backend !== "unknown";
+    if (backend === "basic_text" || backend === "unknown") return false;
+    // Electron 45's async API can initialize with a fallback provider. Check
+    // that the selected OS keyring actually has a key, not just a backend name.
+    return safeStorage.isEncryptionAvailable();
   }
   return true;
+}
+
+async function encryptWithSecureStorage(data: string): Promise<Buffer> {
+  const encryptedData = await safeStorage.encryptStringAsync(data);
+  // On Linux, Chromium's v10 POSIX fallback uses a publicly known key even
+  // when the selected backend name appears secure. Never persist that output.
+  if (
+    process.platform === "linux" &&
+    encryptedData.subarray(0, 3).toString("ascii") === "v10"
+  ) {
+    throw new Error("OS-level encryption is unavailable");
+  }
+  return encryptedData;
 }
 
 /**
@@ -23,7 +39,7 @@ export async function encryptData(data: string): Promise<string> {
   if (!(await isSecureStorageAvailable())) {
     throw new Error("OS-level encryption is unavailable");
   }
-  const encryptedData = await safeStorage.encryptStringAsync(data);
+  const encryptedData = await encryptWithSecureStorage(data);
   return encryptedData.toString("base64");
 }
 
@@ -172,7 +188,7 @@ export const authStorage = {
         );
         throw new Error("OS-level encryption is unavailable");
       }
-      const encryptedData = await safeStorage.encryptStringAsync(
+      const encryptedData = await encryptWithSecureStorage(
         JSON.stringify({ userId, key: key.toString("base64") }),
       );
       if (generation !== storageGeneration || !isCurrentSession()) {

@@ -18,7 +18,11 @@
     "APPIMAGE",
     "DISPLAY",
     "WAYLAND_DISPLAY",
-    "XDG_SESSION_TYPE"
+    "XDG_SESSION_TYPE",
+    "XDG_CURRENT_DESKTOP",
+    "XDG_SESSION_DESKTOP",
+    "DESKTOP_SESSION",
+    "KDE_SESSION_VERSION"
   ],
   "tasks": {
     "build": {

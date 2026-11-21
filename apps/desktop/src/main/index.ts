@@ -12,6 +12,10 @@ import { startUpdateChecks, stopUpdateChecks } from "./services/update";
 import { configureDarkMode, disposeDarkMode } from "./utils/darkMode";
 import { restartInX11IfNeeded } from "./utils/linuxDisplay";
 import { configureLogger } from "./utils/logger";
+import { configurePasswordStore } from "./utils/passwordStore";
+
+// Configure storage before app readiness in development and packaged launches.
+configurePasswordStore();
 
 // Set up logging configuration with colors and separators
 configureLogger();
