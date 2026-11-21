@@ -16,6 +16,9 @@ publish:
   owner: vaaibhavmishra
   repo: viclip
 files:
+  - "out/**"
+  - "resources/**"
+  - "package.json"
   - "!**/.vscode/*"
   - "!src/*"
   - "!electron.vite.config.{js,ts,mjs,cjs}"
