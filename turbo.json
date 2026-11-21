@@ -11,7 +11,15 @@
     "REVERSED_CLIENT_ID",
     "MAIN_VITE_*"
   ],
-  "globalPassThroughEnv": ["ELECTRON_RENDERER_URL"],
+  "globalPassThroughEnv": [
+    "ELECTRON_RENDERER_URL",
+    "ELECTRON_CLI_ARGS",
+    "NODE_ENV_ELECTRON_VITE",
+    "APPIMAGE",
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_SESSION_TYPE"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

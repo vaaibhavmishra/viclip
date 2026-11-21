@@ -10,10 +10,13 @@ import { initFirebase } from "./services/firebase";
 import { disposeApp, initApp } from "./services/initApp";
 import { startUpdateChecks, stopUpdateChecks } from "./services/update";
 import { configureDarkMode, disposeDarkMode } from "./utils/darkMode";
+import { restartInX11IfNeeded } from "./utils/linuxDisplay";
 import { configureLogger } from "./utils/logger";
 
 // Set up logging configuration with colors and separators
 configureLogger();
+
+restartInX11IfNeeded();
 
 /**
  * Set up the application when Electron is ready

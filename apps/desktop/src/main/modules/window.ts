@@ -237,10 +237,7 @@ export function createMainWindow(
   mainWindow.on("closed", () => setMainWindow(null));
 
   mainWindow.on("blur", () => {
-    if (
-      process.platform !== "linux" &&
-      !mainWindow.webContents.isDevToolsOpened()
-    ) {
+    if (!mainWindow.webContents.isDevToolsOpened()) {
       mainWindow.hide();
     }
   });

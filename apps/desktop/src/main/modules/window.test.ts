@@ -27,7 +27,7 @@ interface WindowOptions extends Record<string, unknown> {
 
 class Contents extends EventEmitter {
   setWindowOpenHandler = vi.fn();
-  isDevToolsOpened = () => false;
+  isDevToolsOpened = vi.fn(() => false);
 }
 class MockWindow extends EventEmitter {
   webContents = new Contents();
@@ -121,6 +121,33 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   setPlatform(originalPlatform);
+});
+
+describe("main clipboard window dismissal", () => {
+  it.each(["linux", "darwin", "win32"] as const)(
+    "hides on focus loss on %s",
+    (platform) => {
+      setPlatform(platform);
+      createMainWindow();
+      const window = mocks.main as MockWindow;
+
+      window.emit("blur");
+
+      expect(window.hide).toHaveBeenCalledOnce();
+      expect(window.isDestroyed()).toBe(false);
+    },
+  );
+
+  it("keeps the Linux window open while inspecting developer tools", () => {
+    setPlatform("linux");
+    createMainWindow();
+    const window = mocks.main as MockWindow;
+    window.webContents.isDevToolsOpened.mockReturnValue(true);
+
+    window.emit("blur");
+
+    expect(window.hide).not.toHaveBeenCalled();
+  });
 });
 
 describe("desktop window appearance", () => {
