@@ -32,7 +32,6 @@ const heroDescription = [
             title.text !== '\n' ? (
               <b
                 class:list={['font-normal', title.highlight && 'text-coral italic']}
-                style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)"
               >
                 {title.text}
               </b>
@@ -43,14 +42,13 @@ const heroDescription = [
         </Title>
         <p
           class="px-12 text-center lg:px-0"
-          style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)"
         >
           <span class="sm:block">{heroDescription[0]}</span>{' '}
           <span class="sm:block">{heroDescription[1]}</span>
         </p>
       </div>
       <div class="flex w-2/3 flex-col items-center justify-center gap-3 sm:gap-6 md:w-fit md:flex-row">
-        <div style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)">
+        <div data-hero-reveal>
           <a
             href="/download"
             class="group mac-button relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-dark px-7 py-3.5 text-sm sm:text-base font-semibold text-paper shadow-sm transition-all duration-300 ease-out hover:scale-105 hover:bg-coral hover:text-white active:scale-95"
@@ -60,7 +58,7 @@ const heroDescription = [
             <ArrowRightIcon class="size-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
           </a>
         </div>
-        <div style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)">
+        <div data-hero-reveal>
           <a
             href="/donate"
             class="group mac-button relative inline-flex items-center justify-center gap-2 rounded-xl border border-dark/15 bg-paper/80 px-7 py-3.5 text-sm sm:text-base font-semibold text-dark backdrop-blur-sm transition-all duration-300 ease-out hover:scale-105 hover:border-dark/30 hover:bg-dark/[0.04] active:scale-95"
@@ -74,17 +72,17 @@ const heroDescription = [
         </div>
       </div>
     </div>
-    <SocialMediaStrip style="transform: translateY(20px); opacity: 0.001; filter: blur(4px)" />
+    <SocialMediaStrip />
   </div>
   <Video
-    name="hero-video"
-    autoplay
-    loop
-    muted
-    playsinline
-    preload="none"
+    id="hero-demo"
+    src="/media/viclip-full-demo.mp4"
+    poster="/media/viclip-full-demo-poster.webp"
+    width={1660}
+    height={1080}
+    label="Cross-device clipboard sync"
     class="mac-window rounded-3xl"
-    style="transform: translateY(20px); opacity: 0.001; filter: blur(4px); transform-origin: top;"
+    style="transform-origin: top;"
   />
 </header>
 
@@ -92,10 +90,11 @@ const heroDescription = [
   import { animate, onScroll, stagger } from 'animejs'
 
   function initAnimations() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const debug = false
 
     const elements = document.querySelectorAll(
-      '#header h1 b, #header p, #header div:has(a), #header video, #header ul'
+      '#header h1 b, #header p, #header [data-hero-reveal], #header [data-demo-player], #header ul'
     )
 
     animate(elements, {

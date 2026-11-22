@@ -1,5 +1,4 @@
 ---
-import Description from "./Description.astro";
 import Video from "./Video.astro";
 
 const defaultFeatures = {
@@ -7,29 +6,37 @@ const defaultFeatures = {
   description:
     "ViClip keeps you in flow as you move between screens. Tools should bridge your machines quietly in the background without adding extra steps to your workday.",
   featureTabs: {
-    manager: {
-      title: "Save, edit, and reuse",
-      description:
-        "Keep useful clips close at hand. Edit copied text, pin your go-to snippets, and find them again in your clipboard history.",
-      video: "clipboard-manager",
-    },
     sync: {
-      title: "Copy here. Paste there.",
+      title: "Copy across devices",
       description:
-        "Move text, links, and code between your computer and phone without emailing yourself or sending a message. Your clipboard connects the two.",
-      video: "instant-sync",
+        "Share text from your phone and find it on your computer. Keep moving between screens without emailing yourself or sending a message.",
+      video: "share-demo",
+      width: 1620,
+      height: 1080,
     },
-    encryption: {
-      title: "Private by design",
+    edit: {
+      title: "Edit before you paste",
       description:
-        "Your clips are encrypted on your device before they sync. Only your devices can read them, keeping your clipboard history private.",
-      video: "zero-knowledge-encryption",
+        "Tidy up copied text right in ViClip. Save your changes or discard a draft, then reuse the clip when you need it.",
+      video: "edit-demo",
+      width: 1620,
+      height: 1080,
     },
-    crossPlatform: {
-      title: "Your devices, connected",
+    actions: {
+      title: "Keep useful clips",
       description:
-        "Bring your clipboard across macOS, Windows, Linux, iOS, and Android. Keep working across devices, even when they run different operating systems.",
-      video: "cross-platform",
+        "Pin your go-to snippets so they're easy to find. Unpin them when you're done, or clear clips you no longer need from the action menu.",
+      video: "action-demo",
+      width: 1620,
+      height: 1080,
+    },
+    settings: {
+      title: "Make it yours",
+      description:
+        "Set your clipboard shortcut, manage connected devices, and choose when to sync or receive notifications. Your clipboard, on your terms.",
+      video: "settings-demo",
+      width: 1620,
+      height: 1080,
     },
   },
 };
@@ -46,27 +53,33 @@ const descriptions = Object.values(features.featureTabs).map(
 ---
 
 <section id="features" class="relative flex w-full flex-col py-12 text-start lg:py-36">
-  <Description class="mb-2 text-4xl font-bold sm:text-6xl">
+  <h2 class="mb-2 text-4xl font-bold sm:text-6xl">
     {(titles || features.titles).map((title, index) =>
       title !== '\n' ? (
-        <span class="title-line opacity-0" data-index={index}>
+        <span class="title-line" data-index={index}>
           {title}
         </span>
       ) : (
         <br class="hidden md:block" />
       )
     )}
-  </Description>
+  </h2>
 
-  <p class="feature-description-text opacity-0 lg:w-1/2">{features.description}</p>
+  <p class="feature-description-text lg:w-1/2">{features.description}</p>
 
   <div class="mt-6 flex flex-col gap-6 lg:flex-row lg:justify-between lg:gap-2">
     <div class="flex w-full flex-col lg:w-1/3">
       <!-- Mobile Tabs -->
-      <div class="flex gap-2 overflow-x-auto overflow-y-clip lg:hidden">
+      <div class="flex gap-2 overflow-x-auto p-1 lg:hidden" role="tablist" aria-label="Explore ViClip features">
         {Object.entries(features.featureTabs).map(([key, tab], i) => (
           <button
-            class="feature-tab whitespace-nowrap opacity-0"
+            id={`feature-tab-${key}`}
+            type="button"
+            role="tab"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            aria-controls={`feature-panel-${key}`}
+            tabindex={i === 0 ? 0 : -1}
+            class="feature-tab whitespace-nowrap"
             data-index={i}
             data-feature-key={key}
             data-active={i === 0 ? 'true' : undefined}
@@ -77,17 +90,23 @@ const descriptions = Object.values(features.featureTabs).map(
       </div>
 
       <!-- Desktop features list -->
-      <div id="features-list" class="hidden lg:flex lg:flex-col lg:gap-3">
+      <div id="features-list" class="hidden lg:flex lg:flex-col lg:gap-3" role="tablist" aria-label="Explore ViClip features" aria-orientation="vertical">
         {Object.entries(features.featureTabs).map(([key, tab], i) => (
-          <div
-            class="feature opacity-0"
+          <button
+            id={`feature-option-${key}`}
+            type="button"
+            role="tab"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            aria-controls={`feature-panel-${key}`}
+            tabindex={i === 0 ? 0 : -1}
+            class="feature text-start"
             data-index={i}
             data-feature-key={key}
             data-active={i === 0 ? 'true' : undefined}
           >
-            <Description class="text-2xl font-bold">{tab.title}</Description>
-            <Description>{tab.description}</Description>
-          </div>
+            <span class="block text-2xl font-bold">{tab.title}</span>
+            <span class="block">{tab.description}</span>
+          </button>
         ))}
       </div>
 
@@ -95,23 +114,33 @@ const descriptions = Object.values(features.featureTabs).map(
       <div
         class="feature-description mt-4 lg:hidden"
         data-descriptions={descriptions.join('|||')}
-      ></div>
+      >{descriptions[0]}</div>
     </div>
 
     <!-- Video Section -->
     <div class="sticky top-6 h-fit w-full lg:w-3/5">
       <div class="relative w-full">
         <div class="video-stack relative h-full w-full">
-          {Object.values(features.featureTabs).map((tab) => (
-            <Video
-              autoplay
-              loop
-              muted
-              playsinline
-              preload="none"
-              class="feature-video"
-              name={tab.video}
-            />
+          {Object.entries(features.featureTabs).map(([key, tab], i) => (
+            <div
+              id={`feature-panel-${key}`}
+              class="feature-panel"
+              data-feature-panel
+              role="tabpanel"
+              aria-labelledby={`feature-tab-${key}`}
+              hidden={i !== 0}
+            >
+              <Video
+                id={`feature-demo-${key}`}
+                src={`/media/${tab.video}.mp4`}
+                poster={`/media/${tab.video}-poster.webp`}
+                width={tab.width}
+                height={tab.height}
+                label={tab.title}
+                active={i === 0}
+                class="feature-video"
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -123,31 +152,33 @@ const descriptions = Object.values(features.featureTabs).map(
   import { animate, stagger } from 'animejs'
 
   // Animate Titles
-  animate('.title-line', {
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    animate('.title-line', {
     opacity: [0, 1],
     delay: stagger(200, { start: 200 }),
     duration: 600,
-    easing: 'easeOutQuad',
+    ease: 'outQuad',
   })
 
   animate('.feature-description-text', {
     opacity: [0, 1],
     delay: 600,
     duration: 600,
-    easing: 'easeOutQuad',
+    ease: 'outQuad',
   })
 
   animate('.feature-tab, .feature', {
     opacity: [0, 1],
     delay: stagger(200, { start: 800 }),
     duration: 500,
-    easing: 'easeOutQuad',
+    ease: 'outQuad',
   })
+  }
 
   const features = document.querySelectorAll('.feature, .feature-tab') as NodeListOf<HTMLElement>
   const descriptionEl = document.querySelector('.feature-description') as HTMLDivElement | null
   const descriptions = descriptionEl?.dataset.descriptions?.split('|||')
-  const videos = document.querySelectorAll('.feature-video') as NodeListOf<HTMLVideoElement>
+  const panels = document.querySelectorAll<HTMLElement>('[data-feature-panel]')
 
   function changeToFeature({ target }: { target: HTMLElement }) {
     const targetEl = target?.closest('.feature, .feature-tab') as HTMLElement | null
@@ -157,13 +188,12 @@ const descriptions = Object.values(features.featureTabs).map(
     if (isNaN(index)) return
 
     // Toggle active states
-    const tabCount = document.querySelectorAll('.feature-tab').length || 4
-    features.forEach((el, i) => {
-      if (i % tabCount === index) {
-        el.setAttribute('data-active', 'true')
-      } else {
-        el.removeAttribute('data-active')
-      }
+    features.forEach(el => {
+      const selected = Number(el.dataset.index) === index
+      el.toggleAttribute('data-active', selected)
+      if (selected) el.setAttribute('data-active', 'true')
+      el.setAttribute('aria-selected', String(selected))
+      el.tabIndex = selected ? 0 : -1
     })
 
     // Update mobile description
@@ -172,37 +202,40 @@ const descriptions = Object.values(features.featureTabs).map(
     }
 
     // Animate videos
-    videos.forEach((vid, i) => {
-      const yOffset = (i - index) * 20
-      const zOffset = i === index ? 0 : -100 - Math.abs(i - index) * 50
-      const scale = i === index ? 1 : 0.95
-      const rotation = (i - index) * 3
-
-      if (i === index) {
-        vid.setAttribute('data-active', 'true')
-        vid.style.opacity = '1'
-        vid.style.transform = `translate3d(-50%, 0, 0) scale(${scale})`
-        vid.style.zIndex = '10'
-        vid.currentTime = 0
-        vid.play()
-      } else {
-        vid.removeAttribute('data-active')
-        vid.style.transform = `translate3d(-50%, ${yOffset}px, ${zOffset}px) rotate3d(1, 0, 0, ${rotation}deg) scale(${scale})`
-        vid.style.zIndex = String(1 - Math.abs(i - index))
-        vid.pause()
-      }
+    panels.forEach((panel, i) => {
+      const selected = i === index
+      panel.hidden = !selected
+      const player = panel.querySelector<HTMLElement>('[data-demo-player]')
+      if (!player) return
+      player.dataset.active = String(selected)
+      player.dispatchEvent(new Event('demo:active'))
     })
   }
 
   // Set up event listeners
-  features.forEach(f => f.addEventListener('click', changeToFeature as unknown as EventListener))
+  features.forEach(f => {
+    f.addEventListener('click', () => changeToFeature({ target: f }))
+    f.addEventListener('keydown', event => {
+      const group = Array.from(f.parentElement?.querySelectorAll<HTMLElement>('[role="tab"]') || [])
+      const current = group.indexOf(f)
+      let next = current
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (current + 1) % group.length
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (current - 1 + group.length) % group.length
+      else if (event.key === 'Home') next = 0
+      else if (event.key === 'End') next = group.length - 1
+      else return
+      event.preventDefault()
+      group[next].focus()
+      changeToFeature({ target: group[next] })
+    })
+  })
   changeToFeature({ target: features[0] })
 </script>
 <style>
   @reference '../styles/global.css';
 
   .feature {
-    @apply hover:bg-subtle w-full cursor-pointer rounded-lg p-4 opacity-0 select-none;
+    @apply hover:bg-subtle w-full cursor-pointer rounded-lg p-4 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral;
     transition: background 0.2s ease-in-out;
 
     &[data-active='true'] {
@@ -211,7 +244,7 @@ const descriptions = Object.values(features.featureTabs).map(
   }
 
   .feature-tab {
-    @apply hover:bg-subtle rounded-lg px-4 py-2 text-lg font-medium opacity-0;
+    @apply hover:bg-subtle rounded-lg px-4 py-2 text-lg font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral;
     transition: background 0.2s ease-in-out;
 
     &[data-active='true'] {
@@ -224,46 +257,38 @@ const descriptions = Object.values(features.featureTabs).map(
   }
 
   .video-stack {
-    @apply aspect-video;
-    perspective: 2000px;
-    transform-style: preserve-3d;
+    @apply overflow-hidden rounded-3xl bg-black shadow-md;
+    aspect-ratio: 3/2;
   }
 
-  .feature-video {
-    @apply left-1/2 hidden transform rounded-3xl shadow-md lg:absolute lg:mx-auto lg:block lg:w-full dark:opacity-80;
-    max-width: 800px;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  .feature-panel {
     position: absolute;
-    top: 0;
-    transform-origin: top center;
-    backface-visibility: hidden;
-    will-change: transform, opacity;
-    transform: translate3d(-50%, 0, -100px) scale(0.95);
+    inset: 0;
+  }
+
+  .feature-panel[hidden] {
+    display: none;
+  }
+
+  .feature-panel :global(.feature-video) {
+    height: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .feature-panel:not([hidden]) {
+      animation: demoReveal 0.25s ease-out;
+    }
+  }
+
+  @keyframes demoReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* Don't animate translation on small screens */
   @media (max-width: 1024px) {
-    .feature-video {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transform: none !important;
-      display: none;
-      object-fit: cover;
-
-      &[data-active='true'] {
-        display: block;
-        opacity: 1;
-      }
-    }
-
     .video-stack {
-      @apply overflow-hidden rounded-xl;
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16/9;
+      @apply rounded-xl;
     }
   }
 </style>

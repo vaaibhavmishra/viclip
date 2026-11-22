@@ -1,19 +1,154 @@
 ---
 type Props = {
-  name: string;
+  id: string;
+  src: string;
+  poster: string;
+  width: number;
+  height: number;
+  label: string;
+  active?: boolean;
   class?: string;
-} & astroHTML.JSX.VideoHTMLAttributes;
+  style?: string;
+};
 
-const { name, class: className, ...rest }: Props = Astro.props;
+const { id, src, poster, width, height, label, active = true, class: className, style }: Props = Astro.props;
 ---
 
-{/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-<video
-  class:list={['w-fit overflow-hidden', className]}
-  preload="none"
-  poster={`/media/${name}/poster.webp`}
-  {...rest}
+<div
+  class:list={['demo-player', className]}
+  style={style}
+  data-demo-player
+  data-active={String(active)}
+  data-label={label}
 >
-  <source src={`/media/${name}/video.webm`} type="video/webm" />
-  <source src={`/media/${name}/video.mp4`} type="video/mp4" />
-</video>
+{/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+  <video
+    id={id}
+    data-src={src}
+    poster={poster}
+    width={width}
+    height={height}
+    preload="none"
+    loop
+    muted
+    playsinline
+    aria-label={`${label} demonstration`}
+  >
+    <a href={src}>Watch the {label.toLowerCase()} demo</a>
+  </video>
+  <button
+    type="button"
+    class="demo-toggle"
+    data-video-toggle
+    aria-controls={id}
+    aria-label={`Play ${label.toLowerCase()} demo`}
+    hidden
+  >
+    <span data-play-icon aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 2.5v11L13 8z" />
+    </svg></span>
+    <span data-pause-icon aria-hidden="true" hidden><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 2h3v12H4zm5 0h3v12H9z" />
+    </svg></span>
+    <span data-toggle-label>Play demo</span>
+  </button>
+</div>
+<noscript>
+  <p class="mt-2 text-sm"><a class="zen-link" href={src}>Watch the {label.toLowerCase()} demo</a></p>
+</noscript>
+
+<script>
+  import { createVideoPlayback } from '../scripts/video-playback'
+
+  document.querySelectorAll<HTMLElement>('[data-demo-player]').forEach(player => {
+    const video = player.querySelector('video')
+    const button = player.querySelector<HTMLButtonElement>('[data-video-toggle]')
+    if (!video || !button || !video.dataset.src) return
+
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const playback = createVideoPlayback(video, {
+      src: video.dataset.src,
+      reducedMotion: motion.matches,
+    })
+    let intersecting = false
+
+    function updateButton() {
+      if (!video || !button) return
+      const playing = !video.paused
+      button.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} ${player.dataset.label?.toLowerCase()} demo`)
+      const text = button.querySelector('[data-toggle-label]')
+      if (text) text.textContent = playing ? 'Pause demo' : 'Play demo'
+      button.querySelector('[data-play-icon]')?.toggleAttribute('hidden', playing)
+      button.querySelector('[data-pause-icon]')?.toggleAttribute('hidden', !playing)
+    }
+
+    function updateVisibility() {
+      playback.setVisible(intersecting && document.visibilityState === 'visible')
+    }
+
+    function updateActive() {
+      playback.setActive(player.dataset.active === 'true')
+    }
+
+    function updateMotion() {
+      playback.setReducedMotion(motion.matches)
+    }
+
+    function toggle() {
+      playback.toggle()
+    }
+
+    const observer = new IntersectionObserver(entries => {
+      intersecting = entries[0].isIntersecting && entries[0].intersectionRatio >= 0.2
+      updateVisibility()
+    }, { threshold: [0, 0.2] })
+
+    video.muted = true
+    updateActive()
+    updateButton()
+    button.hidden = false
+    button.addEventListener('click', toggle)
+    video.addEventListener('play', updateButton)
+    video.addEventListener('pause', updateButton)
+    video.addEventListener('error', updateButton)
+    player.addEventListener('demo:active', updateActive)
+    document.addEventListener('visibilitychange', updateVisibility)
+    motion.addEventListener('change', updateMotion)
+    observer.observe(player)
+
+    document.addEventListener('astro:before-swap', () => {
+      observer.disconnect()
+      playback.dispose()
+      button.removeEventListener('click', toggle)
+      video.removeEventListener('play', updateButton)
+      video.removeEventListener('pause', updateButton)
+      video.removeEventListener('error', updateButton)
+      player.removeEventListener('demo:active', updateActive)
+      document.removeEventListener('visibilitychange', updateVisibility)
+      motion.removeEventListener('change', updateMotion)
+    }, { once: true })
+  })
+</script>
+
+<style>
+  @reference '../styles/global.css';
+
+  .demo-player {
+    @apply relative w-full overflow-hidden bg-black;
+  }
+
+  video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .demo-toggle {
+    @apply absolute right-3 bottom-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/65 px-3 py-2 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral sm:right-4 sm:bottom-4;
+  }
+
+  [hidden] {
+    display: none;
+  }
+</style>
