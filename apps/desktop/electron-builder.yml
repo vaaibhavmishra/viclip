@@ -50,7 +50,9 @@ mac:
   icon: build/icon.icns
   minimumSystemVersion: "13.0"
   entitlements: resources/entitlements.mac.plist
-  identity: null
+  # Ad-hoc signing enables native notifications without a paid signing certificate.
+  identity: "-"
+  hardenedRuntime: true
   notarize: false
 dmg:
   artifactName: ${name}-${version}-${os}-${arch}.${ext}

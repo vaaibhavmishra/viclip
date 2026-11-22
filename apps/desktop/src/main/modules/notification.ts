@@ -6,6 +6,7 @@
  */
 
 import { Notification } from "electron/main";
+import log from "electron-log/main";
 import { getNotificationsEnabled } from "../globalStates";
 
 /**
@@ -15,17 +16,25 @@ import { getNotificationsEnabled } from "../globalStates";
  * @param body The notification message body
  */
 export function showNotification(title: string, body: string): void {
-  // Check if notifications are enabled and supported by OS
-  if (!getNotificationsEnabled() || !Notification.isSupported()) {
-    return;
-  }
   try {
+    // Check if notifications are enabled and supported by OS
+    if (!getNotificationsEnabled() || !Notification.isSupported()) {
+      return;
+    }
     const notification = new Notification({
       title,
       body,
     });
+    notification.on("failed", () => {
+      log.warn(
+        "System notification failed. Check notification permissions and the OS notification service.",
+      );
+    });
     notification.show();
   } catch {
     // Non-fatal: OS notification daemon might be absent or busy
+    log.warn(
+      "System notification failed. Check notification permissions and the OS notification service.",
+    );
   }
 }
