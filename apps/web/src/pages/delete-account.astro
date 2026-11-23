@@ -1,0 +1,70 @@
+---
+import Title from "~/components/Title.astro";
+import Layout from "~/layouts/Layout.astro";
+
+const supportEmail = "support@viclip.shipby.me";
+const subject = "ViClip account deletion request";
+const body = "Please delete my ViClip account and its associated data.\n\nMy ViClip account email: \n\nPlease confirm any verification needed and the expected completion time.";
+const requestUrl = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+---
+
+<Layout
+  title="Delete Your Account - ViClip"
+  description="Request deletion of your ViClip account and associated data by email. Learn what is deleted and how to submit your request."
+>
+  <main class="container mx-auto max-w-4xl px-6 pt-28 pb-32">
+    <div class="mb-12">
+      <Title class="text-4xl sm:text-6xl font-bold tracking-tight mb-4">Delete your ViClip account</Title>
+      <p class="text-dark/60 text-base sm:text-lg">
+        Request permanent account and data deletion through our support email.
+      </p>
+    </div>
+
+    <article class="space-y-10 text-dark/90 leading-relaxed text-base sm:text-lg">
+      <section class="space-y-4" aria-labelledby="request-heading">
+        <h2 id="request-heading" class="text-2xl sm:text-3xl font-bold text-dark">Send your request</h2>
+        <ol class="list-decimal pl-6 space-y-2">
+          <li>Send an email from the email address registered to your ViClip account.</li>
+          <li>Address it to <a href={`mailto:${supportEmail}`} class="text-coral underline break-all">{supportEmail}</a> with the subject <strong>{subject}</strong>.</li>
+          <li>State that you want your ViClip account and its associated data deleted.</li>
+        </ol>
+        <p>Do not include your password, encryption keys, or clipboard content.</p>
+        <a
+          href={requestUrl}
+          class="inline-flex items-center justify-center rounded-full bg-coral px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coral"
+        >
+          Request account deletion by email
+        </a>
+        <p class="text-sm text-dark/60">
+          This opens a draft in your email app. Review it and send it yourself. If you do not have an email app configured, use your webmail and the address and subject above.
+        </p>
+      </section>
+
+      <section class="space-y-4" aria-labelledby="deleted-heading">
+        <h2 id="deleted-heading" class="text-2xl sm:text-3xl font-bold text-dark">What will be deleted</h2>
+        <ul class="list-disc pl-6 space-y-2">
+          <li>Your ViClip sign-in account and profile, including your name and account email.</li>
+          <li>All stored clipboard history, including pinned clips and clip metadata.</li>
+          <li>Registered devices and notification registrations associated with the account.</li>
+          <li>Stored encryption metadata and account settings.</li>
+        </ul>
+        <p>
+          Account deletion is permanent. You will lose access to your account and synced history. Copies already saved on your devices or pasted into other applications are not erased remotely; clear those locally if needed.
+        </p>
+      </section>
+
+      <section class="space-y-4" aria-labelledby="next-heading">
+        <h2 id="next-heading" class="text-2xl sm:text-3xl font-bold text-dark">What happens next</h2>
+        <p>
+          We handle requests manually. We will reply with any steps needed to verify account ownership and the expected completion time, then confirm when your account and associated data have been deleted. Sending the request alone does not immediately delete the account.
+        </p>
+        <p>
+          If any information must be retained for legal or security reasons, we will explain which information is retained, why, and for how long. Deletion-request correspondence is handled through the support mailbox.
+        </p>
+        <p>
+          For more information, read our <a href="/privacy-policy" class="text-coral underline">Privacy Policy</a>. You can also find this request page in the mobile app under <strong>Settings &gt; Delete account</strong>.
+        </p>
+      </section>
+    </article>
+  </main>
+</Layout>
