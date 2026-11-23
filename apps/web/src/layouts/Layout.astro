@@ -31,27 +31,31 @@ import Footer from "~/components/Footer.astro";
 import NavBar from "~/components/NavBar.astro";
 ---
 
-<script is:inline data-cfasync="false">
-  const theme = (() => {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-      return localStorage.getItem('theme') ?? 'light'
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-    return 'light'
-  })()
-
-  if (theme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light')
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark')
-  }
-</script>
-
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script is:inline data-cfasync="false">
+      (() => {
+        let preference = 'system'
+        try {
+          const savedTheme = localStorage.getItem('theme')
+          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+            preference = savedTheme
+          }
+        } catch {
+          // Follow the system theme when browser storage is unavailable.
+        }
+
+        const theme = preference === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : preference
+        const html = document.documentElement
+        html.setAttribute('data-theme-preference', preference)
+        html.setAttribute('data-theme', theme)
+        html.classList.toggle('dark', theme === 'dark')
+        html.style.colorScheme = theme
+      })()
+    </script>
     {redirect ? <meta http-equiv="refresh" content={`0;url=${redirect}`} /> : null}
     <meta name="description" content={description ?? defaultDescription} />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

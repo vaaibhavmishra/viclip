@@ -118,7 +118,7 @@ const descriptions = Object.values(features.featureTabs).map(
     </div>
 
     <!-- Video Section -->
-    <div class="sticky top-6 h-fit w-full lg:w-3/5">
+    <div class="sticky top-24 h-fit w-full lg:top-28 lg:w-3/5">
       <div class="relative w-full">
         <div class="video-stack relative h-full w-full">
           {Object.entries(features.featureTabs).map(([key, tab], i) => (
@@ -126,9 +126,12 @@ const descriptions = Object.values(features.featureTabs).map(
               id={`feature-panel-${key}`}
               class="feature-panel"
               data-feature-panel
+              data-stack-state={i === 0 ? 'active' : 'queued'}
+              style={`--stack-depth: ${i}; --stack-offset: ${i}; --stack-scale: ${i === 0 ? 1 : 1 - i * 0.04}; --stack-tilt: ${i * 2}deg; z-index: ${i === 0 ? 5 : 4 - i};`}
               role="tabpanel"
               aria-labelledby={`feature-tab-${key}`}
-              hidden={i !== 0}
+              aria-hidden={i !== 0 ? 'true' : 'false'}
+              inert={i !== 0}
             >
               <Video
                 id={`feature-demo-${key}`}
@@ -185,7 +188,7 @@ const descriptions = Object.values(features.featureTabs).map(
     if (!targetEl) return
 
     const index = parseInt(targetEl.dataset.index as string, 10)
-    if (isNaN(index)) return
+    if (isNaN(index) || index < 0 || index >= panels.length) return
 
     // Toggle active states
     features.forEach(el => {
@@ -202,13 +205,33 @@ const descriptions = Object.values(features.featureTabs).map(
     }
 
     // Animate videos
+    // Pause background players before starting the newly selected video.
     panels.forEach((panel, i) => {
-      const selected = i === index
-      panel.hidden = !selected
+      if (i === index) return
       const player = panel.querySelector<HTMLElement>('[data-demo-player]')
       if (!player) return
-      player.dataset.active = String(selected)
+      player.dataset.active = 'false'
       player.dispatchEvent(new Event('demo:active'))
+    })
+
+    panels.forEach((panel, i) => {
+      const selected = i === index
+      const depth = Math.abs(i - index)
+      panel.dataset.stackState = selected ? 'active' : i < index ? 'behind' : 'queued'
+      panel.style.setProperty('--stack-depth', String(depth))
+      panel.style.setProperty('--stack-offset', String(i - index))
+      panel.style.setProperty('--stack-scale', String(selected ? 1 : 1 - depth * 0.04))
+      panel.style.setProperty('--stack-tilt', `${(i - index) * 2}deg`)
+      panel.style.zIndex = String(selected ? panels.length + 1 : panels.length - depth)
+      panel.setAttribute('aria-hidden', String(!selected))
+      panel.inert = !selected
+      if (selected) {
+        panel.setAttribute('aria-labelledby', targetEl.id)
+        const player = panel.querySelector<HTMLElement>('[data-demo-player]')
+        if (!player) return
+        player.dataset.active = 'true'
+        player.dispatchEvent(new Event('demo:active'))
+      }
     })
   }
 
@@ -257,37 +280,64 @@ const descriptions = Object.values(features.featureTabs).map(
   }
 
   .video-stack {
-    @apply overflow-hidden rounded-3xl bg-black shadow-md;
+    --stack-gap: 18px;
     aspect-ratio: 3/2;
+    isolation: isolate;
+    perspective: 1200px;
+    perspective-origin: center top;
   }
 
   .feature-panel {
+    @apply overflow-hidden rounded-3xl bg-black shadow-md;
     position: absolute;
     inset: 0;
+    transform-origin: center top;
+    transform:
+      translate3d(0, calc(var(--stack-offset) * var(--stack-gap)), calc(var(--stack-depth) * -36px))
+      rotateX(var(--stack-tilt))
+      scale(var(--stack-scale));
+    opacity: 1;
+    visibility: visible;
+    pointer-events: none;
+    backface-visibility: hidden;
+    transition:
+      transform 450ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 300ms ease,
+      visibility 0s;
   }
 
-  .feature-panel[hidden] {
-    display: none;
+  .feature-panel[data-stack-state='active'] {
+    pointer-events: auto;
+  }
+
+  .feature-panel[data-stack-state='queued'] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 450ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 300ms ease,
+      visibility 0s 450ms;
   }
 
   .feature-panel :global(.feature-video) {
     height: 100%;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .feature-panel:not([hidden]) {
-      animation: demoReveal 0.25s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    .feature-panel,
+    .feature-panel[data-stack-state='queued'] {
+      transition: none;
     }
   }
 
-  @keyframes demoReveal {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  /* Don't animate translation on small screens */
-  @media (max-width: 1024px) {
+  /* Use smaller stack offsets on small screens. */
+  @media (width < 1024px) {
     .video-stack {
+      --stack-gap: 10px;
+      margin-top: 2rem;
+    }
+
+    .feature-panel {
       @apply rounded-xl;
     }
   }

@@ -1,6 +1,6 @@
 import { UAParser } from "ua-parser-js";
 
-export type DetectedOS = "mac" | "windows" | "linux";
+export type DetectedOS = "mac" | "windows" | "linux" | "android";
 export type DownloadCpu = "x86_64" | "aarch64" | "arm64";
 
 export function getUserAgentOSName(userAgent: string) {
@@ -8,7 +8,9 @@ export function getUserAgentOSName(userAgent: string) {
 }
 
 export function getDetectedOS(osName?: string): DetectedOS {
-  if (osName === "Windows") {
+  if (osName === "Android") {
+    return "android";
+  } else if (osName === "Windows") {
     return "windows";
   } else if (
     osName === "Linux" ||

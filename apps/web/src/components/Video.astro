@@ -36,6 +36,14 @@ const { id, src, poster, width, height, label, active = true, class: className, 
   >
     <a href={src}>Watch the {label.toLowerCase()} demo</a>
   </video>
+  <img
+    class="demo-poster"
+    src={poster}
+    width={width}
+    height={height}
+    alt=""
+    aria-hidden="true"
+  />
   <button
     type="button"
     class="demo-toggle"
@@ -142,6 +150,28 @@ const { id, src, poster, width, height, label, active = true, class: className, 
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  .demo-poster {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .demo-player[data-active='false'] video {
+    visibility: hidden;
+  }
+
+  .demo-player[data-active='false'] .demo-poster {
+    display: block;
+  }
+
+  .demo-player[data-active='false'] .demo-toggle {
+    display: none;
   }
 
   .demo-toggle {

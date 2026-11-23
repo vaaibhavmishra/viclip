@@ -1,5 +1,4 @@
 ---
-import ArrowRightIcon from "~/icons/ArrowRightIcon.astro";
 import Button from "../Button.astro";
 
 interface ReleaseInfo {
@@ -9,7 +8,6 @@ interface ReleaseInfo {
 }
 
 interface PlatformReleases {
-  universal?: ReleaseInfo;
   all?: ReleaseInfo;
   tarball?: ReleaseInfo;
   x86_64?:
@@ -21,11 +19,10 @@ interface PlatformReleases {
     tarball?: ReleaseInfo;
   };
   arm64?: ReleaseInfo;
-  flathub?: { all: ReleaseInfo };
 }
 
 interface Props {
-  platform: "mac" | "windows" | "linux";
+  platform: "mac" | "windows" | "linux" | "android";
   icon: string[];
   description: string;
   releases: PlatformReleases;
@@ -43,11 +40,14 @@ function getReleaseLink(
   { os, cpu }: { os: string; cpu?: string },
 ) {
   if (os === "mac") {
-    return releases.universal?.link || releases.all?.link || "";
+    const release = cpu === "arm64" ? releases.arm64 : releases.x86_64;
+    return isFlatReleaseInfo(release) ? release.link : "";
+  } else if (os === "android") {
+    return releases.all?.link || "";
   } else {
     if (cpu === "x86_64") {
       if (isFlatReleaseInfo(releases.x86_64)) {
-        return releases.flathub?.all.link || releases.x86_64.link || "";
+        return releases.x86_64.link || "";
       }
       return releases.x86_64?.tarball?.link
         ? releases.x86_64?.tarball?.link
@@ -76,21 +76,10 @@ function getReleaseLink(
         isPrimary
       >
         <Fragment set:html={icon} />
-        Download for{' '}
-        {platform === 'mac' ? 'MacOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+        {platform === 'android'
+          ? 'Get it on Google Play'
+          : `Download for ${platform === 'mac' ? 'macOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}`}
       </Button>
-      {platform === 'linux' && (
-        <Button
-          class="download-button w-fit group-data-[twilight='true']/platform:hidden"
-          href={releases.flathub?.all.link || ''}
-          aria-label="Download from Flathub"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Flathub
-          <ArrowRightIcon class="size-4" />
-        </Button>
-      )}
     </div>
   </div>
 </div>

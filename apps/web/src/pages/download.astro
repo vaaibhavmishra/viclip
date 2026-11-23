@@ -14,29 +14,30 @@ import Description from "~/components/Description.astro";
 import ButtonCard from "~/components/download/ButtonCard.astro";
 import DownloadScript from "~/components/download/DownloadScript.astro";
 import PlatformDownload from "~/components/download/PlatformDownload.astro";
-import { getReleases } from "~/components/download/release-data";
+import { getReleases, releasesUrl } from "~/components/download/release-data";
 import Layout from "~/layouts/Layout.astro";
 
 library.add(faWindows, faLinux, faApple, faGithub, faAndroid);
 const windowsIcon = icon({ prefix: "fab", iconName: "windows" });
 const linuxIcon = icon({ prefix: "fab", iconName: "linux" });
 const appleIcon = icon({ prefix: "fab", iconName: "apple" });
+const androidIcon = icon({ prefix: "fab", iconName: "android" });
 
 const releases = getReleases();
 
 const platformDescriptions = {
-  mac: "Experience seamless clipboard sync on macOS with universal Apple Silicon and Intel support.",
+  mac: "Download ViClip for macOS as a DMG for Apple Silicon (ARM64) or Intel (x86_64).",
   windows: "Fast, real-time clipboard sync for Windows 10 and 11 (x64 and ARM64).",
-  linux: "Available as an AppImage and Flatpak for all major Linux distributions.",
+  linux: "Download an AppImage for Linux on ARM64 or x86_64.",
+  android: "Get ViClip for Android on Google Play.",
 };
 
 const download = {
   title: "Download ViClip",
   description:
     "Universal, real-time, end-to-end encrypted clipboard synchronization across Windows, macOS, Linux, iOS, and Android.",
-  beta: "ViClip Desktop is currently in ",
   otherDownload:
-    "Looking for other architectures or source code? Check our <a href='https://github.com/ViClip-Org/ViClip-Desktop/releases/latest' target='_blank' rel='noopener noreferrer' class='underline text-coral font-medium'>GitHub Releases</a>.",
+    `Looking for other architectures or source code? Check our <a href='${releasesUrl}' target='_blank' rel='noopener noreferrer' class='underline text-coral font-medium'>GitHub Releases</a>.`,
 };
 ---
 
@@ -44,7 +45,7 @@ const download = {
 
 <Layout
   title="Download ViClip - Universal Clipboard Sync"
-  description="Download ViClip for macOS, Windows, and Linux. End-to-end encrypted real-time clipboard synchronization across all your devices."
+  description="Download ViClip for Android from Google Play, or get ARM64 and x86_64 builds for macOS, Windows, and Linux. End-to-end encrypted clipboard synchronization."
 >
   <main class="container mx-auto px-6 pt-28 pb-36">
     <div class="relative mx-auto max-w-4xl">
@@ -76,6 +77,15 @@ const download = {
 
       <!-- Auto-Detected Platform Download Section -->
       <div class="my-8 flex justify-center">
+        <!-- Android Download -->
+        <PlatformDownload
+          platform="android"
+          icon={androidIcon.html}
+          description={platformDescriptions.android}
+          releases={releases.android}
+          cpu="arm64"
+        />
+
         <!-- MacOS Download -->
         <PlatformDownload
           platform="mac"
@@ -130,12 +140,6 @@ const download = {
 
       <!-- Beta Tag & Other Downloads notice -->
       <div class="mb-16 flex flex-col items-center justify-center gap-2 text-center">
-        <div class="flex cursor-default items-center justify-center gap-2 text-xs sm:text-sm font-semibold text-dark/80">
-          <span>{download.beta}</span>
-          <span class="inline-flex items-center rounded-md border border-dark/20 bg-dark/5 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-dark">
-            Beta
-          </span>
-        </div>
         <div class="max-w-lg text-xs sm:text-sm text-dark/60">
           <Fragment set:html={download.otherDownload} />
         </div>
@@ -150,44 +154,52 @@ const download = {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <!-- macOS -->
           <ButtonCard
-            label="macOS Universal (.dmg)"
-            href={releases.macos.universal.link}
+            label={releases.macos.arm64.label}
+            href={releases.macos.arm64.link}
+            variant="mac"
+          />
+
+          <ButtonCard
+            label={releases.macos.x86_64.label}
+            href={releases.macos.x86_64.link}
             variant="mac"
           />
 
           <!-- Windows 64-bit -->
           <ButtonCard
-            label="Windows 64-bit (.exe)"
+            label={releases.windows.x86_64.label}
             href={releases.windows.x86_64.link}
             variant="windows"
           />
 
           <!-- Windows ARM64 -->
           <ButtonCard
-            label="Windows ARM64 (.exe)"
+            label={releases.windows.arm64.label}
             href={releases.windows.arm64.link}
             variant="windows"
           />
 
           <!-- Linux AppImage x86_64 -->
           <ButtonCard
-            label="Linux AppImage (x86_64)"
+            label={releases.linux.x86_64.tarball.label}
             href={releases.linux.x86_64.tarball.link}
             variant="linux"
           />
 
           <!-- Linux AppImage ARM64 -->
           <ButtonCard
-            label="Linux AppImage (ARM64)"
+            label={releases.linux.aarch64.tarball.label}
             href={releases.linux.aarch64.tarball.link}
             variant="linux"
           />
 
-          <!-- Linux Flathub -->
+          <!-- Linux Flathub is replaced by the architecture-specific AppImage downloads above. -->
+
+          <!-- Android Google Play -->
           <ButtonCard
-            label="Linux Flatpak (Flathub)"
-            href={releases.linux.flathub.all.link}
-            variant="linux"
+            label={releases.android.all.label}
+            href={releases.android.all.link}
+            variant="android"
           />
         </div>
       </div>
