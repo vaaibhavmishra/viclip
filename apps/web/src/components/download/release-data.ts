@@ -9,9 +9,8 @@ export function getReleases(_locale?: string) {
   return {
     android: {
       all: {
-        // Replace this demo URL with the app listing when ViClip is on Google Play.
-        link: "https://play.google.com/store/apps",
-        label: "Android (Google Play)",
+        link: `${downloadUrl}-android.apk`,
+        label: "Android (.apk)",
       },
     },
     macos: {

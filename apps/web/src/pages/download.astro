@@ -29,7 +29,7 @@ const platformDescriptions = {
   mac: "Download ViClip for macOS as a DMG for Apple Silicon (ARM64) or Intel (x86_64).",
   windows: "Fast, real-time clipboard sync for Windows 10 and 11 (x64 and ARM64).",
   linux: "Download an AppImage for Linux on ARM64 or x86_64.",
-  android: "Get ViClip for Android on Google Play.",
+  android: "Download ViClip for Android from GitHub Releases.",
 };
 
 const download = {
@@ -45,7 +45,7 @@ const download = {
 
 <Layout
   title="Download ViClip - Universal Clipboard Sync"
-  description="Download ViClip for Android from Google Play, or get ARM64 and x86_64 builds for macOS, Windows, and Linux. End-to-end encrypted clipboard synchronization."
+  description="Download ViClip for Android from GitHub Releases, or get ARM64 and x86_64 builds for macOS, Windows, and Linux. End-to-end encrypted clipboard synchronization."
 >
   <main class="container mx-auto px-6 pt-28 pb-36">
     <div class="relative mx-auto max-w-4xl">
@@ -195,7 +195,7 @@ const download = {
 
           <!-- Linux Flathub is replaced by the architecture-specific AppImage downloads above. -->
 
-          <!-- Android Google Play -->
+          <!-- Android GitHub Release -->
           <ButtonCard
             label={releases.android.all.label}
             href={releases.android.all.link}

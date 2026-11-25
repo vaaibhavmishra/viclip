@@ -76,9 +76,7 @@ function getReleaseLink(
         isPrimary
       >
         <Fragment set:html={icon} />
-        {platform === 'android'
-          ? 'Get it on Google Play'
-          : `Download for ${platform === 'mac' ? 'macOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}`}
+        {`Download for ${platform === 'mac' ? 'macOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}`}
       </Button>
     </div>
   </div>
