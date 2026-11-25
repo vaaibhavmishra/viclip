@@ -112,9 +112,16 @@ const native = Object.fromEntries(
 );
 Object.assign(native, {
   useColorScheme: () => "light",
-  useWindowDimensions: () => ({ height: 800, width: 390 }),
+  useWindowDimensions: () => ({
+    height: 800,
+    width: 390,
+    scale: 1,
+    fontScale: 1,
+  }),
   StyleSheet: { create: (value) => value },
-  Dimensions: { get: () => ({ height: 800, width: 390 }) },
+  Dimensions: {
+    get: () => ({ height: 800, width: 390, scale: 1, fontScale: 1 }),
+  },
   Platform: { OS: "android", Version: 35 },
   AppState: { currentState: "active" },
   Keyboard: { dismiss() {} },

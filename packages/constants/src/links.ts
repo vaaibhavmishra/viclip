@@ -5,6 +5,7 @@ export const LINKS = {
   website: "https://viclip.shipby.me",
   terms: "https://viclip.shipby.me/terms-of-service",
   privacy: "https://viclip.shipby.me/privacy-policy",
+  deleteAccount: "https://viclip.shipby.me/delete-account",
   support: "https://viclip.shipby.me/donate",
   downloads: "https://viclip.shipby.me/download",
 } as const;

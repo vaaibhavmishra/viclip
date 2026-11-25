@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,6 +19,7 @@ import {
   listenDevices,
   removeDevice,
 } from "@/services/firebase";
+import { useResponsiveLayout } from "@/utils/layout";
 import { useSessionScope } from "@/utils/sessionScope";
 import { formatLastActive } from "@/utils/util";
 
@@ -49,6 +49,7 @@ export default function Devices() {
   const removing = useRef(new Set<string>());
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { isCompact, contentContainerStyle } = useResponsiveLayout();
 
   const [devicesList, setDevicesList] = useState<ExtendedDeviceData[]>([]);
   const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
@@ -189,12 +190,14 @@ export default function Devices() {
         <View
           style={[
             styles.deviceCard,
+            isCompact && styles.deviceCardCompact,
             isDark ? styles.deviceCardDark : styles.deviceCardLight,
           ]}
         >
           <View
             style={[
               styles.deviceIconBox,
+              isCompact && styles.deviceIconBoxCompact,
               isDark ? styles.deviceIconBoxDark : styles.deviceIconBoxLight,
             ]}
           >
@@ -268,7 +271,7 @@ export default function Devices() {
         </View>
       );
     },
-    [isDark, currentDeviceId, handleRemoveDevice],
+    [isDark, isCompact, currentDeviceId, handleRemoveDevice],
   );
 
   if (isLoading && !refreshing) {
@@ -301,10 +304,7 @@ export default function Devices() {
     >
       <FlatList
         style={styles.list}
-        contentContainerStyle={{
-          paddingBottom: 150,
-          paddingTop: Platform.OS === "ios" ? 130 : 110,
-        }}
+        contentContainerStyle={contentContainerStyle}
         data={devicesList}
         keyExtractor={(item) => item.firebaseKey}
         renderItem={renderItem}
@@ -364,7 +364,6 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   deviceCard: {
     borderWidth: 1,
@@ -384,6 +383,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card.light,
     borderColor: colors.border.light,
   },
+  deviceCardCompact: {
+    padding: 14,
+    gap: 12,
+  },
   deviceCardDark: {
     backgroundColor: colors.card.dark,
     borderColor: colors.border.dark,
@@ -391,6 +394,9 @@ const styles = StyleSheet.create({
   deviceIconBox: {
     padding: 16,
     borderRadius: 16,
+  },
+  deviceIconBoxCompact: {
+    padding: 10,
   },
   deviceIconBoxLight: {
     backgroundColor: colors.primaryTint,
@@ -400,18 +406,24 @@ const styles = StyleSheet.create({
   },
   deviceInfo: {
     flex: 1,
+    minWidth: 0,
   },
   deviceNameRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 8,
     marginBottom: 4,
   },
   deviceName: {
+    flexShrink: 1,
+    maxWidth: "100%",
     fontWeight: "700",
     fontSize: 18,
   },
   thisDeviceBadge: {
+    maxWidth: "100%",
+    flexShrink: 0,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -435,6 +447,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   lastActiveText: {
+    flexShrink: 1,
     fontWeight: "500",
     fontSize: 14,
   },
@@ -449,11 +462,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerTintDark,
   },
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 80,
     paddingHorizontal: 32,
+    paddingVertical: 24,
   },
   emptyIconBox: {
     padding: 24,

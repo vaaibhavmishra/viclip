@@ -25,6 +25,14 @@ function loadModule(filename, mocks = {}, globals = {}) {
       fileName: resolved,
     }).outputText;
     function mockRequire(request) {
+      if (request === "react-native-safe-area-context") {
+        return {
+          SafeAreaView: "SafeAreaView",
+          SafeAreaProvider: "SafeAreaProvider",
+          useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+          ...mocks[request],
+        };
+      }
       if (
         Object.hasOwn(mocks, request) &&
         (!request.startsWith(".") || resolved === entryFile)

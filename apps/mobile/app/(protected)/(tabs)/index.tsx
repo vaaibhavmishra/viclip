@@ -14,13 +14,13 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   useColorScheme,
-  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -39,6 +39,7 @@ import {
   removeClip,
   togglePinClip,
 } from "@/services/firebase";
+import { useResponsiveLayout } from "@/utils/layout";
 import { useSessionScope } from "@/utils/sessionScope";
 import {
   detectClipboardType,
@@ -50,7 +51,7 @@ import {
 
 export default function Index() {
   const scope = useSessionScope();
-  const { height: screenHeight } = useWindowDimensions();
+  const layout = useResponsiveLayout();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [clipboardContent, setClipboardContent] = useState<ClipData[]>([]);
@@ -701,11 +702,17 @@ export default function Index() {
           <View
             style={[
               styles.clipMetaRow,
+              layout.isCompact && styles.clipMetaRowCompact,
               isDark ? styles.clipMetaRowDark : styles.clipMetaRowLight,
             ]}
           >
             {/* Left: Device & Timestamp stream */}
-            <View style={styles.metaLeftGroup}>
+            <View
+              style={[
+                styles.metaLeftGroup,
+                layout.isCompact && styles.metaLeftGroupCompact,
+              ]}
+            >
               <Ionicons
                 name={deviceIcon}
                 size={13}
@@ -832,6 +839,7 @@ export default function Index() {
       handleTogglePin,
       handleDelete,
       handleOpenEdit,
+      layout.isCompact,
     ],
   );
 
@@ -865,10 +873,10 @@ export default function Index() {
     >
       <FlatList
         style={styles.list}
-        contentContainerStyle={{
-          paddingBottom: 180,
-          paddingTop: Platform.OS === "ios" ? 130 : 110,
-        }}
+        contentContainerStyle={[
+          layout.contentContainerStyle,
+          { paddingBottom: 16 },
+        ]}
         ListHeaderComponent={
           error ? (
             <Text accessibilityRole="alert" style={{ color: colors.danger }}>
@@ -949,17 +957,26 @@ export default function Index() {
             if (!saving.current) setEditingClip(null);
           }}
         >
-          <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalOverlay,
+              {
+                paddingTop: layout.modalInsets.top + 12,
+                paddingLeft: layout.modalInsets.left,
+                paddingRight: layout.modalInsets.right,
+              },
+            ]}
+          >
             <TouchableWithoutFeedback>
               <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.modalKeyboard}
               >
                 <View
                   style={[
                     styles.modalContent,
                     {
-                      minHeight: screenHeight * 0.55,
-                      maxHeight: screenHeight * 0.85,
+                      maxHeight: "100%",
                       backgroundColor: isDark
                         ? colors.card.dark
                         : colors.card.light,
@@ -969,199 +986,213 @@ export default function Index() {
                     },
                   ]}
                 >
-                  {/* Drag Handle */}
-                  <View style={styles.dragHandleWrapper}>
+                  <ScrollView
+                    style={styles.modalScroll}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                    contentContainerStyle={{
+                      paddingBottom: layout.modalInsets.bottom + 16,
+                    }}
+                  >
+                    {/* Drag Handle */}
+                    <View style={styles.dragHandleWrapper}>
+                      <View
+                        style={[
+                          styles.dragHandle,
+                          {
+                            backgroundColor: isDark
+                              ? "rgba(255,255,255,0.2)"
+                              : "rgba(0,0,0,0.15)",
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    {/* Header */}
+                    <View style={styles.modalHeader}>
+                      <View style={styles.modalHeaderTitleGroup}>
+                        <View style={styles.modalHeaderIconBox}>
+                          <Ionicons name="create" size={18} color="white" />
+                        </View>
+                        <Text
+                          style={[
+                            styles.modalHeaderTitle,
+                            {
+                              color: isDark
+                                ? colors.text.dark
+                                : colors.text.light,
+                            },
+                          ]}
+                        >
+                          Edit Clip
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (!saving.current) setEditingClip(null);
+                        }}
+                        style={[
+                          styles.modalCloseBtn,
+                          isDark
+                            ? styles.modalCloseBtnDark
+                            : styles.modalCloseBtnLight,
+                        ]}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={20}
+                          color={isDark ? colors.text.mutedDark : "#6b7280"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Text Input */}
+                    <View style={styles.modalInputWrapper}>
+                      <TextInput
+                        ref={editInputRef}
+                        multiline
+                        autoFocus
+                        editable={!isSavingEdit}
+                        maxLength={CLIPBOARD_CONFIG.maxContentLength}
+                        value={editContent}
+                        onChangeText={setEditContent}
+                        placeholder="Enter clip content..."
+                        placeholderTextColor={isDark ? "#52525b" : "#a1a1aa"}
+                        style={[
+                          styles.modalTextInput,
+                          {
+                            minHeight: Math.max(
+                              96,
+                              Math.min(240, layout.height * 0.25),
+                            ),
+                            color: isDark ? "#fafafa" : "#18181b",
+                            fontFamily:
+                              Platform.OS === "ios" ? "Menlo" : "monospace",
+                            backgroundColor: isDark
+                              ? "rgba(255,255,255,0.05)"
+                              : "rgba(0,0,0,0.03)",
+                            borderColor: isDark
+                              ? "rgba(255,255,255,0.08)"
+                              : "rgba(0,0,0,0.06)",
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    {/* Footer Info */}
+                    <View style={styles.modalStatsRow}>
+                      <View style={styles.modalStatsGroup}>
+                        <View
+                          style={[
+                            styles.metaBadge,
+                            isDark
+                              ? styles.subtleIconBoxDark
+                              : styles.subtleIconBoxLight,
+                          ]}
+                        >
+                          <Ionicons
+                            name="text-outline"
+                            size={13}
+                            color="#6b7280"
+                          />
+                          <Text
+                            style={[
+                              styles.metaText,
+                              {
+                                color: isDark
+                                  ? colors.text.mutedDark
+                                  : colors.text.mutedLight,
+                              },
+                            ]}
+                          >
+                            {editContent.length} chars
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.metaBadge,
+                            isDark
+                              ? styles.subtleIconBoxDark
+                              : styles.subtleIconBoxLight,
+                          ]}
+                        >
+                          <Ionicons
+                            name="document-text-outline"
+                            size={13}
+                            color="#6b7280"
+                          />
+                          <Text
+                            style={[
+                              styles.metaText,
+                              {
+                                color: isDark
+                                  ? colors.text.mutedDark
+                                  : colors.text.mutedLight,
+                              },
+                            ]}
+                          >
+                            {editContent.split(/\s+/).filter(Boolean).length}{" "}
+                            words
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Action Buttons */}
                     <View
                       style={[
-                        styles.dragHandle,
-                        {
-                          backgroundColor: isDark
-                            ? "rgba(255,255,255,0.2)"
-                            : "rgba(0,0,0,0.15)",
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Header */}
-                  <View style={styles.modalHeader}>
-                    <View style={styles.modalHeaderTitleGroup}>
-                      <View style={styles.modalHeaderIconBox}>
-                        <Ionicons name="create" size={18} color="white" />
-                      </View>
-                      <Text
-                        style={[
-                          styles.modalHeaderTitle,
-                          {
-                            color: isDark
-                              ? colors.text.dark
-                              : colors.text.light,
-                          },
-                        ]}
-                      >
-                        Edit Clip
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (!saving.current) setEditingClip(null);
-                      }}
-                      style={[
-                        styles.modalCloseBtn,
-                        isDark
-                          ? styles.modalCloseBtnDark
-                          : styles.modalCloseBtnLight,
+                        styles.modalActionButtonsRow,
+                        layout.isCompact && styles.modalActionButtonsCompact,
                       ]}
                     >
-                      <Ionicons
-                        name="close"
-                        size={20}
-                        color={isDark ? colors.text.mutedDark : "#6b7280"}
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Text Input */}
-                  <View style={styles.modalInputWrapper}>
-                    <TextInput
-                      ref={editInputRef}
-                      multiline
-                      autoFocus
-                      editable={!isSavingEdit}
-                      maxLength={CLIPBOARD_CONFIG.maxContentLength}
-                      value={editContent}
-                      onChangeText={setEditContent}
-                      placeholder="Enter clip content..."
-                      placeholderTextColor={isDark ? "#52525b" : "#a1a1aa"}
-                      style={[
-                        styles.modalTextInput,
-                        {
-                          minHeight: screenHeight * 0.25,
-                          color: isDark ? "#fafafa" : "#18181b",
-                          fontFamily:
-                            Platform.OS === "ios" ? "Menlo" : "monospace",
-                          backgroundColor: isDark
-                            ? "rgba(255,255,255,0.05)"
-                            : "rgba(0,0,0,0.03)",
-                          borderColor: isDark
-                            ? "rgba(255,255,255,0.08)"
-                            : "rgba(0,0,0,0.06)",
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Footer Info */}
-                  <View style={styles.modalStatsRow}>
-                    <View style={styles.modalStatsGroup}>
-                      <View
+                      <TouchableOpacity
                         style={[
-                          styles.metaBadge,
+                          styles.modalCancelBtn,
+                          layout.isCompact && styles.modalActionButtonCompact,
                           isDark
-                            ? styles.subtleIconBoxDark
-                            : styles.subtleIconBoxLight,
+                            ? styles.modalCancelBtnDark
+                            : styles.modalCancelBtnLight,
                         ]}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          if (!saving.current) setEditingClip(null);
+                        }}
                       >
-                        <Ionicons
-                          name="text-outline"
-                          size={13}
-                          color="#6b7280"
-                        />
                         <Text
                           style={[
-                            styles.metaText,
+                            styles.modalCancelText,
                             {
-                              color: isDark
-                                ? colors.text.mutedDark
-                                : colors.text.mutedLight,
+                              color: isDark ? colors.text.mutedDark : "#4b5563",
                             },
                           ]}
                         >
-                          {editContent.length} chars
+                          Cancel
                         </Text>
-                      </View>
-                      <View
+                      </TouchableOpacity>
+                      <TouchableOpacity
                         style={[
-                          styles.metaBadge,
-                          isDark
-                            ? styles.subtleIconBoxDark
-                            : styles.subtleIconBoxLight,
+                          styles.modalSaveBtn,
+                          layout.isCompact && styles.modalActionButtonCompact,
                         ]}
+                        activeOpacity={0.8}
+                        onPress={handleSaveEdit}
+                        disabled={isSavingEdit}
                       >
-                        <Ionicons
-                          name="document-text-outline"
-                          size={13}
-                          color="#6b7280"
-                        />
-                        <Text
-                          style={[
-                            styles.metaText,
-                            {
-                              color: isDark
-                                ? colors.text.mutedDark
-                                : colors.text.mutedLight,
-                            },
-                          ]}
-                        >
-                          {editContent.split(/\s+/).filter(Boolean).length}{" "}
-                          words
-                        </Text>
-                      </View>
+                        {isSavingEdit ? (
+                          <ActivityIndicator size="small" color="#ffffff" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark"
+                              size={20}
+                              color="#ffffff"
+                            />
+                            <Text style={styles.modalSaveText}>Save</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
                     </View>
-                  </View>
-
-                  {/* Action Buttons */}
-                  <View
-                    style={[
-                      styles.modalActionButtonsRow,
-                      {
-                        paddingBottom: Platform.OS === "ios" ? 36 : 20,
-                      },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.modalCancelBtn,
-                        isDark
-                          ? styles.modalCancelBtnDark
-                          : styles.modalCancelBtnLight,
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        if (!saving.current) setEditingClip(null);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.modalCancelText,
-                          {
-                            color: isDark ? colors.text.mutedDark : "#4b5563",
-                          },
-                        ]}
-                      >
-                        Cancel
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.modalSaveBtn}
-                      activeOpacity={0.8}
-                      onPress={handleSaveEdit}
-                      disabled={isSavingEdit}
-                    >
-                      {isSavingEdit ? (
-                        <ActivityIndicator size="small" color="#ffffff" />
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="checkmark"
-                            size={20}
-                            color="#ffffff"
-                          />
-                          <Text style={styles.modalSaveText}>Save</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
+                  </ScrollView>
                 </View>
               </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
@@ -1174,6 +1205,9 @@ export default function Index() {
         style={[
           styles.floatingActionArea,
           {
+            marginLeft: layout.tabBarStyle.left,
+            marginRight: layout.tabBarStyle.right,
+            marginBottom: layout.contentContainerStyle.paddingBottom,
             borderColor: isDark
               ? "rgba(39, 39, 42, 0.8)"
               : "rgba(229, 231, 235, 0.5)",
@@ -1235,7 +1269,6 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   clipCard: {
     paddingHorizontal: 16,
@@ -1343,6 +1376,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: 10,
   },
+  clipMetaRowCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+  },
   clipMetaRowLight: {
     borderTopColor: "rgba(0, 0, 0, 0.05)",
   },
@@ -1355,6 +1393,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginRight: 8,
+  },
+  metaLeftGroupCompact: {
+    flex: 0,
+    marginRight: 0,
   },
   metaDeviceIcon: {
     marginRight: 5,
@@ -1373,7 +1415,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   metaTimeText: {
-    flexShrink: 0,
+    flexShrink: 1,
   },
   metaBadge: {
     flexDirection: "row",
@@ -1388,6 +1430,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     flexShrink: 0,
+    justifyContent: "flex-end",
   },
   actionIconBtn: {
     width: 32,
@@ -1413,11 +1456,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217, 119, 6, 0.4)",
   },
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 80,
-    paddingHorizontal: 32,
+    paddingVertical: 24,
+    paddingHorizontal: 12,
   },
   emptyIconBox: {
     padding: 24,
@@ -1459,10 +1502,21 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
+  modalKeyboard: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
   modalContent: {
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
+    flexShrink: 1,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
+  },
+  modalScroll: {
+    flexShrink: 1,
   },
   dragHandleWrapper: {
     alignItems: "center",
@@ -1485,6 +1539,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 1,
   },
   modalHeaderIconBox: {
     backgroundColor: colors.primary,
@@ -1494,6 +1549,7 @@ const styles = StyleSheet.create({
   modalHeaderTitle: {
     fontSize: 20,
     fontWeight: "700",
+    flexShrink: 1,
   },
   modalCloseBtn: {
     padding: 8,
@@ -1506,12 +1562,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.dark,
   },
   modalInputWrapper: {
-    flex: 1,
     paddingHorizontal: 24,
     paddingBottom: 8,
   },
   modalTextInput: {
-    flex: 1,
     fontSize: 15,
     lineHeight: 22,
     textAlignVertical: "top",
@@ -1530,6 +1584,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    flexWrap: "wrap",
+    flexShrink: 1,
   },
   modalActionButtonsRow: {
     flexDirection: "row",
@@ -1537,10 +1593,19 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 8,
   },
+  modalActionButtonsCompact: {
+    flexDirection: "column",
+  },
+  modalActionButtonCompact: {
+    flexBasis: "auto",
+  },
   modalCancelBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: 0,
     borderWidth: 1,
     paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
@@ -1556,11 +1621,16 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontWeight: "700",
     fontSize: 15,
+    flexShrink: 1,
+    textAlign: "center",
   },
   modalSaveBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: 0,
     backgroundColor: colors.primary,
     paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -1576,12 +1646,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "700",
     fontSize: 15,
+    flexShrink: 1,
+    textAlign: "center",
   },
   floatingActionArea: {
-    position: "absolute",
-    bottom: 110,
-    left: 20,
-    right: 20,
+    marginTop: 8,
     overflow: "hidden",
     borderRadius: 24,
     borderWidth: 1,
@@ -1598,9 +1667,11 @@ const styles = StyleSheet.create({
   },
   floatingActionBtnReceive: {
     flex: 1,
+    minWidth: 0,
     marginRight: 6,
     borderWidth: 1,
     paddingVertical: 14,
+    paddingHorizontal: 8,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -1618,12 +1689,16 @@ const styles = StyleSheet.create({
   floatingActionBtnReceiveText: {
     fontWeight: "700",
     fontSize: 15,
+    flexShrink: 1,
+    textAlign: "center",
   },
   floatingActionBtnSend: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 6,
     backgroundColor: colors.primary,
     paddingVertical: 14,
+    paddingHorizontal: 8,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -1639,5 +1714,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "700",
     fontSize: 15,
+    flexShrink: 1,
+    textAlign: "center",
   },
 });

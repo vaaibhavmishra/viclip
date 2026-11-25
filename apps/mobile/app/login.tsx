@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { LINKS } from "@viclip/constants";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -27,6 +28,8 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { colors } from "@/constants/theme";
+import { useResponsiveLayout } from "@/utils/layout";
+import { openExternalLink } from "@/utils/openExternalLink";
 import {
   loginUser,
   recoverAccountWithOldPassword,
@@ -47,6 +50,9 @@ export default function Login() {
   }, []);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { height, isCompact, horizontalPadding, modalInsets } =
+    useResponsiveLayout();
+  const useCompactSpacing = isCompact || height < 600;
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -312,13 +318,20 @@ export default function Login() {
       ]}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: useCompactSpacing ? 16 : 32,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <TouchableWithoutFeedback
             onPress={Keyboard.dismiss}
@@ -331,25 +344,36 @@ export default function Login() {
                 layout={LinearTransition.duration(200)}
                 style={[
                   styles.card,
+                  useCompactSpacing && styles.cardCompact,
                   isDark ? styles.cardDark : styles.cardLight,
                 ]}
               >
-                <View style={styles.header}>
+                <View
+                  style={[
+                    styles.header,
+                    useCompactSpacing && styles.headerCompact,
+                  ]}
+                >
                   <View
                     style={[
                       styles.logoBox,
+                      useCompactSpacing && styles.logoBoxCompact,
                       isDark ? styles.logoBoxDark : styles.logoBoxLight,
                     ]}
                   >
                     <Image
                       source={require("../assets/images/viclip-icon-small.png")}
-                      style={styles.logo}
+                      style={[
+                        styles.logo,
+                        useCompactSpacing && styles.logoCompact,
+                      ]}
                       resizeMode="contain"
                     />
                   </View>
                   <Text
                     style={[
                       styles.title,
+                      isCompact && styles.titleCompact,
                       { color: isDark ? colors.text.dark : colors.text.light },
                     ]}
                   >
@@ -369,7 +393,7 @@ export default function Login() {
                   </Text>
                 </View>
 
-                <View style={styles.form}>
+                <View style={[styles.form, isCompact && styles.formCompact]}>
                   {/* Username for Signup */}
                   {!isLogin && (
                     <Animated.View
@@ -393,6 +417,7 @@ export default function Login() {
                       <Animated.View
                         style={[
                           styles.inputContainer,
+                          isCompact && styles.inputContainerCompact,
                           getInputContainerStyle("username"),
                         ]}
                       >
@@ -443,6 +468,7 @@ export default function Login() {
                     <Animated.View
                       style={[
                         styles.inputContainer,
+                        isCompact && styles.inputContainerCompact,
                         getInputContainerStyle("email"),
                       ]}
                     >
@@ -511,6 +537,7 @@ export default function Login() {
                         <TouchableOpacity
                           onPress={handleForgotPassword}
                           disabled={isLoading}
+                          style={styles.forgotPasswordButton}
                         >
                           <Text
                             style={[
@@ -531,6 +558,7 @@ export default function Login() {
                     <Animated.View
                       style={[
                         styles.inputContainer,
+                        isCompact && styles.inputContainerCompact,
                         getInputContainerStyle("password"),
                       ]}
                     >
@@ -639,6 +667,7 @@ export default function Login() {
                       <Animated.View
                         style={[
                           styles.inputContainer,
+                          isCompact && styles.inputContainerCompact,
                           getInputContainerStyle("confirmPassword"),
                         ]}
                       >
@@ -742,7 +771,7 @@ export default function Login() {
                         : "Already have an account?"}
                     </Text>
                     <TouchableOpacity
-                      style={{ marginLeft: 8 }}
+                      style={styles.toggleButton}
                       onPress={() => {
                         setIsLogin(!isLogin);
                         setError(null);
@@ -771,7 +800,10 @@ export default function Login() {
               {/* Footer text Outside the Card */}
               <Animated.View
                 entering={FadeInDown.duration(600).delay(150)}
-                style={styles.footerBox}
+                style={[
+                  styles.footerBox,
+                  useCompactSpacing && styles.footerBoxCompact,
+                ]}
               >
                 <Text
                   style={[
@@ -781,6 +813,8 @@ export default function Login() {
                 >
                   By continuing, you agree to ViClip's{"\n"}
                   <Text
+                    accessibilityRole="link"
+                    onPress={() => void openExternalLink(LINKS.terms)}
                     style={[
                       styles.footerLink,
                       { color: isDark ? colors.text.mutedDark : "#4b5563" },
@@ -790,6 +824,8 @@ export default function Login() {
                   </Text>{" "}
                   and{" "}
                   <Text
+                    accessibilityRole="link"
+                    onPress={() => void openExternalLink(LINKS.privacy)}
                     style={[
                       styles.footerLink,
                       { color: isDark ? colors.text.mutedDark : "#4b5563" },
@@ -815,9 +851,19 @@ export default function Login() {
           }
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            {
+              paddingTop: modalInsets.top + 16,
+              paddingBottom: modalInsets.bottom + 16,
+              paddingLeft: modalInsets.left + 16,
+              paddingRight: modalInsets.right + 16,
+            },
+          ]}
+        >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalContentWrapper}
           >
             <View
@@ -830,9 +876,13 @@ export default function Login() {
             >
               <ScrollView
                 style={styles.recoveryScroll}
-                contentContainerStyle={styles.recoveryScrollContent}
+                contentContainerStyle={[
+                  styles.recoveryScrollContent,
+                  isCompact && styles.recoveryScrollContentCompact,
+                ]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
               >
                 <View
                   style={[
@@ -1002,6 +1052,7 @@ export default function Login() {
                       <View
                         style={[
                           styles.inputContainer,
+                          isCompact && styles.inputContainerCompact,
                           isDark
                             ? styles.inputContainerNormalDark
                             : styles.inputContainerNormalLight,
@@ -1154,10 +1205,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 32,
   },
   card: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
     borderRadius: 36,
     paddingHorizontal: 24,
     paddingVertical: 40,
@@ -1167,6 +1219,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 20,
     elevation: 8,
+  },
+  cardCompact: {
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
   cardLight: {
     backgroundColor: colors.card.light,
@@ -1180,11 +1237,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
+  headerCompact: {
+    marginBottom: 24,
+  },
   logoBox: {
     padding: 20,
     borderRadius: 28,
     marginBottom: 20,
     borderWidth: 1,
+  },
+  logoBoxCompact: {
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 20,
   },
   logoBoxLight: {
     backgroundColor: colors.primaryTint,
@@ -1198,12 +1263,22 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
   },
+  logoCompact: {
+    width: 64,
+    height: 64,
+  },
   title: {
+    width: "100%",
     fontSize: 28,
     fontWeight: "900",
     letterSpacing: -0.5,
+    textAlign: "center",
+  },
+  titleCompact: {
+    fontSize: 24,
   },
   subtitle: {
+    width: "100%",
     fontSize: 15,
     fontWeight: "500",
     marginTop: 10,
@@ -1214,6 +1289,9 @@ const styles = StyleSheet.create({
   form: {
     width: "100%",
     gap: 20,
+  },
+  formCompact: {
+    gap: 16,
   },
   inputGroup: {
     gap: 8,
@@ -1230,6 +1308,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  inputContainerCompact: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   inputContainerNormalLight: {
     backgroundColor: colors.input.bgLight,
@@ -1249,27 +1331,46 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    marginLeft: 12,
+    minWidth: 0,
+    marginLeft: 8,
+    paddingVertical: 0,
     fontSize: 16,
     fontWeight: "500",
   },
   passwordHeaderRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
     marginLeft: 4,
     paddingRight: 4,
   },
   passwordLabelRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
   },
   infoIconBtn: {
-    padding: 4,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
     marginLeft: 4,
   },
   eyeIconBtn: {
-    padding: 4,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
+  forgotPasswordButton: {
+    maxWidth: "100%",
+    minHeight: 44,
+    justifyContent: "center",
+    flexShrink: 1,
   },
   forgotPasswordText: {
     fontSize: 13,
@@ -1321,13 +1422,18 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginLeft: 10,
     flex: 1,
+    minWidth: 0,
   },
   submitButton: {
     width: "100%",
     backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 16,
+    paddingHorizontal: 16,
+    minHeight: 52,
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 12,
@@ -1345,12 +1451,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#ffffff",
     letterSpacing: 0.5,
+    flexShrink: 1,
+    textAlign: "center",
   },
   buttonLoadingText: {
-    marginLeft: 8,
+    flexShrink: 1,
   },
   toggleRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
@@ -1358,14 +1468,29 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 15,
     fontWeight: "500",
+    flexShrink: 1,
+    textAlign: "center",
+  },
+  toggleButton: {
+    maxWidth: "100%",
+    minHeight: 44,
+    justifyContent: "center",
   },
   toggleBtnText: {
     fontSize: 15,
     fontWeight: "700",
+    textAlign: "center",
   },
   footerBox: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
     marginTop: 32,
     paddingHorizontal: 16,
+  },
+  footerBoxCompact: {
+    marginTop: 24,
+    paddingHorizontal: 8,
   },
   footerText: {
     fontSize: 14,
@@ -1382,17 +1507,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   modalContentWrapper: {
     width: "100%",
     maxWidth: 420,
-    maxHeight: "90%",
+    flex: 1,
+    justifyContent: "center",
   },
   recoveryCard: {
     borderRadius: 28,
     borderWidth: 1,
     maxHeight: "100%",
+    flexShrink: 1,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -1414,6 +1540,9 @@ const styles = StyleSheet.create({
   recoveryScrollContent: {
     padding: 24,
   },
+  recoveryScrollContentCompact: {
+    padding: 16,
+  },
   recoveryHeader: {
     alignItems: "center",
     marginBottom: 20,
@@ -1434,6 +1563,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerTint,
   },
   recoveryTitle: {
+    width: "100%",
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 8,
@@ -1446,11 +1576,13 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   missingSetupEmail: {
+    width: "100%",
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 12,
   },
   recoverySubtitle: {
+    width: "100%",
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -1494,7 +1626,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
     borderRadius: 16,
     paddingVertical: 16,
+    paddingHorizontal: 16,
+    minHeight: 52,
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: colors.danger,
@@ -1510,5 +1646,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
   },
 });

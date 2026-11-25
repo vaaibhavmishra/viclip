@@ -1,11 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { getAuth } from "@react-native-firebase/auth";
+import { LINKS } from "@viclip/constants";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -18,6 +18,8 @@ import Toast from "react-native-toast-message";
 import { colors } from "@/constants/theme";
 import { logoutUser } from "@/services/auth";
 import { useBackgroundSync } from "@/services/backgroundSync";
+import { useResponsiveLayout } from "@/utils/layout";
+import { openExternalLink } from "@/utils/openExternalLink";
 import { useSessionScope } from "@/utils/sessionScope";
 
 // ─── Background Sync Status Card ──────────────────────────────────────────────
@@ -27,6 +29,7 @@ function SyncStatusCard() {
   const toggling = useRef(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { isCompact } = useResponsiveLayout();
 
   const {
     notificationsEnabled,
@@ -84,7 +87,7 @@ function SyncStatusCard() {
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => handleToggle(!toggleValue)}
-        style={styles.toggleRow}
+        style={[styles.toggleRow, isCompact && styles.toggleRowCompact]}
       >
         <View style={styles.toggleLeft}>
           <View
@@ -103,7 +106,7 @@ function SyncStatusCard() {
               color={toggleValue ? colors.primary : "#6b7280"}
             />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={styles.rowText}>
             <Text
               style={[
                 styles.toggleTitle,
@@ -119,7 +122,6 @@ function SyncStatusCard() {
                   color: isDark ? colors.text.mutedDark : "#9ca3af",
                 },
               ]}
-              numberOfLines={1}
             >
               {!notificationsEnabled
                 ? "Tap to enable push notifications"
@@ -239,6 +241,7 @@ export default function Settings() {
   }, []);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { isCompact, contentContainerStyle } = useResponsiveLayout();
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -294,16 +297,13 @@ export default function Settings() {
             : colors.background.light,
         },
       ]}
-      contentContainerStyle={{
-        padding: 20,
-        paddingBottom: 150,
-        paddingTop: Platform.OS === "ios" ? 130 : 110,
-      }}
+      contentContainerStyle={contentContainerStyle}
     >
       {/* Profile Section */}
       <View
         style={[
           styles.profileCard,
+          isCompact && styles.profileCardCompact,
           isDark ? styles.cardDark : styles.cardLight,
         ]}
       >
@@ -344,6 +344,76 @@ export default function Settings() {
 
       {/* Background Sync Section */}
       <SyncStatusCard />
+
+      <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+        {(
+          [
+            {
+              label: "Delete account",
+              subtitle: "Request account and data deletion by email",
+              icon: "trash-outline",
+              url: LINKS.deleteAccount,
+            },
+            {
+              label: "Privacy Policy",
+              subtitle: "How ViClip handles your data",
+              icon: "shield-checkmark-outline",
+              url: LINKS.privacy,
+            },
+            {
+              label: "Terms of Service",
+              subtitle: "Terms for using ViClip",
+              icon: "document-text-outline",
+              url: LINKS.terms,
+            },
+          ] as const
+        ).map((link) => (
+          <TouchableOpacity
+            key={link.url}
+            accessibilityRole="link"
+            accessibilityLabel={link.label}
+            accessibilityHint="Opens the ViClip website in your browser"
+            onPress={() => void openExternalLink(link.url)}
+            activeOpacity={0.7}
+            style={[styles.toggleRow, isCompact && styles.toggleRowCompact]}
+          >
+            <View style={styles.toggleLeft}>
+              <Ionicons
+                name={link.icon}
+                size={22}
+                color={isDark ? colors.text.mutedDark : colors.text.mutedLight}
+              />
+              <View style={styles.rowText}>
+                <Text
+                  style={[
+                    styles.toggleTitle,
+                    { color: isDark ? colors.text.dark : colors.text.light },
+                  ]}
+                >
+                  {link.label}
+                </Text>
+                <Text
+                  style={[
+                    styles.toggleSubtitle,
+                    {
+                      color: isDark
+                        ? colors.text.mutedDark
+                        : colors.text.mutedLight,
+                    },
+                  ]}
+                >
+                  {link.subtitle}
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={isDark ? colors.text.mutedDark : colors.text.mutedLight}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* Logout Button */}
       <TouchableOpacity
@@ -395,12 +465,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
+  toggleRowCompact: {
+    paddingHorizontal: 16,
+  },
   toggleLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     flex: 1,
+    minWidth: 0,
     marginRight: 12,
+  },
+  rowText: {
+    flex: 1,
+    minWidth: 0,
   },
   toggleIconBox: {
     padding: 10,
@@ -426,8 +504,10 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
@@ -436,6 +516,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   statusBadge: {
+    maxWidth: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -449,6 +530,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusBadgeText: {
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -473,8 +555,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   ctaButtonText: {
+    flexShrink: 1,
+    textAlign: "center",
     color: "#ffffff",
     fontWeight: "700",
     fontSize: 14,
@@ -490,6 +575,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
+  },
+  profileCardCompact: {
+    padding: 16,
   },
   avatarWrapper: {
     padding: 6,
@@ -508,12 +596,14 @@ const styles = StyleSheet.create({
     borderRadius: 48,
   },
   userName: {
+    alignSelf: "stretch",
     fontWeight: "700",
     fontSize: 24,
     marginBottom: 4,
     textAlign: "center",
   },
   userEmail: {
+    alignSelf: "stretch",
     fontWeight: "500",
     fontSize: 16,
     textAlign: "center",
@@ -537,6 +627,7 @@ const styles = StyleSheet.create({
     borderColor: colors.dangerBorderDark,
   },
   logoutBtnText: {
+    flexShrink: 1,
     textAlign: "center",
     color: colors.danger,
     fontWeight: "700",

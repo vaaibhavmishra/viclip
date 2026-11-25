@@ -79,7 +79,12 @@ function clipboardScreen(overrides = {}) {
     react: host.React,
     "react-native": {
       ...native,
+      ...overrides.native,
       Alert: { alert: (...args) => state.alerts.push(args) },
+    },
+    "react-native-safe-area-context": {
+      useSafeAreaInsets: () =>
+        overrides.insets ?? { top: 24, bottom: 48, left: 0, right: 0 },
     },
     "@expo/vector-icons/Ionicons": "Icon",
     "expo-blur": { BlurView: "BlurView" },
@@ -106,6 +111,60 @@ function clipboardScreen(overrides = {}) {
   state.listener({ key: sampleClip });
   return { host, auth, session, state, share, render };
 }
+
+function flattenedStyle(style) {
+  return Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+}
+
+test("small-screen clip actions reserve their height instead of overlaying history", () => {
+  const screen = clipboardScreen({
+    native: {
+      useWindowDimensions: () => ({
+        width: 320,
+        height: 568,
+        scale: 2,
+        fontScale: 2,
+      }),
+    },
+  });
+  const tree = screen.render();
+  const area = findAll(
+    tree,
+    (node) =>
+      node.type === "View" &&
+      findAll(node, (child) => child.type === "BlurView").length > 0,
+  ).at(-1);
+  const style = flattenedStyle(area.props.style);
+  assert.notEqual(style.position, "absolute");
+  assert.ok(style.marginBottom >= 48 + 12 + 76);
+  assert.ok(
+    flattenedStyle(list(tree).props.contentContainerStyle).paddingTop <= 24,
+  );
+});
+
+test("clip editor can scroll its save action above the Android keyboard", () => {
+  const screen = clipboardScreen();
+  const tree = screen.render();
+  const row = list(tree).props.renderItem({ item: sampleClip, index: 0 });
+  findAll(
+    row,
+    (node) => node.props.accessibilityLabel === "Edit clip",
+  )[0].props.onPress();
+  const modal = findAll(
+    screen.render(),
+    (node) => node.type === "Modal" && node.props.visible,
+  )[0];
+  const keyboard = findAll(
+    modal,
+    (node) => node.type === "KeyboardAvoidingView",
+  )[0];
+  assert.equal(keyboard.props.behavior, "height");
+  assert.equal(flattenedStyle(keyboard.props.style).flex, 1);
+  const scroll = findAll(modal, (node) => node.type === "ScrollView")[0];
+  assert.ok(scroll);
+  assert.equal(scroll.props.keyboardShouldPersistTaps, "handled");
+  assert.ok(button(scroll, "Save"));
+});
 
 function button(tree, text) {
   return findAll(
